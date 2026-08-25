@@ -2,7 +2,9 @@ const { generateInterviewFeedback } = require("../services/aiService");
 
 const getInterviewFeedback = async (req, res) => {
   try {
+    console.log("=================================");
     console.log("Interview Feedback Request Received");
+    console.log("=================================");
 
     const { role, questions, answers } = req.body;
 
@@ -10,15 +12,19 @@ const getInterviewFeedback = async (req, res) => {
     console.log("Questions:", questions);
     console.log("Answers:", answers);
 
-    // Validate role
-    if (!role) {
+    // -----------------------------
+    // Validate Role
+    // -----------------------------
+    if (!role || typeof role !== "string") {
       return res.status(400).json({
         success: false,
         error: "Target role is required.",
       });
     }
 
-    // Validate questions
+    // -----------------------------
+    // Validate Questions
+    // -----------------------------
     if (!Array.isArray(questions) || questions.length === 0) {
       return res.status(400).json({
         success: false,
@@ -26,7 +32,9 @@ const getInterviewFeedback = async (req, res) => {
       });
     }
 
-    // Validate answers
+    // -----------------------------
+    // Validate Answers
+    // -----------------------------
     if (!answers || typeof answers !== "object") {
       return res.status(400).json({
         success: false,
@@ -34,6 +42,9 @@ const getInterviewFeedback = async (req, res) => {
       });
     }
 
+    // -----------------------------
+    // Generate AI Feedback
+    // -----------------------------
     const feedback = await generateInterviewFeedback(
       role,
       questions,
@@ -42,13 +53,19 @@ const getInterviewFeedback = async (req, res) => {
 
     console.log("Interview Feedback Generated Successfully");
 
+    // -----------------------------
+    // Send Response
+    // -----------------------------
     return res.status(200).json({
       success: true,
-      feedback: feedback,
+      feedback,
     });
 
   } catch (error) {
-    console.error("Interview Controller Error:", error);
+    console.error("=================================");
+    console.error("Interview Controller Error:");
+    console.error(error);
+    console.error("=================================");
 
     return res.status(500).json({
       success: false,

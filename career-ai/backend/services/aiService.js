@@ -1,91 +1,89 @@
-const generateInterviewFeedback = async (role, questions, answers) => {
+const analyzeResumeWithAI = async (resumeText, jobRole) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is missing in backend/.env");
   }
 
+  if (!resumeText || !resumeText.trim()) {
+    throw new Error("Resume text is empty");
+  }
+
+  if (!jobRole || !jobRole.trim()) {
+    throw new Error("Target job role is required");
+  }
+
   const prompt = `
-You are an expert technical interviewer and career coach.
+You are an expert ATS resume analyzer and career coach.
 
-The candidate completed a mock interview.
+Analyze the following resume for the target job role.
 
-Target Role:
-${role || "Software Developer"}
+Target Job Role:
+${jobRole}
 
-Interview Questions and Candidate Answers:
+Resume:
+${resumeText}
 
-${questions
-  .map((question, index) => {
-    return `
-Q${index + 1}: ${question}
+Evaluate the resume based ONLY on the information provided.
 
-Candidate Answer:
-${answers[index] || "No answer provided"}
-`;
-  })
-  .join("\n")}
+Analyze:
 
-Analyze the candidate's answers for the target role.
+1. ATS score
+2. Resume strengths
+3. Resume weaknesses
+4. Missing skills
+5. Recommended skills
+6. Experience relevance
+7. Projects relevance
+8. Keyword optimization
+9. Formatting/content issues
+10. Overall improvement suggestions
 
-Evaluate:
-
-1. Technical knowledge
-2. Concept understanding
-3. Communication
-4. Accuracy
-5. Clarity
-6. Areas of improvement
-7. Overall interview performance
-
-Give practical feedback that helps the candidate improve.
-
-Return ONLY valid JSON.
+Important:
+- Do not invent information.
+- Do not assume the candidate has skills that are not present.
+- Recommendations must be relevant to the target job role.
+- ATS score must be between 0 and 100.
+- Return ONLY valid JSON.
+- Do not return Markdown.
+- Do not return backticks.
 
 Use exactly this structure:
 
 {
-  "overallScore": 75,
-  "overallFeedback": "Short overall feedback about the candidate.",
+  "atsScore": 75,
+  "overallFeedback": "Short overall feedback.",
   "strengths": [
-    "Good understanding of React",
-    "Clear communication"
+    "Strength 1",
+    "Strength 2"
   ],
   "weaknesses": [
-    "Needs stronger understanding of JavaScript concepts",
-    "Answers need more detail"
+    "Weakness 1",
+    "Weakness 2"
   ],
-  "questionFeedback": [
-    {
-      "question": "Tell me about yourself.",
-      "feedback": "The answer is relevant but could be more structured."
-    },
-    {
-      "question": "What are React Hooks?",
-      "feedback": "The answer should explain useState and useEffect with examples."
-    }
+  "missingSkills": [
+    "Skill 1",
+    "Skill 2"
+  ],
+  "recommendedSkills": [
+    "Skill 1",
+    "Skill 2"
+  ],
+  "keywordSuggestions": [
+    "Keyword 1",
+    "Keyword 2"
   ],
   "recommendations": [
-    "Practice JavaScript fundamentals",
-    "Give structured answers",
-    "Practice explaining technical concepts with examples"
+    "Recommendation 1",
+    "Recommendation 2",
+    "Recommendation 3"
   ]
 }
-
-Rules:
-
-- overallScore must be between 0 and 100.
-- All arrays must contain strings except questionFeedback.
-- questionFeedback must contain objects with question and feedback.
-- Do not invent answers.
-- Evaluate only the answers provided.
-- Feedback must be specific to the target role.
-- Return ONLY JSON.
-- No Markdown.
-- No backticks.
 `;
 
   try {
+    console.log("Sending resume data to Gemini...");
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
       {
@@ -104,6 +102,7 @@ Rules:
               ],
             },
           ],
+
           generationConfig: {
             temperature: 0.2,
             responseMimeType: "application/json",
@@ -114,21 +113,33 @@ Rules:
 
     const data = await response.json();
 
+    console.log("Gemini Resume API Status:", response.status);
+
     if (!response.ok) {
-      console.error("Gemini Interview API Error:", data);
+      console.error("Gemini Resume API Error:");
+      console.error(JSON.stringify(data, null, 2));
 
       throw new Error(
-        data.error?.message || "Gemini interview request failed"
+        data?.error?.message ||
+        "Gemini resume analysis request failed"
       );
     }
 
     const rawText =
-      data.candidates?.[0]?.content?.parts?.[0]?.text;
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!rawText) {
-      console.error("Empty Gemini interview response:", data);
-      throw new Error("Gemini returned an empty interview response");
+      console.error(
+        "Gemini returned empty resume response:",
+        JSON.stringify(data, null, 2)
+      );
+
+      throw new Error(
+        "Gemini returned an empty resume response"
+      );
     }
+
+    console.log("Gemini Resume Response Received");
 
     const cleanText = rawText
       .replace(/^```json\s*/i, "")
@@ -140,17 +151,274 @@ Rules:
 
     try {
       result = JSON.parse(cleanText);
-    } catch (error) {
-      console.error("Invalid Gemini interview JSON:");
+    } catch (jsonError) {
+      console.error("Gemini returned invalid resume JSON:");
       console.error(cleanText);
 
-      throw new Error("Gemini returned invalid interview JSON");
+      throw new Error(
+        "Gemini returned invalid resume JSON"
+      );
     }
 
-    return result;
+    if (
+      typeof result.atsScore !== "number" ||
+      !result.overallFeedback ||
+      !Array.isArray(result.strengths) ||
+      !Array.isArray(result.weaknesses) ||
+      !Array.isArray(result.missingSkills) ||
+      !Array.isArray(result.recommendedSkills) ||
+      !Array.isArray(result.keywordSuggestions) ||
+      !Array.isArray(result.recommendations)
+    ) {
+      throw new Error(
+        "Gemini returned an unexpected resume analysis structure"
+      );
+    }
 
+    console.log(
+      "Resume Analysis Parsed Successfully"
+    );
+
+    return result;
   } catch (error) {
-    console.error("Generate Interview Feedback Error:", error.message);
+    console.error(
+      "Analyze Resume With AI Error:",
+      error.message
+    );
+
     throw error;
   }
+};
+
+
+// ======================================================
+// INTERVIEW FEEDBACK
+// ======================================================
+
+const generateInterviewFeedback = async (
+  role,
+  questions,
+  answers
+) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is missing in backend/.env");
+  }
+
+  const getAnswer = (index) => {
+    if (Array.isArray(answers)) {
+      return answers[index] || "No answer provided";
+    }
+
+    if (answers && typeof answers === "object") {
+      return answers[index] || "No answer provided";
+    }
+
+    return "No answer provided";
+  };
+
+  const interviewData = questions
+    .map((question, index) => {
+      return `
+Q${index + 1}: ${question}
+
+Candidate Answer:
+${getAnswer(index)}
+`;
+    })
+    .join("\n");
+
+  const prompt = `
+You are an expert technical interviewer and career coach.
+
+The candidate has completed a mock technical interview.
+
+Target Role:
+${role}
+
+Interview Questions and Candidate Answers:
+${interviewData}
+
+Analyze the candidate ONLY from the answers provided above.
+
+Evaluate:
+
+1. Technical knowledge
+2. Concept understanding
+3. Communication
+4. Accuracy
+5. Clarity
+6. Problem solving ability
+7. Overall interview performance
+
+Important:
+- Do not invent information about the candidate.
+- Do not assume the candidate knows something that they did not demonstrate.
+- If an answer is incorrect or meaningless, clearly mention it.
+- Give practical and specific improvement suggestions.
+- Feedback should be relevant to the target role.
+
+Return ONLY valid JSON.
+
+Use exactly this structure:
+
+{
+  "overallScore": 75,
+  "overallFeedback": "Short overall feedback about the candidate.",
+  "strengths": [
+    "Strength 1",
+    "Strength 2"
+  ],
+  "weaknesses": [
+    "Weakness 1",
+    "Weakness 2"
+  ],
+  "questionFeedback": [
+    {
+      "question": "Question text",
+      "feedback": "Specific feedback about the candidate's answer."
+    }
+  ],
+  "recommendations": [
+    "Recommendation 1",
+    "Recommendation 2",
+    "Recommendation 3"
+  ]
+}
+
+Rules:
+
+- overallScore must be a number between 0 and 100.
+- strengths must be an array of strings.
+- weaknesses must be an array of strings.
+- recommendations must be an array of strings.
+- questionFeedback must be an array of objects.
+- Every questionFeedback object must contain "question" and "feedback".
+- questionFeedback must contain feedback for every question.
+- Do not invent answers.
+- Evaluate only the candidate's provided answers.
+- Feedback must be specific to the target role.
+- Return ONLY JSON.
+- Do not return Markdown.
+- Do not return backticks.
+`;
+
+  try {
+    console.log("Sending interview data to Gemini...");
+
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+          },
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    console.log("Gemini API Status:", response.status);
+
+    if (!response.ok) {
+      console.error("Gemini API Error:");
+      console.error(JSON.stringify(data, null, 2));
+
+      throw new Error(
+        data?.error?.message ||
+        "Gemini interview request failed"
+      );
+    }
+
+    const rawText =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!rawText) {
+      console.error(
+        "Gemini returned empty response:",
+        JSON.stringify(data, null, 2)
+      );
+
+      throw new Error(
+        "Gemini returned an empty interview response"
+      );
+    }
+
+    console.log("Gemini Response Received");
+
+    const cleanText = rawText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    let result;
+
+    try {
+      result = JSON.parse(cleanText);
+    } catch (jsonError) {
+      console.error("Gemini returned invalid JSON:");
+      console.error(cleanText);
+
+      throw new Error(
+        "Gemini returned invalid interview JSON"
+      );
+    }
+
+    if (
+      typeof result.overallScore !== "number" ||
+      !result.overallFeedback ||
+      !Array.isArray(result.strengths) ||
+      !Array.isArray(result.weaknesses) ||
+      !Array.isArray(result.questionFeedback) ||
+      !Array.isArray(result.recommendations)
+    ) {
+      throw new Error(
+        "Gemini returned an unexpected feedback structure"
+      );
+    }
+
+    console.log(
+      "Interview Feedback Parsed Successfully"
+    );
+
+    return result;
+  } catch (error) {
+    console.error(
+      "Generate Interview Feedback Error:",
+      error.message
+    );
+
+    throw error;
+  }
+};
+
+
+// ======================================================
+// EXPORTS
+// ======================================================
+
+module.exports = {
+  analyzeResumeWithAI,
+  generateInterviewFeedback,
 };
