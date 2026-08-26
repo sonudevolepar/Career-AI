@@ -15,6 +15,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 4. API Endpoints set karein (Middleware ke baad)
+
+// update code push githup
 app.use('/api/resume', resumeRoutes);
 app.use('/api/interview', interviewRoutes);
 
