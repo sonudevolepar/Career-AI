@@ -1,9 +1,127 @@
-const analyzeResumeWithAI = async (resumeText, jobRole) => {
+// ======================================================
+// GEMINI AI SERVICE
+// ======================================================
+
+const GEMINI_MODEL = "gemini-3.6-flash";
+
+const GEMINI_URL =
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+
+// ======================================================
+// HELPER: CALL GEMINI
+// ======================================================
+
+const callGemini = async (prompt) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is missing in backend/.env");
+    throw new Error(
+      "GEMINI_API_KEY is missing in backend/.env"
+    );
   }
+
+  console.log(
+    "Gemini API key loaded:",
+    apiKey.substring(0, 6) + "..."
+  );
+
+  const response = await fetch(GEMINI_URL, {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
+
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: prompt,
+            },
+          ],
+        },
+      ],
+
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+
+  const data = await response.json();
+
+  console.log("Gemini API Status:", response.status);
+
+  if (!response.ok) {
+    console.error("Gemini API Error:");
+    console.error(JSON.stringify(data, null, 2));
+
+    throw new Error(
+      data?.error?.message ||
+      "Gemini API request failed"
+    );
+  }
+
+  const rawText =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!rawText) {
+    console.error(
+      "Gemini returned empty response:"
+    );
+
+    console.error(
+      JSON.stringify(data, null, 2)
+    );
+
+    throw new Error(
+      "Gemini returned an empty response"
+    );
+  }
+
+  return rawText;
+};
+
+
+// ======================================================
+// HELPER: PARSE GEMINI JSON RESPONSE
+// ======================================================
+
+const parseGeminiJSON = (rawText) => {
+  const cleanText = rawText
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(cleanText);
+  } catch (error) {
+    console.error(
+      "Gemini returned invalid JSON:"
+    );
+
+    console.error(cleanText);
+
+    throw new Error(
+      "Gemini returned invalid JSON"
+    );
+  }
+};
+
+
+// ======================================================
+// RESUME ANALYZER
+// ======================================================
+
+const analyzeResumeWithAI = async (
+  resumeText,
+  jobRole
+) => {
 
   if (!resumeText || !resumeText.trim()) {
     throw new Error("Resume text is empty");
@@ -40,6 +158,7 @@ Analyze:
 10. Overall improvement suggestions
 
 Important:
+
 - Do not invent information.
 - Do not assume the candidate has skills that are not present.
 - Recommendations must be relevant to the target job role.
@@ -82,96 +201,78 @@ Use exactly this structure:
 `;
 
   try {
-    console.log("Sending resume data to Gemini...");
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json",
-          },
-        }),
-      }
+    console.log(
+      "================================="
     );
 
-    const data = await response.json();
+    console.log(
+      "Sending resume data to Gemini..."
+    );
 
-    console.log("Gemini Resume API Status:", response.status);
+    console.log(
+      "================================="
+    );
 
-    if (!response.ok) {
-      console.error("Gemini Resume API Error:");
-      console.error(JSON.stringify(data, null, 2));
+    const rawText = await callGemini(prompt);
 
-      throw new Error(
-        data?.error?.message ||
-        "Gemini resume analysis request failed"
-      );
-    }
+    console.log(
+      "Gemini Resume Response Received"
+    );
 
-    const rawText =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const result = parseGeminiJSON(rawText);
 
-    if (!rawText) {
-      console.error(
-        "Gemini returned empty resume response:",
-        JSON.stringify(data, null, 2)
-      );
-
-      throw new Error(
-        "Gemini returned an empty resume response"
-      );
-    }
-
-    console.log("Gemini Resume Response Received");
-
-    const cleanText = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    let result;
-
-    try {
-      result = JSON.parse(cleanText);
-    } catch (jsonError) {
-      console.error("Gemini returned invalid resume JSON:");
-      console.error(cleanText);
-
-      throw new Error(
-        "Gemini returned invalid resume JSON"
-      );
-    }
+    // Validate ATS score
 
     if (
       typeof result.atsScore !== "number" ||
-      !result.overallFeedback ||
-      !Array.isArray(result.strengths) ||
-      !Array.isArray(result.weaknesses) ||
-      !Array.isArray(result.missingSkills) ||
-      !Array.isArray(result.recommendedSkills) ||
-      !Array.isArray(result.keywordSuggestions) ||
-      !Array.isArray(result.recommendations)
+      result.atsScore < 0 ||
+      result.atsScore > 100
     ) {
       throw new Error(
-        "Gemini returned an unexpected resume analysis structure"
+        "Gemini returned an invalid ATS score"
+      );
+    }
+
+    if (!result.overallFeedback) {
+      throw new Error(
+        "Gemini returned missing overall feedback"
+      );
+    }
+
+    if (!Array.isArray(result.strengths)) {
+      throw new Error(
+        "Gemini returned invalid strengths"
+      );
+    }
+
+    if (!Array.isArray(result.weaknesses)) {
+      throw new Error(
+        "Gemini returned invalid weaknesses"
+      );
+    }
+
+    if (!Array.isArray(result.missingSkills)) {
+      throw new Error(
+        "Gemini returned invalid missingSkills"
+      );
+    }
+
+    if (!Array.isArray(result.recommendedSkills)) {
+      throw new Error(
+        "Gemini returned invalid recommendedSkills"
+      );
+    }
+
+    if (!Array.isArray(result.keywordSuggestions)) {
+      throw new Error(
+        "Gemini returned invalid keywordSuggestions"
+      );
+    }
+
+    if (!Array.isArray(result.recommendations)) {
+      throw new Error(
+        "Gemini returned invalid recommendations"
       );
     }
 
@@ -180,7 +281,9 @@ Use exactly this structure:
     );
 
     return result;
+
   } catch (error) {
+
     console.error(
       "Analyze Resume With AI Error:",
       error.message
@@ -200,34 +303,66 @@ const generateInterviewFeedback = async (
   questions,
   answers
 ) => {
-  const apiKey = process.env.GEMINI_API_KEY;
 
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is missing in backend/.env");
+  if (!role || !role.trim()) {
+    throw new Error(
+      "Interview role is required"
+    );
+  }
+
+  if (
+    !Array.isArray(questions) ||
+    questions.length === 0
+  ) {
+    throw new Error(
+      "Interview questions are required"
+    );
   }
 
   const getAnswer = (index) => {
+
     if (Array.isArray(answers)) {
-      return answers[index] || "No answer provided";
+      return (
+        answers[index] ||
+        "No answer provided"
+      );
     }
 
-    if (answers && typeof answers === "object") {
-      return answers[index] || "No answer provided";
+    if (
+      answers &&
+      typeof answers === "object"
+    ) {
+      return (
+        answers[index] ||
+        "No answer provided"
+      );
     }
 
     return "No answer provided";
   };
 
+
+  // ====================================================
+  // BUILD INTERVIEW DATA
+  // ====================================================
+
   const interviewData = questions
     .map((question, index) => {
+
       return `
 Q${index + 1}: ${question}
 
 Candidate Answer:
 ${getAnswer(index)}
 `;
+
     })
     .join("\n");
+
+
+  // ====================================================
+  // GEMINI PROMPT
+  // ====================================================
 
   const prompt = `
 You are an expert technical interviewer and career coach.
@@ -253,13 +388,16 @@ Evaluate:
 7. Overall interview performance
 
 Important:
+
 - Do not invent information about the candidate.
 - Do not assume the candidate knows something that they did not demonstrate.
 - If an answer is incorrect or meaningless, clearly mention it.
 - Give practical and specific improvement suggestions.
 - Feedback should be relevant to the target role.
-
-Return ONLY valid JSON.
+- Evaluate only the candidate's provided answers.
+- Return ONLY valid JSON.
+- Do not return Markdown.
+- Do not return backticks.
 
 Use exactly this structure:
 
@@ -297,113 +435,133 @@ Rules:
 - Every questionFeedback object must contain "question" and "feedback".
 - questionFeedback must contain feedback for every question.
 - Do not invent answers.
-- Evaluate only the candidate's provided answers.
 - Feedback must be specific to the target role.
 - Return ONLY JSON.
-- Do not return Markdown.
-- Do not return backticks.
 `;
 
   try {
-    console.log("Sending interview data to Gemini...");
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json",
-          },
-        }),
-      }
+    console.log(
+      "================================="
     );
 
-    const data = await response.json();
+    console.log(
+      "Sending interview data to Gemini..."
+    );
 
-    console.log("Gemini API Status:", response.status);
+    console.log(
+      "================================="
+    );
 
-    if (!response.ok) {
-      console.error("Gemini API Error:");
-      console.error(JSON.stringify(data, null, 2));
-
-      throw new Error(
-        data?.error?.message ||
-        "Gemini interview request failed"
-      );
-    }
+    // ==================================================
+    // CALL GEMINI
+    // ==================================================
 
     const rawText =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      await callGemini(prompt);
 
-    if (!rawText) {
-      console.error(
-        "Gemini returned empty response:",
-        JSON.stringify(data, null, 2)
-      );
+    console.log(
+      "Gemini Interview Response Received"
+    );
 
-      throw new Error(
-        "Gemini returned an empty interview response"
-      );
-    }
+    // ==================================================
+    // PARSE JSON
+    // ==================================================
 
-    console.log("Gemini Response Received");
+    const result =
+      parseGeminiJSON(rawText);
 
-    const cleanText = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
 
-    let result;
-
-    try {
-      result = JSON.parse(cleanText);
-    } catch (jsonError) {
-      console.error("Gemini returned invalid JSON:");
-      console.error(cleanText);
-
-      throw new Error(
-        "Gemini returned invalid interview JSON"
-      );
-    }
+    // ==================================================
+    // VALIDATE RESPONSE
+    // ==================================================
 
     if (
       typeof result.overallScore !== "number" ||
-      !result.overallFeedback ||
-      !Array.isArray(result.strengths) ||
-      !Array.isArray(result.weaknesses) ||
-      !Array.isArray(result.questionFeedback) ||
-      !Array.isArray(result.recommendations)
+      result.overallScore < 0 ||
+      result.overallScore > 100
     ) {
       throw new Error(
-        "Gemini returned an unexpected feedback structure"
+        "Gemini returned an invalid overall score"
       );
     }
+
+    if (!result.overallFeedback) {
+      throw new Error(
+        "Gemini returned missing overall feedback"
+      );
+    }
+
+    if (!Array.isArray(result.strengths)) {
+      throw new Error(
+        "Gemini returned invalid strengths"
+      );
+    }
+
+    if (!Array.isArray(result.weaknesses)) {
+      throw new Error(
+        "Gemini returned invalid weaknesses"
+      );
+    }
+
+    if (!Array.isArray(result.questionFeedback)) {
+      throw new Error(
+        "Gemini returned invalid questionFeedback"
+      );
+    }
+
+    if (!Array.isArray(result.recommendations)) {
+      throw new Error(
+        "Gemini returned invalid recommendations"
+      );
+    }
+
+
+    // ==================================================
+    // CHECK EVERY QUESTION
+    // ==================================================
+
+    if (
+      result.questionFeedback.length !==
+      questions.length
+    ) {
+
+      throw new Error(
+        "Gemini did not return feedback for every question"
+      );
+    }
+
+
+    for (
+      const item of result.questionFeedback
+    ) {
+
+      if (
+        !item.question ||
+        !item.feedback
+      ) {
+
+        throw new Error(
+          "Invalid questionFeedback structure"
+        );
+      }
+    }
+
 
     console.log(
       "Interview Feedback Parsed Successfully"
     );
 
+    console.log(
+      "Overall Score:",
+      result.overallScore
+    );
+
+
     return result;
+
   } catch (error) {
+
     console.error(
       "Generate Interview Feedback Error:",
       error.message
