@@ -4,21 +4,18 @@ const AIMockInterviewer = () => {
   const [role, setRole] = useState("");
   const [started, setStarted] = useState(false);
 
+  const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+
   const [feedbackResult, setFeedbackResult] = useState(null);
+  const [error, setError] = useState("");
 
-  const questions = [
-    "Tell me about yourself.",
-    "What are React Hooks?",
-    "Explain Virtual DOM.",
-    "Difference between let, const and var?",
-    "What is Node.js?",
-  ];
-
-  // ================================================
+  // =====================================================
   // ANSWER CHANGE
-  // ================================================
+  // =====================================================
 
   const handleAnswerChange = (index, value) => {
     setAnswers((prev) => ({
@@ -27,23 +24,86 @@ const AIMockInterviewer = () => {
     }));
   };
 
-  // ================================================
+  // =====================================================
   // START INTERVIEW
-  // ================================================
+  // =====================================================
 
-  const handleStartInterview = () => {
+  const handleStartInterview = async () => {
     if (!role.trim()) {
       alert("Please enter your target role.");
       return;
     }
 
-    setStarted(true);
+    setIsGeneratingQuestions(true);
+    setError("");
     setFeedbackResult(null);
+    setAnswers({});
+
+    try {
+      console.log("Generating questions for role:", role);
+
+      const response = await fetch(
+        "http://localhost:5000/api/interview/questions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            role: role.trim(),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("Questions API Response:", data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error ||
+            data.message ||
+            "Failed to generate interview questions."
+        );
+      }
+
+      if (!Array.isArray(data.questions) || data.questions.length === 0) {
+        throw new Error("No interview questions were generated.");
+      }
+
+      setQuestions(data.questions);
+      setStarted(true);
+
+      console.log("Generated Questions:", data.questions);
+    } catch (error) {
+      console.error("Question Generation Error:", error);
+
+      setError(error.message);
+
+      alert(
+        error.message || "Failed to generate interview questions."
+      );
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
   };
 
-  // ================================================
+  // =====================================================
+  // RESET INTERVIEW
+  // =====================================================
+
+  const handleReset = () => {
+    setRole("");
+    setStarted(false);
+    setQuestions([]);
+    setAnswers({});
+    setFeedbackResult(null);
+    setError("");
+  };
+
+  // =====================================================
   // GET AI FEEDBACK
-  // ================================================
+  // =====================================================
 
   const handleGetFeedback = async () => {
     const answeredQuestions = questions.filter(
@@ -55,130 +115,88 @@ const AIMockInterviewer = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoadingFeedback(true);
     setFeedbackResult(null);
+    setError("");
 
     try {
-      console.log("Sending answers:", answers);
+      console.log("Sending interview answers:", answers);
 
       const response = await fetch(
         "http://localhost:5000/api/interview/feedback",
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
-            role: role,
-            questions: questions,
-            answers: answers,
+            role: role.trim(),
+            questions,
+            answers,
           }),
         }
       );
 
       const data = await response.json();
 
-      console.log(
-        "FULL INTERVIEW API RESPONSE:",
-        data
+      console.log("FULL INTERVIEW API RESPONSE:", data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error ||
+            data.message ||
+            "Feedback generation failed."
+        );
+      }
+
+      setFeedbackResult(
+        data.feedback || {
+          overallScore: 0,
+          overallFeedback: "No feedback received.",
+          strengths: [],
+          weaknesses: [],
+          questionFeedback: [],
+          recommendations: [],
+        }
       );
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            data.error ||
-            "Feedback generation failed."
-        );
-      }
-
-      if (data.success) {
-        /*
-         * IMPORTANT:
-         *
-         * Backend response:
-         *
-         * {
-         *   success: true,
-         *   feedback: {
-         *     overallScore: 0,
-         *     overallFeedback: "...",
-         *     strengths: [],
-         *     weaknesses: [],
-         *     questionFeedback: [],
-         *     recommendations: []
-         *   }
-         * }
-         */
-
-        setFeedbackResult(data.feedback);
-
-      } else {
-        throw new Error(
-          data.message ||
-            data.error ||
-            "Feedback generation failed."
-        );
-      }
-
     } catch (error) {
-      console.error(
-        "Interview Feedback Error:",
-        error
-      );
+      console.error("Interview Feedback Error:", error);
+
+      setError(error.message);
 
       setFeedbackResult({
-        error: error.message,
+        overallScore: 0,
+        overallFeedback: error.message,
+        strengths: [],
+        weaknesses: [],
+        questionFeedback: [],
+        recommendations: [],
       });
-
     } finally {
-      setIsLoading(false);
+      setIsLoadingFeedback(false);
     }
   };
 
-  // ================================================
-  // RESET INTERVIEW
-  // ================================================
-
-  const handleResetInterview = () => {
-    setRole("");
-    setStarted(false);
-    setAnswers({});
-    setFeedbackResult(null);
-    setIsLoading(false);
-  };
-
-  // ================================================
+  // =====================================================
   // UI
-  // ================================================
+  // =====================================================
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-
       <div className="max-w-5xl mx-auto">
 
-        {/* ========================================= */}
         {/* HEADER */}
-        {/* ========================================= */}
-
         <div className="text-center mb-10">
-
           <h1 className="text-4xl font-bold text-blue-600 mb-2">
             AI Mock Interviewer
           </h1>
 
           <p className="text-slate-600">
-            Practice AI-powered technical interviews.
+            Practice AI-powered technical interviews based on your target role.
           </p>
-
         </div>
 
-
-        {/* ========================================= */}
         {/* ROLE SECTION */}
-        {/* ========================================= */}
-
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
 
           <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -187,21 +205,22 @@ const AIMockInterviewer = () => {
 
           <input
             type="text"
-            placeholder="Frontend Developer, MERN Developer..."
+            placeholder="MERN Stack Developer, Data Scientist, AI/ML Engineer..."
             value={role}
-            onChange={(e) =>
-              setRole(e.target.value)
-            }
-            disabled={started}
+            onChange={(e) => setRole(e.target.value)}
+            disabled={started || isGeneratingQuestions}
             className="w-full border border-slate-300 rounded-xl px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           {!started && (
             <button
               onClick={handleStartInterview}
-              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition"
+              disabled={isGeneratingQuestions}
+              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 disabled:bg-blue-400 transition"
             >
-              Start Interview
+              {isGeneratingQuestions
+                ? "Generating Questions..."
+                : "Start Interview"}
             </button>
           )}
 
@@ -213,385 +232,188 @@ const AIMockInterviewer = () => {
               </div>
 
               <button
-                onClick={handleResetInterview}
-                className="bg-slate-600 text-white px-5 py-2 rounded-lg hover:bg-slate-700 transition"
+                onClick={handleReset}
+                className="bg-slate-600 text-white px-5 py-2 rounded-lg hover:bg-slate-700"
               >
                 Reset
               </button>
 
             </div>
           )}
-
         </div>
 
+        {/* ERROR */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6">
+            {error}
+          </div>
+        )}
 
-        {/* ========================================= */}
         {/* QUESTIONS */}
-        {/* ========================================= */}
-
-        {started && (
-
+        {started && questions.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-6">
 
-            <h2 className="text-2xl font-bold mb-6">
+            <h2 className="text-2xl font-bold mb-2">
               Interview Questions
             </h2>
 
+            <p className="text-slate-500 mb-6">
+              Questions generated specifically for{" "}
+              <strong>{role}</strong>
+            </p>
 
             <div className="space-y-6">
 
-              {questions.map(
-                (question, index) => (
+              {questions.map((question, index) => (
+                <div
+                  key={index}
+                  className="border border-slate-200 rounded-xl p-5"
+                >
 
-                  <div
-                    key={index}
-                    className="border border-slate-200 rounded-xl p-5"
-                  >
+                  <h3 className="font-semibold text-lg mb-3">
+                    Q{index + 1}. {question}
+                  </h3>
 
-                    <h3 className="font-semibold text-lg mb-3">
-                      Q{index + 1}. {question}
-                    </h3>
+                  <textarea
+                    placeholder="Write your answer..."
+                    value={answers[index] || ""}
+                    onChange={(e) =>
+                      handleAnswerChange(index, e.target.value)
+                    }
+                    className="w-full border border-slate-300 rounded-lg p-3 h-32 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
 
-
-                    <textarea
-                      placeholder="Write your answer..."
-                      value={answers[index] || ""}
-                      onChange={(e) =>
-                        handleAnswerChange(
-                          index,
-                          e.target.value
-                        )
-                      }
-                      className="w-full border border-slate-300 rounded-lg p-3 h-32 outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-
-                  </div>
-
-                )
-              )}
+                </div>
+              ))}
 
             </div>
 
-
-            {/* ===================================== */}
             {/* FEEDBACK BUTTON */}
-            {/* ===================================== */}
-
             <button
               onClick={handleGetFeedback}
-              disabled={isLoading}
+              disabled={isLoadingFeedback}
               className="mt-8 bg-green-600 text-white px-7 py-3 rounded-xl hover:bg-green-700 disabled:bg-green-400 transition"
             >
-              {isLoading
+              {isLoadingFeedback
                 ? "Processing Feedback..."
                 : "Get AI Feedback"}
             </button>
 
-
-            {/* ===================================== */}
-            {/* AI FEEDBACK */}
-            {/* ===================================== */}
-
+            {/* FEEDBACK RESULT */}
             {feedbackResult && (
+              <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
 
-              <div className="mt-8">
+                <h3 className="text-2xl font-bold text-blue-800 mb-6">
+                  AI Interview Feedback
+                </h3>
 
-                {/* ================================= */}
-                {/* ERROR */}
-                {/* ================================= */}
+                {/* SCORE */}
+                <div className="bg-white rounded-xl p-5 mb-5">
+                  <p className="text-sm text-slate-500">
+                    Overall Score
+                  </p>
 
-                {feedbackResult.error ? (
+                  <p className="text-4xl font-bold text-blue-600">
+                    {feedbackResult.overallScore}/100
+                  </p>
+                </div>
 
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                {/* OVERALL */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-bold mb-2">
+                    Overall Feedback
+                  </h4>
 
-                    <h3 className="text-xl font-bold text-red-700 mb-2">
-                      Error
-                    </h3>
+                  <p className="text-slate-700">
+                    {feedbackResult.overallFeedback}
+                  </p>
+                </div>
 
-                    <p className="text-red-600">
-                      {feedbackResult.error}
-                    </p>
+                {/* STRENGTHS */}
+                {feedbackResult.strengths?.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-bold text-green-700 mb-2">
+                      Strengths
+                    </h4>
 
+                    <ul className="list-disc pl-6 space-y-1">
+                      {feedbackResult.strengths.map(
+                        (item, index) => (
+                          <li key={index}>{item}</li>
+                        )
+                      )}
+                    </ul>
                   </div>
+                )}
 
-                ) : (
+                {/* WEAKNESSES */}
+                {feedbackResult.weaknesses?.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-bold text-red-700 mb-2">
+                      Weaknesses
+                    </h4>
 
-                  <div className="space-y-6">
-
-                    {/* ============================= */}
-                    {/* SCORE */}
-                    {/* ============================= */}
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-
-                      <div className="flex items-center justify-between">
-
-                        <div>
-
-                          <h3 className="text-2xl font-bold text-blue-800">
-                            AI Interview Feedback
-                          </h3>
-
-                          <p className="text-slate-600 mt-1">
-                            Overall performance evaluation
-                          </p>
-
-                        </div>
-
-
-                        <div className="text-center">
-
-                          <div className="text-4xl font-bold text-blue-600">
-                            {feedbackResult.overallScore}
-                          </div>
-
-                          <div className="text-sm text-slate-500">
-                            / 100
-                          </div>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-
-                    {/* ============================= */}
-                    {/* OVERALL FEEDBACK */}
-                    {/* ============================= */}
-
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-
-                      <h3 className="text-xl font-bold text-slate-800 mb-3">
-                        Overall Feedback
-                      </h3>
-
-                      <p className="text-slate-700 leading-relaxed">
-                        {feedbackResult.overallFeedback}
-                      </p>
-
-                    </div>
-
-
-                    {/* ============================= */}
-                    {/* STRENGTHS */}
-                    {/* ============================= */}
-
-                    <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
-
-                      <h3 className="text-xl font-bold text-green-800 mb-4">
-                        Strengths
-                      </h3>
-
-                      {Array.isArray(
-                        feedbackResult.strengths
-                      ) &&
-                      feedbackResult.strengths.length > 0 ? (
-
-                        <ul className="space-y-3">
-
-                          {feedbackResult.strengths.map(
-                            (strength, index) => (
-
-                              <li
-                                key={index}
-                                className="flex gap-3 text-slate-700"
-                              >
-
-                                <span className="text-green-600 font-bold">
-                                  ✓
-                                </span>
-
-                                <span>
-                                  {strength}
-                                </span>
-
-                              </li>
-
-                            )
-                          )}
-
-                        </ul>
-
-                      ) : (
-
-                        <p className="text-slate-500">
-                          No strengths provided.
-                        </p>
-
+                    <ul className="list-disc pl-6 space-y-1">
+                      {feedbackResult.weaknesses.map(
+                        (item, index) => (
+                          <li key={index}>{item}</li>
+                        )
                       )}
-
-                    </div>
-
-
-                    {/* ============================= */}
-                    {/* WEAKNESSES */}
-                    {/* ============================= */}
-
-                    <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-
-                      <h3 className="text-xl font-bold text-red-800 mb-4">
-                        Areas to Improve
-                      </h3>
-
-                      {Array.isArray(
-                        feedbackResult.weaknesses
-                      ) &&
-                      feedbackResult.weaknesses.length > 0 ? (
-
-                        <ul className="space-y-3">
-
-                          {feedbackResult.weaknesses.map(
-                            (weakness, index) => (
-
-                              <li
-                                key={index}
-                                className="flex gap-3 text-slate-700"
-                              >
-
-                                <span className="text-red-600 font-bold">
-                                  !
-                                </span>
-
-                                <span>
-                                  {weakness}
-                                </span>
-
-                              </li>
-
-                            )
-                          )}
-
-                        </ul>
-
-                      ) : (
-
-                        <p className="text-slate-500">
-                          No weaknesses provided.
-                        </p>
-
-                      )}
-
-                    </div>
-
-
-                    {/* ============================= */}
-                    {/* QUESTION FEEDBACK */}
-                    {/* ============================= */}
-
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-
-                      <h3 className="text-xl font-bold text-slate-800 mb-5">
-                        Question-wise Feedback
-                      </h3>
-
-
-                      <div className="space-y-5">
-
-                        {Array.isArray(
-                          feedbackResult.questionFeedback
-                        ) &&
-                        feedbackResult.questionFeedback.length > 0 ? (
-
-                          feedbackResult.questionFeedback.map(
-                            (item, index) => (
-
-                              <div
-                                key={index}
-                                className="border border-slate-200 rounded-xl p-5"
-                              >
-
-                                <h4 className="font-semibold text-lg text-slate-800 mb-3">
-                                  Q{index + 1}.{" "}
-                                  {item.question}
-                                </h4>
-
-                                <p className="text-slate-600 leading-relaxed">
-                                  {item.feedback}
-                                </p>
-
-                              </div>
-
-                            )
-                          )
-
-                        ) : (
-
-                          <p className="text-slate-500">
-                            No question feedback available.
-                          </p>
-
-                        )}
-
-                      </div>
-
-                    </div>
-
-
-                    {/* ============================= */}
-                    {/* RECOMMENDATIONS */}
-                    {/* ============================= */}
-
-                    <div className="bg-purple-50 border border-purple-200 rounded-2xl p-6">
-
-                      <h3 className="text-xl font-bold text-purple-800 mb-4">
-                        Recommendations
-                      </h3>
-
-                      {Array.isArray(
-                        feedbackResult.recommendations
-                      ) &&
-                      feedbackResult.recommendations.length > 0 ? (
-
-                        <ul className="space-y-3">
-
-                          {feedbackResult.recommendations.map(
-                            (recommendation, index) => (
-
-                              <li
-                                key={index}
-                                className="flex gap-3 text-slate-700"
-                              >
-
-                                <span className="text-purple-600 font-bold">
-                                  →
-                                </span>
-
-                                <span>
-                                  {recommendation}
-                                </span>
-
-                              </li>
-
-                            )
-                          )}
-
-                        </ul>
-
-                      ) : (
-
-                        <p className="text-slate-500">
-                          No recommendations provided.
-                        </p>
-
-                      )}
-
-                    </div>
-
+                    </ul>
                   </div>
+                )}
 
+                {/* QUESTION FEEDBACK */}
+                {feedbackResult.questionFeedback?.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-bold mb-4">
+                      Question-wise Feedback
+                    </h4>
+
+                    <div className="space-y-4">
+                      {feedbackResult.questionFeedback.map(
+                        (item, index) => (
+                          <div
+                            key={index}
+                            className="bg-white rounded-xl p-4 border"
+                          >
+                            <p className="font-semibold mb-2">
+                              Q{index + 1}. {item.question}
+                            </p>
+
+                            <p className="text-slate-600">
+                              {item.feedback}
+                            </p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* RECOMMENDATIONS */}
+                {feedbackResult.recommendations?.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-bold text-purple-700 mb-2">
+                      Recommendations
+                    </h4>
+
+                    <ul className="list-disc pl-6 space-y-1">
+                      {feedbackResult.recommendations.map(
+                        (item, index) => (
+                          <li key={index}>{item}</li>
+                        )
+                      )}
+                    </ul>
+                  </div>
                 )}
 
               </div>
-
             )}
-
           </div>
-
         )}
 
       </div>
-
     </div>
   );
 };

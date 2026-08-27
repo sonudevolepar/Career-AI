@@ -21,11 +21,6 @@ const callGemini = async (prompt) => {
     );
   }
 
-  console.log(
-    "Gemini API key loaded:",
-    apiKey.substring(0, 6) + "..."
-  );
-
   const response = await fetch(GEMINI_URL, {
     method: "POST",
 
@@ -38,6 +33,7 @@ const callGemini = async (prompt) => {
       contents: [
         {
           role: "user",
+
           parts: [
             {
               text: prompt,
@@ -54,11 +50,16 @@ const callGemini = async (prompt) => {
 
   const data = await response.json();
 
-  console.log("Gemini API Status:", response.status);
+  console.log(
+    "Gemini API Status:",
+    response.status
+  );
 
   if (!response.ok) {
     console.error("Gemini API Error:");
-    console.error(JSON.stringify(data, null, 2));
+    console.error(
+      JSON.stringify(data, null, 2)
+    );
 
     throw new Error(
       data?.error?.message ||
@@ -88,7 +89,7 @@ const callGemini = async (prompt) => {
 
 
 // ======================================================
-// HELPER: PARSE GEMINI JSON RESPONSE
+// HELPER: PARSE JSON RESPONSE
 // ======================================================
 
 const parseGeminiJSON = (rawText) => {
@@ -123,12 +124,22 @@ const analyzeResumeWithAI = async (
   jobRole
 ) => {
 
-  if (!resumeText || !resumeText.trim()) {
-    throw new Error("Resume text is empty");
+  if (
+    !resumeText ||
+    !resumeText.trim()
+  ) {
+    throw new Error(
+      "Resume text is empty"
+    );
   }
 
-  if (!jobRole || !jobRole.trim()) {
-    throw new Error("Target job role is required");
+  if (
+    !jobRole ||
+    !jobRole.trim()
+  ) {
+    throw new Error(
+      "Target job role is required"
+    );
   }
 
   const prompt = `
@@ -203,26 +214,22 @@ Use exactly this structure:
   try {
 
     console.log(
-      "================================="
-    );
-
-    console.log(
       "Sending resume data to Gemini..."
     );
 
-    console.log(
-      "================================="
-    );
-
-    const rawText = await callGemini(prompt);
+    const rawText =
+      await callGemini(prompt);
 
     console.log(
       "Gemini Resume Response Received"
     );
 
-    const result = parseGeminiJSON(rawText);
+    const result =
+      parseGeminiJSON(rawText);
 
-    // Validate ATS score
+    // ----------------------------------------------
+    // VALIDATE RESPONSE
+    // ----------------------------------------------
 
     if (
       typeof result.atsScore !== "number" ||
@@ -295,6 +302,276 @@ Use exactly this structure:
 
 
 // ======================================================
+// GENERATE INTERVIEW QUESTIONS
+// ======================================================
+
+const generateInterviewQuestions = async (
+  role
+) => {
+
+  if (
+    !role ||
+    !role.trim()
+  ) {
+    throw new Error(
+      "Interview role is required"
+    );
+  }
+
+  const prompt = `
+You are an expert technical interviewer and career coach.
+
+The candidate wants to prepare for this target role:
+
+TARGET ROLE:
+${role}
+
+Your task is to generate exactly 5 technical interview questions.
+
+IMPORTANT:
+
+The questions MUST be specifically related to the target role.
+
+Do NOT always generate React, Node.js, MongoDB or JavaScript questions.
+
+For example:
+
+If the role is:
+MERN Stack Developer
+
+Focus on:
+- JavaScript
+- React
+- Node.js
+- Express.js
+- MongoDB
+- REST APIs
+- Authentication
+- Web development
+
+If the role is:
+Data Scientist
+
+Focus on:
+- Python
+- Statistics
+- Probability
+- Pandas
+- NumPy
+- SQL
+- Data Analysis
+- Machine Learning
+- Model Evaluation
+
+If the role is:
+Data Science
+
+Focus on:
+- Python
+- Statistics
+- Probability
+- Data preprocessing
+- Exploratory Data Analysis
+- Machine Learning
+- SQL
+- Model evaluation
+
+If the role is:
+AI/ML Engineer
+
+Focus on:
+- Machine Learning
+- Deep Learning
+- Neural Networks
+- Python
+- TensorFlow/PyTorch concepts
+- Model evaluation
+- ML deployment
+
+If the role is:
+Frontend Developer
+
+Focus on:
+- HTML
+- CSS
+- JavaScript
+- React or relevant frontend framework
+- Browser concepts
+- Performance
+- Accessibility
+
+If the role is:
+Backend Developer
+
+Focus on:
+- APIs
+- Backend programming
+- Databases
+- Authentication
+- Security
+- Scalability
+- System design
+
+If the role is:
+DevOps Engineer
+
+Focus on:
+- Linux
+- Docker
+- Kubernetes
+- CI/CD
+- Cloud
+- Networking
+- Monitoring
+
+If the role is:
+Java Developer
+
+Focus on:
+- Java
+- OOP
+- Collections
+- Exception handling
+- Multithreading
+- Spring/Spring Boot
+- Databases
+
+If the role is:
+Python Developer
+
+Focus on:
+- Python
+- OOP
+- Data structures
+- APIs
+- Databases
+- Testing
+- Python frameworks
+
+If the user enters ANY OTHER ROLE:
+
+You MUST identify the important skills normally expected for that role
+and generate questions specifically around those skills.
+
+IMPORTANT RULES:
+
+1. Generate exactly 5 questions.
+2. Questions must be relevant to the target role.
+3. Do not use the same fixed questions for every role.
+4. Mix conceptual and practical questions.
+5. Questions should have increasing difficulty.
+6. Questions should be suitable for a technical job interview.
+7. Do not provide answers.
+8. Do not provide explanations.
+9. Do not add question numbers.
+10. Return ONLY valid JSON.
+11. Do not return Markdown.
+12. Do not return code fences.
+
+Return exactly this JSON:
+
+{
+  "questions": [
+    "Question 1",
+    "Question 2",
+    "Question 3",
+    "Question 4",
+    "Question 5"
+  ]
+}
+`;
+
+  try {
+
+    console.log(
+      "================================="
+    );
+
+    console.log(
+      "Generating Interview Questions"
+    );
+
+    console.log(
+      "Target Role:",
+      role
+    );
+
+    console.log(
+      "================================="
+    );
+
+    const rawText =
+      await callGemini(prompt);
+
+    console.log(
+      "Gemini Questions Response Received"
+    );
+
+    const result =
+      parseGeminiJSON(rawText);
+
+    // ----------------------------------------------
+    // VALIDATE QUESTIONS
+    // ----------------------------------------------
+
+    if (
+      !result ||
+      !Array.isArray(result.questions)
+    ) {
+      throw new Error(
+        "Gemini returned invalid interview questions"
+      );
+    }
+
+    if (
+      result.questions.length !== 5
+    ) {
+      throw new Error(
+        "Gemini did not return exactly 5 interview questions"
+      );
+    }
+
+    for (
+      const question of result.questions
+    ) {
+
+      if (
+        typeof question !== "string" ||
+        !question.trim()
+      ) {
+        throw new Error(
+          "Invalid interview question returned by Gemini"
+        );
+      }
+    }
+
+    console.log(
+      "Interview Questions Parsed Successfully"
+    );
+
+    console.log(
+      "Generated Questions:",
+      result.questions
+    );
+
+    return result.questions.map(
+      (question) =>
+        question.trim()
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Generate Interview Questions Error:",
+      error.message
+    );
+
+    throw error;
+  }
+};
+
+
+// ======================================================
 // INTERVIEW FEEDBACK
 // ======================================================
 
@@ -304,7 +581,10 @@ const generateInterviewFeedback = async (
   answers
 ) => {
 
-  if (!role || !role.trim()) {
+  if (
+    !role ||
+    !role.trim()
+  ) {
     throw new Error(
       "Interview role is required"
     );
@@ -322,6 +602,7 @@ const generateInterviewFeedback = async (
   const getAnswer = (index) => {
 
     if (Array.isArray(answers)) {
+
       return (
         answers[index] ||
         "No answer provided"
@@ -332,6 +613,7 @@ const generateInterviewFeedback = async (
       answers &&
       typeof answers === "object"
     ) {
+
       return (
         answers[index] ||
         "No answer provided"
@@ -342,27 +624,28 @@ const generateInterviewFeedback = async (
   };
 
 
-  // ====================================================
+  // ==================================================
   // BUILD INTERVIEW DATA
-  // ====================================================
+  // ==================================================
 
-  const interviewData = questions
-    .map((question, index) => {
+  const interviewData =
+    questions
+      .map((question, index) => {
 
-      return `
+        return `
 Q${index + 1}: ${question}
 
 Candidate Answer:
 ${getAnswer(index)}
 `;
 
-    })
-    .join("\n");
+      })
+      .join("\n");
 
 
-  // ====================================================
+  // ==================================================
   // GEMINI PROMPT
-  // ====================================================
+  // ==================================================
 
   const prompt = `
 You are an expert technical interviewer and career coach.
@@ -453,73 +736,87 @@ Rules:
       "================================="
     );
 
-    // ==================================================
+
+    // ----------------------------------------------
     // CALL GEMINI
-    // ==================================================
+    // ----------------------------------------------
 
     const rawText =
       await callGemini(prompt);
+
 
     console.log(
       "Gemini Interview Response Received"
     );
 
-    // ==================================================
+
+    // ----------------------------------------------
     // PARSE JSON
-    // ==================================================
+    // ----------------------------------------------
 
     const result =
       parseGeminiJSON(rawText);
 
 
-    // ==================================================
+    // ----------------------------------------------
     // VALIDATE RESPONSE
-    // ==================================================
+    // ----------------------------------------------
 
     if (
       typeof result.overallScore !== "number" ||
       result.overallScore < 0 ||
       result.overallScore > 100
     ) {
+
       throw new Error(
         "Gemini returned an invalid overall score"
       );
     }
 
+
     if (!result.overallFeedback) {
+
       throw new Error(
         "Gemini returned missing overall feedback"
       );
     }
 
+
     if (!Array.isArray(result.strengths)) {
+
       throw new Error(
         "Gemini returned invalid strengths"
       );
     }
 
+
     if (!Array.isArray(result.weaknesses)) {
+
       throw new Error(
         "Gemini returned invalid weaknesses"
       );
     }
 
+
     if (!Array.isArray(result.questionFeedback)) {
+
       throw new Error(
         "Gemini returned invalid questionFeedback"
       );
     }
 
+
     if (!Array.isArray(result.recommendations)) {
+
       throw new Error(
         "Gemini returned invalid recommendations"
       );
     }
 
 
-    // ==================================================
-    // CHECK EVERY QUESTION
-    // ==================================================
+    // ----------------------------------------------
+    // CHECK EVERY QUESTION FEEDBACK
+    // ----------------------------------------------
 
     if (
       result.questionFeedback.length !==
@@ -552,6 +849,7 @@ Rules:
       "Interview Feedback Parsed Successfully"
     );
 
+
     console.log(
       "Overall Score:",
       result.overallScore
@@ -578,5 +876,6 @@ Rules:
 
 module.exports = {
   analyzeResumeWithAI,
+  generateInterviewQuestions,
   generateInterviewFeedback,
 };

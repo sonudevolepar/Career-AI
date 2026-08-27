@@ -6,10 +6,10 @@ const cors = require("cors");
 // Routes
 const resumeRoutes = require("./routes/resumeRoutes");
 const interviewRoutes = require("./routes/interviewRoutes");
+const dsaRoutes = require("./routes/dsaRoutes");
 
 // Initialize Express
 const app = express();
-
 
 // ================================================
 // MIDDLEWARE
@@ -25,7 +25,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 // ================================================
 // API ROUTES
 // ================================================
@@ -36,6 +35,8 @@ app.use("/api/resume", resumeRoutes);
 // AI Mock Interview
 app.use("/api/interview", interviewRoutes);
 
+// DSA Coach
+app.use("/api/dsa", dsaRoutes);
 
 // ================================================
 // HEALTH CHECK
@@ -47,7 +48,6 @@ app.get("/", (req, res) => {
     message: "Career AI Backend API is running successfully",
   });
 });
-
 
 // ================================================
 // EXPORT
