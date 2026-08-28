@@ -7,6 +7,7 @@ const cors = require("cors");
 const resumeRoutes = require("./routes/resumeRoutes");
 const interviewRoutes = require("./routes/interviewRoutes");
 const dsaRoutes = require("./routes/dsaRoutes");
+const roadmapRoutes = require("./routes/roadmapRoutes");
 
 // Initialize Express
 const app = express();
@@ -37,6 +38,10 @@ app.use("/api/interview", interviewRoutes);
 
 // DSA Coach
 app.use("/api/dsa", dsaRoutes);
+
+
+//roadmapRoutes
+app.use("/api/roadmap", roadmapRoutes);
 
 // ================================================
 // HEALTH CHECK
