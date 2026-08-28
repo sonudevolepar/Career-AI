@@ -17,6 +17,7 @@ const Navbar = () => {
         {/* Navigation */}
         <div className="flex items-center gap-6">
 
+          {/* Home */}
           <Link
             to="/"
             className="text-slate-700 hover:text-blue-600 font-medium transition"
@@ -24,6 +25,7 @@ const Navbar = () => {
             Home
           </Link>
 
+          {/* Resume Analyzer */}
           <Link
             to="/resume-analyzer"
             className="text-slate-700 hover:text-blue-600 font-medium transition"
@@ -31,6 +33,7 @@ const Navbar = () => {
             Resume Analyzer
           </Link>
 
+          {/* DSA Coach */}
           <Link
             to="/dsa-coach"
             className="text-slate-700 hover:text-blue-600 font-medium transition"
@@ -38,6 +41,7 @@ const Navbar = () => {
             DSA Coach
           </Link>
 
+          {/* Mock Interview */}
           <Link
             to="/mock-interview"
             className="text-slate-700 hover:text-blue-600 font-medium transition"
@@ -45,8 +49,23 @@ const Navbar = () => {
             Mock Interview
           </Link>
 
-        </div>
+          {/* AI Roadmap */}
+          <Link
+            to="/ai-roadmap"
+            className="text-slate-700 hover:text-blue-600 font-medium transition"
+          >
+            AI Roadmap
+          </Link>
 
+          {/* System Design */}
+          <Link
+            to="/system-design"
+            className="text-slate-700 hover:text-blue-600 font-medium transition"
+          >
+            System Design
+          </Link>
+
+        </div>
       </div>
     </nav>
   );
