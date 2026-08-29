@@ -8,6 +8,7 @@ const resumeRoutes = require("./routes/resumeRoutes");
 const interviewRoutes = require("./routes/interviewRoutes");
 const dsaRoutes = require("./routes/dsaRoutes");
 const roadmapRoutes = require("./routes/roadmapRoutes");
+const systemDesignRoutes = require("./routes/systemDesignRoutes");
 
 // Initialize Express
 const app = express();
@@ -43,6 +44,8 @@ app.use("/api/dsa", dsaRoutes);
 //roadmapRoutes
 app.use("/api/roadmap", roadmapRoutes);
 
+//systemDesign
+app.use("/api/system-design", systemDesignRoutes);
 // ================================================
 // HEALTH CHECK
 // ================================================
