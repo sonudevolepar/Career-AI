@@ -1,93 +1,312 @@
 import React, { useState } from "react";
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  MarkerType,
+  Position,
+} from "@xyflow/react";
+
+import "@xyflow/react/dist/style.css";
+
+// ======================================================
+// ARCHITECTURE DIAGRAM
+// ======================================================
+
+const ArchitectureDiagram = ({ architecture }) => {
+  if (!architecture) {
+    return null;
+  }
+
+  const components =
+    architecture.components || [];
+
+  const requestFlow =
+    architecture.requestFlow || [];
+
+  // ====================================================
+  // CREATE NODES
+  // ====================================================
+
+  const nodes = components.map(
+    (component, index) => {
+      const columns = 3;
+
+      const column =
+        index % columns;
+
+      const row =
+        Math.floor(index / columns);
+
+      return {
+        id: component.name,
+
+        position: {
+          x: column * 330,
+          y: row * 180,
+        },
+
+        sourcePosition:
+          Position.Right,
+
+        targetPosition:
+          Position.Left,
+
+        data: {
+          label: (
+            <div className="text-center">
+              <div className="font-bold text-gray-800">
+                {component.name}
+              </div>
+
+              <div className="text-xs text-gray-500 mt-2">
+                {component.type}
+              </div>
+            </div>
+          ),
+        },
+
+        style: {
+          width: 250,
+          minHeight: 90,
+          borderRadius: 14,
+          padding: 16,
+          background: "#ffffff",
+          border: "2px solid #3b82f6",
+          boxShadow:
+            "0 4px 12px rgba(0,0,0,0.08)",
+        },
+      };
+    }
+  );
+
+  // ====================================================
+  // CREATE EDGES
+  // ====================================================
+
+  const edges = requestFlow
+    .map((flow, index) => {
+      const sourceExists =
+        components.some(
+          (component) =>
+            component.name === flow.from
+        );
+
+      const targetExists =
+        components.some(
+          (component) =>
+            component.name === flow.to
+        );
+
+      if (
+        !sourceExists ||
+        !targetExists
+      ) {
+        return null;
+      }
+
+      return {
+        id: `edge-${index}`,
+
+        source: flow.from,
+
+        target: flow.to,
+
+        label:
+          flow.label || "",
+
+        type: "smoothstep",
+
+        animated: true,
+
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+        },
+
+        style: {
+          strokeWidth: 2,
+        },
+
+        labelStyle: {
+          fontSize: 11,
+          fontWeight: 600,
+        },
+
+        labelBgStyle: {
+          fill: "#ffffff",
+        },
+      };
+    })
+    .filter(Boolean);
+
+  return (
+    <div className="mt-8">
+
+      <div className="flex items-center justify-between mb-4">
+
+        <div>
+          <h3 className="text-xl font-bold text-gray-800">
+            AI Generated System Architecture
+          </h3>
+
+          <p className="text-sm text-gray-500 mt-1">
+            Interactive architecture diagram
+          </p>
+        </div>
+
+        <div className="text-sm text-gray-500">
+          {nodes.length} components
+        </div>
+
+      </div>
+
+      <div
+        className="border border-gray-200 rounded-2xl overflow-hidden bg-gray-50"
+        style={{
+          height: "650px",
+        }}
+      >
+
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          fitView
+          attributionPosition="bottom-left"
+        >
+
+          <Background />
+
+          <Controls />
+
+          <MiniMap
+            pannable
+            zoomable
+          />
+
+        </ReactFlow>
+
+      </div>
+
+      <div className="mt-3 text-center text-sm text-gray-500">
+        You can zoom, pan and inspect the architecture.
+      </div>
+
+    </div>
+  );
+};
+
+// ======================================================
+// MAIN COMPONENT
+// ======================================================
 
 const AISystemDesignCoach = () => {
-  const [problem, setProblem] = useState("");
-  const [difficulty, setDifficulty] = useState("Beginner");
+  const [problem, setProblem] =
+    useState("");
 
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [difficulty, setDifficulty] =
+    useState("Beginner");
 
-  // ======================================================
+  const [result, setResult] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  // ====================================================
   // GENERATE SYSTEM DESIGN
-  // ======================================================
+  // ====================================================
 
   const generateSystemDesign = async () => {
-    // Clear previous state
     setError("");
     setResult(null);
 
-    // Frontend validation
     if (!problem.trim()) {
-      setError("Please enter a system design problem.");
+      setError(
+        "Please enter a system design problem."
+      );
+
       return;
     }
 
     setLoading(true);
 
     try {
-      // ==================================================
-      // SEND DATA TO BACKEND
-      // ==================================================
+      const response =
+        await fetch(
+          "http://localhost:5000/api/system-design/generate",
+          {
+            method: "POST",
 
-      const response = await fetch(
-        "http://localhost:5000/api/system-design/generate",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
 
-          body: JSON.stringify({
-            problem: problem.trim(),
-            difficulty: difficulty,
-          }),
-        }
+            body: JSON.stringify({
+              problem:
+                problem.trim(),
+
+              difficulty,
+            }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      console.log(
+        "System Design Backend Response:",
+        data
       );
-
-      // Get backend response
-      const data = await response.json();
-
-      console.log("System Design Backend Response:", data);
-
-      // ==================================================
-      // HANDLE ERROR
-      // ==================================================
 
       if (!response.ok) {
         throw new Error(
-          data.message || "Failed to generate system design"
+          data.message ||
+          "Failed to generate system design"
         );
       }
 
-      // ==================================================
-      // SAVE RESULT
-      // ==================================================
+      if (
+        !data.success ||
+        !data.data
+      ) {
+        throw new Error(
+          "Invalid system design response"
+        );
+      }
 
       setResult(data.data);
+
     } catch (err) {
-      console.error("System Design Error:", err);
+      console.error(
+        "System Design Error:",
+        err
+      );
 
       setError(
-        err.message || "Something went wrong. Please try again."
+        err.message ||
+        "Something went wrong. Please try again."
       );
+
     } finally {
       setLoading(false);
     }
   };
 
-  // ======================================================
+  // ====================================================
   // UI
-  // ======================================================
+  // ====================================================
 
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-10">
 
-      {/* ==================================================
-          HEADER
-      ================================================== */}
+      <div className="max-w-7xl mx-auto">
 
-      <div className="max-w-6xl mx-auto">
+        {/* HEADER */}
 
         <div className="text-center mb-10">
 
@@ -101,13 +320,11 @@ const AISystemDesignCoach = () => {
 
         </div>
 
-        {/* ==================================================
-            INPUT CARD
-        ================================================== */}
+        {/* INPUT CARD */}
 
         <div className="bg-white rounded-2xl shadow-md p-8">
 
-          {/* Problem */}
+          {/* PROBLEM */}
 
           <div className="mb-6">
 
@@ -118,14 +335,23 @@ const AISystemDesignCoach = () => {
             <input
               type="text"
               value={problem}
-              onChange={(e) => setProblem(e.target.value)}
+              onChange={(e) =>
+                setProblem(e.target.value)
+              }
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter"
+                ) {
+                  generateSystemDesign();
+                }
+              }}
               placeholder="e.g. Design YouTube, Design WhatsApp, Design URL Shortener"
               className="w-full border border-gray-300 rounded-xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
 
           </div>
 
-          {/* Difficulty */}
+          {/* DIFFICULTY */}
 
           <div className="mb-7">
 
@@ -135,17 +361,31 @@ const AISystemDesignCoach = () => {
 
             <select
               value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
+              onChange={(e) =>
+                setDifficulty(
+                  e.target.value
+                )
+              }
               className="w-full border border-gray-300 rounded-xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
+
+              <option value="Beginner">
+                Beginner
+              </option>
+
+              <option value="Intermediate">
+                Intermediate
+              </option>
+
+              <option value="Advanced">
+                Advanced
+              </option>
+
             </select>
 
           </div>
 
-          {/* Error */}
+          {/* ERROR */}
 
           {error && (
             <div className="mb-5 bg-red-50 border border-red-200 text-red-600 rounded-lg px-4 py-3">
@@ -153,31 +393,34 @@ const AISystemDesignCoach = () => {
             </div>
           )}
 
-          {/* Generate Button */}
+          {/* BUTTON */}
 
           <div className="flex justify-center">
 
             <button
-              onClick={generateSystemDesign}
+              onClick={
+                generateSystemDesign
+              }
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold px-8 py-4 rounded-xl transition"
             >
+
               {loading
                 ? "Generating System Design..."
                 : "Generate System Design"}
+
             </button>
 
           </div>
 
         </div>
 
-        {/* ==================================================
-            LOADING
-        ================================================== */}
+        {/* LOADING */}
 
         {loading && (
           <div className="text-center mt-8 text-blue-600 font-medium">
-            AI is designing the system... Please wait.
+            AI is designing the system...
+            Please wait.
           </div>
         )}
 
@@ -188,7 +431,7 @@ const AISystemDesignCoach = () => {
         {result && (
           <div className="mt-10 space-y-6">
 
-            {/* Title */}
+            {/* TITLE */}
 
             <div className="bg-white rounded-2xl shadow-md p-8">
 
@@ -202,7 +445,138 @@ const AISystemDesignCoach = () => {
 
             </div>
 
-            {/* Requirements */}
+            {/* ==================================================
+                ARCHITECTURE DIAGRAM
+            ================================================== */}
+
+            {result.architecture && (
+              <div className="bg-white rounded-2xl shadow-md p-8">
+
+                <h2 className="text-2xl font-bold mb-5">
+                  System Architecture
+                </h2>
+
+                <p className="text-gray-700 mb-6">
+                  {result.architecture.overview}
+                </p>
+
+                <ArchitectureDiagram
+                  architecture={
+                    result.architecture
+                  }
+                />
+
+                {/* COMPONENT DETAILS */}
+
+                <div className="mt-10">
+
+                  <h3 className="font-semibold text-lg mb-4">
+                    Architecture Components
+                  </h3>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+
+                    {result.architecture.components?.map(
+                      (
+                        component,
+                        index
+                      ) => (
+                        <div
+                          key={index}
+                          className="border rounded-xl p-5"
+                        >
+
+                          <div className="flex items-center justify-between">
+
+                            <h4 className="font-bold text-blue-600">
+                              {
+                                component.name
+                              }
+                            </h4>
+
+                            <span className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-full">
+                              {
+                                component.type
+                              }
+                            </span>
+
+                          </div>
+
+                          <p className="text-gray-600 mt-2">
+                            {
+                              component.purpose
+                            }
+                          </p>
+
+                        </div>
+                      )
+                    )}
+
+                  </div>
+
+                </div>
+
+                {/* REQUEST FLOW */}
+
+                {result.architecture.requestFlow?.length >
+                  0 && (
+                  <div className="mt-10">
+
+                    <h3 className="font-semibold text-lg mb-4">
+                      Request Flow
+                    </h3>
+
+                    <div className="space-y-3">
+
+                      {result.architecture.requestFlow.map(
+                        (
+                          flow,
+                          index
+                        ) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 border rounded-lg p-4"
+                          >
+
+                            <span className="font-bold text-blue-600">
+                              {index + 1}
+                            </span>
+
+                            <span className="font-medium">
+                              {flow.from}
+                            </span>
+
+                            <span className="text-gray-400">
+                              →
+                            </span>
+
+                            <span className="font-medium">
+                              {flow.to}
+                            </span>
+
+                            {flow.label && (
+                              <span className="text-sm text-gray-500 ml-auto">
+                                {
+                                  flow.label
+                                }
+                              </span>
+                            )}
+
+                          </div>
+                        )
+                      )}
+
+                    </div>
+
+                  </div>
+                )}
+
+              </div>
+            )}
+
+            {/* ==================================================
+                REQUIREMENTS
+            ================================================== */}
 
             {result.requirements && (
               <div className="bg-white rounded-2xl shadow-md p-8">
@@ -216,11 +590,15 @@ const AISystemDesignCoach = () => {
                 </h3>
 
                 <ul className="list-disc pl-6 space-y-2">
+
                   {result.requirements.functional?.map(
                     (item, index) => (
-                      <li key={index}>{item}</li>
+                      <li key={index}>
+                        {item}
+                      </li>
                     )
                   )}
+
                 </ul>
 
                 <h3 className="font-semibold text-lg mt-6 mb-2">
@@ -228,17 +606,23 @@ const AISystemDesignCoach = () => {
                 </h3>
 
                 <ul className="list-disc pl-6 space-y-2">
+
                   {result.requirements.nonFunctional?.map(
                     (item, index) => (
-                      <li key={index}>{item}</li>
+                      <li key={index}>
+                        {item}
+                      </li>
                     )
                   )}
+
                 </ul>
 
               </div>
             )}
 
-            {/* Capacity Estimation */}
+            {/* ==================================================
+                CAPACITY
+            ================================================== */}
 
             {result.capacityEstimation && (
               <div className="bg-white rounded-2xl shadow-md p-8">
@@ -250,25 +634,52 @@ const AISystemDesignCoach = () => {
                 <div className="grid md:grid-cols-2 gap-4">
 
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <strong>Users:</strong>
-                    <p>{result.capacityEstimation.users}</p>
-                  </div>
+                    <strong>
+                      Users:
+                    </strong>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <strong>Requests / Second:</strong>
                     <p>
-                      {result.capacityEstimation.requestsPerSecond}
+                      {
+                        result.capacityEstimation.users
+                      }
                     </p>
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <strong>Storage:</strong>
-                    <p>{result.capacityEstimation.storage}</p>
+                    <strong>
+                      Requests / Second:
+                    </strong>
+
+                    <p>
+                      {
+                        result.capacityEstimation
+                          .requestsPerSecond
+                      }
+                    </p>
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <strong>Bandwidth:</strong>
-                    <p>{result.capacityEstimation.bandwidth}</p>
+                    <strong>
+                      Storage:
+                    </strong>
+
+                    <p>
+                      {
+                        result.capacityEstimation.storage
+                      }
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <strong>
+                      Bandwidth:
+                    </strong>
+
+                    <p>
+                      {
+                        result.capacityEstimation.bandwidth
+                      }
+                    </p>
                   </div>
 
                 </div>
@@ -276,62 +687,9 @@ const AISystemDesignCoach = () => {
               </div>
             )}
 
-            {/* Architecture */}
-
-            {result.architecture && (
-              <div className="bg-white rounded-2xl shadow-md p-8">
-
-                <h2 className="text-2xl font-bold mb-5">
-                  System Architecture
-                </h2>
-
-                <p className="text-gray-700 mb-6">
-                  {result.architecture.overview}
-                </p>
-
-                <h3 className="font-semibold text-lg mb-3">
-                  Components
-                </h3>
-
-                <div className="space-y-3">
-
-                  {result.architecture.components?.map(
-                    (component, index) => (
-                      <div
-                        key={index}
-                        className="border rounded-lg p-4"
-                      >
-                        <h4 className="font-bold text-blue-600">
-                          {component.name}
-                        </h4>
-
-                        <p className="text-gray-600 mt-1">
-                          {component.purpose}
-                        </p>
-                      </div>
-                    )
-                  )}
-
-                </div>
-
-                <h3 className="font-semibold text-lg mt-7 mb-3">
-                  Request Flow
-                </h3>
-
-                <ol className="list-decimal pl-6 space-y-2">
-
-                  {result.architecture.requestFlow?.map(
-                    (step, index) => (
-                      <li key={index}>{step}</li>
-                    )
-                  )}
-
-                </ol>
-
-              </div>
-            )}
-
-            {/* Database */}
+            {/* ==================================================
+                DATABASE
+            ================================================== */}
 
             {result.databaseDesign && (
               <div className="bg-white rounded-2xl shadow-md p-8">
@@ -341,18 +699,27 @@ const AISystemDesignCoach = () => {
                 </h2>
 
                 <p>
-                  <strong>Database:</strong>{" "}
-                  {result.databaseDesign.databaseType}
+                  <strong>
+                    Database:
+                  </strong>{" "}
+                  {
+                    result.databaseDesign.databaseType
+                  }
                 </p>
 
                 <p className="mt-2 text-gray-600">
-                  {result.databaseDesign.reason}
+                  {
+                    result.databaseDesign.reason
+                  }
                 </p>
 
                 <div className="mt-6 space-y-4">
 
                   {result.databaseDesign.tablesOrCollections?.map(
-                    (table, index) => (
+                    (
+                      table,
+                      index
+                    ) => (
                       <div
                         key={index}
                         className="border rounded-lg p-4"
@@ -363,13 +730,22 @@ const AISystemDesignCoach = () => {
                         </h3>
 
                         <ul className="list-disc pl-6 mt-2">
+
                           {table.fields?.map(
-                            (field, fieldIndex) => (
-                              <li key={fieldIndex}>
+                            (
+                              field,
+                              fieldIndex
+                            ) => (
+                              <li
+                                key={
+                                  fieldIndex
+                                }
+                              >
                                 {field}
                               </li>
                             )
                           )}
+
                         </ul>
 
                       </div>
@@ -381,7 +757,9 @@ const AISystemDesignCoach = () => {
               </div>
             )}
 
-            {/* APIs */}
+            {/* ==================================================
+                APIs
+            ================================================== */}
 
             {result.apis && (
               <div className="bg-white rounded-2xl shadow-md p-8">
@@ -392,50 +770,64 @@ const AISystemDesignCoach = () => {
 
                 <div className="space-y-5">
 
-                  {result.apis.map((api, index) => (
-                    <div
-                      key={index}
-                      className="border rounded-lg p-5"
-                    >
+                  {result.apis.map(
+                    (
+                      api,
+                      index
+                    ) => (
+                      <div
+                        key={index}
+                        className="border rounded-lg p-5"
+                      >
 
-                      <div className="flex gap-3 items-center">
+                        <div className="flex gap-3 items-center">
 
-                        <span className="font-bold text-blue-600">
-                          {api.method}
-                        </span>
+                          <span className="font-bold text-blue-600">
+                            {api.method}
+                          </span>
 
-                        <code className="bg-gray-100 px-3 py-1 rounded">
-                          {api.endpoint}
-                        </code>
+                          <code className="bg-gray-100 px-3 py-1 rounded">
+                            {api.endpoint}
+                          </code>
+
+                        </div>
+
+                        <p className="mt-3">
+                          <strong>
+                            Purpose:
+                          </strong>{" "}
+                          {api.purpose}
+                        </p>
+
+                        <p className="mt-2">
+                          <strong>
+                            Request:
+                          </strong>{" "}
+                          {api.request}
+                        </p>
+
+                        <p className="mt-2">
+                          <strong>
+                            Response:
+                          </strong>{" "}
+                          {api.response}
+                        </p>
 
                       </div>
-
-                      <p className="mt-3">
-                        <strong>Purpose:</strong>{" "}
-                        {api.purpose}
-                      </p>
-
-                      <p className="mt-2">
-                        <strong>Request:</strong>{" "}
-                        {api.request}
-                      </p>
-
-                      <p className="mt-2">
-                        <strong>Response:</strong>{" "}
-                        {api.response}
-                      </p>
-
-                    </div>
-                  ))}
+                    )
+                  )}
 
                 </div>
 
               </div>
             )}
 
-            {/* Scalability */}
+            {/* ==================================================
+                SCALABILITY
+            ================================================== */}
 
-            {result.scalability?.length > 0 && (
+            {result.scalability?.length >
+              0 && (
               <div className="bg-white rounded-2xl shadow-md p-8">
 
                 <h2 className="text-2xl font-bold mb-5">
@@ -445,8 +837,13 @@ const AISystemDesignCoach = () => {
                 <ul className="list-disc pl-6 space-y-2">
 
                   {result.scalability.map(
-                    (item, index) => (
-                      <li key={index}>{item}</li>
+                    (
+                      item,
+                      index
+                    ) => (
+                      <li key={index}>
+                        {item}
+                      </li>
                     )
                   )}
 
@@ -455,9 +852,12 @@ const AISystemDesignCoach = () => {
               </div>
             )}
 
-            {/* Reliability */}
+            {/* ==================================================
+                RELIABILITY
+            ================================================== */}
 
-            {result.reliability?.length > 0 && (
+            {result.reliability?.length >
+              0 && (
               <div className="bg-white rounded-2xl shadow-md p-8">
 
                 <h2 className="text-2xl font-bold mb-5">
@@ -467,8 +867,13 @@ const AISystemDesignCoach = () => {
                 <ul className="list-disc pl-6 space-y-2">
 
                   {result.reliability.map(
-                    (item, index) => (
-                      <li key={index}>{item}</li>
+                    (
+                      item,
+                      index
+                    ) => (
+                      <li key={index}>
+                        {item}
+                      </li>
                     )
                   )}
 
@@ -477,9 +882,12 @@ const AISystemDesignCoach = () => {
               </div>
             )}
 
-            {/* Security */}
+            {/* ==================================================
+                SECURITY
+            ================================================== */}
 
-            {result.security?.length > 0 && (
+            {result.security?.length >
+              0 && (
               <div className="bg-white rounded-2xl shadow-md p-8">
 
                 <h2 className="text-2xl font-bold mb-5">
@@ -489,8 +897,13 @@ const AISystemDesignCoach = () => {
                 <ul className="list-disc pl-6 space-y-2">
 
                   {result.security.map(
-                    (item, index) => (
-                      <li key={index}>{item}</li>
+                    (
+                      item,
+                      index
+                    ) => (
+                      <li key={index}>
+                        {item}
+                      </li>
                     )
                   )}
 
@@ -499,9 +912,62 @@ const AISystemDesignCoach = () => {
               </div>
             )}
 
-            {/* Bottlenecks */}
+            {/* ==================================================
+                CACHING
+            ================================================== */}
 
-            {result.bottlenecks?.length > 0 && (
+            {result.caching?.length >
+              0 && (
+              <div className="bg-white rounded-2xl shadow-md p-8">
+
+                <h2 className="text-2xl font-bold mb-5">
+                  Caching
+                </h2>
+
+                <ul className="list-disc pl-6 space-y-2">
+
+                  {result.caching.map(
+                    (
+                      item,
+                      index
+                    ) => (
+                      <li key={index}>
+                        {item}
+                      </li>
+                    )
+                  )}
+
+                </ul>
+
+              </div>
+            )}
+
+            {/* ==================================================
+                LOAD BALANCING
+            ================================================== */}
+
+            {result.loadBalancing && (
+              <div className="bg-white rounded-2xl shadow-md p-8">
+
+                <h2 className="text-2xl font-bold mb-5">
+                  Load Balancing
+                </h2>
+
+                <p className="text-gray-700">
+                  {
+                    result.loadBalancing
+                  }
+                </p>
+
+              </div>
+            )}
+
+            {/* ==================================================
+                BOTTLENECKS
+            ================================================== */}
+
+            {result.bottlenecks?.length >
+              0 && (
               <div className="bg-white rounded-2xl shadow-md p-8">
 
                 <h2 className="text-2xl font-bold mb-5">
@@ -511,19 +977,26 @@ const AISystemDesignCoach = () => {
                 <div className="space-y-4">
 
                   {result.bottlenecks.map(
-                    (item, index) => (
+                    (
+                      item,
+                      index
+                    ) => (
                       <div
                         key={index}
                         className="border rounded-lg p-4"
                       >
 
                         <p>
-                          <strong>Problem:</strong>{" "}
+                          <strong>
+                            Problem:
+                          </strong>{" "}
                           {item.problem}
                         </p>
 
                         <p className="mt-2">
-                          <strong>Solution:</strong>{" "}
+                          <strong>
+                            Solution:
+                          </strong>{" "}
                           {item.solution}
                         </p>
 
@@ -536,7 +1009,9 @@ const AISystemDesignCoach = () => {
               </div>
             )}
 
-            {/* Interview Explanation */}
+            {/* ==================================================
+                INTERVIEW EXPLANATION
+            ================================================== */}
 
             {result.interviewExplanation && (
               <div className="bg-white rounded-2xl shadow-md p-8">
@@ -546,15 +1021,20 @@ const AISystemDesignCoach = () => {
                 </h2>
 
                 <p className="whitespace-pre-line text-gray-700">
-                  {result.interviewExplanation}
+                  {
+                    result.interviewExplanation
+                  }
                 </p>
 
               </div>
             )}
 
-            {/* Follow Up Questions */}
+            {/* ==================================================
+                FOLLOW-UP
+            ================================================== */}
 
-            {result.followUpQuestions?.length > 0 && (
+            {result.followUpQuestions?.length >
+              0 && (
               <div className="bg-white rounded-2xl shadow-md p-8">
 
                 <h2 className="text-2xl font-bold mb-5">
@@ -564,8 +1044,13 @@ const AISystemDesignCoach = () => {
                 <ol className="list-decimal pl-6 space-y-3">
 
                   {result.followUpQuestions.map(
-                    (question, index) => (
-                      <li key={index}>{question}</li>
+                    (
+                      question,
+                      index
+                    ) => (
+                      <li key={index}>
+                        {question}
+                      </li>
                     )
                   )}
 
@@ -574,9 +1059,12 @@ const AISystemDesignCoach = () => {
               </div>
             )}
 
-            {/* Key Takeaways */}
+            {/* ==================================================
+                KEY TAKEAWAYS
+            ================================================== */}
 
-            {result.keyTakeaways?.length > 0 && (
+            {result.keyTakeaways?.length >
+              0 && (
               <div className="bg-white rounded-2xl shadow-md p-8">
 
                 <h2 className="text-2xl font-bold mb-5">
@@ -586,8 +1074,13 @@ const AISystemDesignCoach = () => {
                 <ul className="list-disc pl-6 space-y-2">
 
                   {result.keyTakeaways.map(
-                    (item, index) => (
-                      <li key={index}>{item}</li>
+                    (
+                      item,
+                      index
+                    ) => (
+                      <li key={index}>
+                        {item}
+                      </li>
                     )
                   )}
 

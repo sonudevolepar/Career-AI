@@ -1,6 +1,6 @@
 // ======================================================
 // SYSTEM DESIGN AI SERVICE
-// Career AI
+// Gemini -> Structured System Design JSON
 // ======================================================
 
 const { GoogleGenAI } = require("@google/genai");
@@ -10,9 +10,7 @@ const { GoogleGenAI } = require("@google/genai");
 // ======================================================
 
 if (!process.env.GEMINI_API_KEY) {
-  console.error(
-    "❌ GEMINI_API_KEY is missing from environment variables."
-  );
+  throw new Error("GEMINI_API_KEY is missing in .env");
 }
 
 const genAI = new GoogleGenAI({
@@ -20,10 +18,14 @@ const genAI = new GoogleGenAI({
 });
 
 // ======================================================
-// CONSTANTS
+// MODEL
 // ======================================================
 
-const DEFAULT_DIFFICULTY = "Beginner";
+const TEXT_MODEL = "gemini-3.6-flash";
+
+// ======================================================
+// ALLOWED DIFFICULTIES
+// ======================================================
 
 const ALLOWED_DIFFICULTIES = [
   "Beginner",
@@ -37,161 +39,60 @@ const ALLOWED_DIFFICULTIES = [
 
 const cleanAIResponse = (text) => {
   if (!text || typeof text !== "string") {
-    throw new Error("AI returned an empty response");
+    throw new Error("AI returned empty response");
   }
 
-  let cleaned = text.trim();
-
-  // ----------------------------------------------------
-  // Remove markdown code fences
-  // ----------------------------------------------------
-
-  cleaned = cleaned
+  return text
+    .trim()
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
-
-  // ----------------------------------------------------
-  // Remove accidental "json" prefix
-  // ----------------------------------------------------
-
-  if (cleaned.toLowerCase().startsWith("json")) {
-    cleaned = cleaned.substring(4).trim();
-  }
-
-  return cleaned;
 };
 
 // ======================================================
-// REPAIR JSON STRING
+// PARSE JSON
 // ======================================================
 
-const repairJSONString = (text) => {
-  let repaired = text;
-
-  // ----------------------------------------------------
-  // Escape invalid backslashes.
-  //
-  // Valid JSON escapes are:
-  // \" \\ \/ \b \f \n \r \t \uXXXX
-  //
-  // AI-generated architecture diagrams sometimes
-  // contain single backslashes which break JSON.
-  // ----------------------------------------------------
-
-  repaired = repaired.replace(
-    /\\(?!["\\/bfnrtu])/g,
-    "\\\\"
-  );
-
-  return repaired;
-};
-
-// ======================================================
-// EXTRACT JSON OBJECT
-// ======================================================
-
-const extractJSONObject = (text) => {
-  const startIndex = text.indexOf("{");
-  const endIndex = text.lastIndexOf("}");
-
-  if (startIndex === -1 || endIndex === -1) {
-    throw new Error("AI response does not contain a JSON object");
-  }
-
-  return text.substring(startIndex, endIndex + 1);
-};
-
-// ======================================================
-// PARSE AI JSON
-// ======================================================
-
-const parseAIResponse = (text) => {
+const parseAIJSON = (text) => {
   const cleaned = cleanAIResponse(text);
-
-  // ====================================================
-  // ATTEMPT 1
-  // ====================================================
 
   try {
     return JSON.parse(cleaned);
   } catch (error) {
-    console.warn(
-      "⚠️ Normal JSON parsing failed. Trying repair..."
-    );
-  }
+    // Try extracting JSON object
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
 
-  // ====================================================
-  // ATTEMPT 2 - REPAIR BACKSLASHES
-  // ====================================================
+    if (start === -1 || end === -1) {
+      console.error("Raw Gemini response:");
+      console.error(cleaned);
 
-  try {
-    const repaired = repairJSONString(cleaned);
+      throw new Error(
+        "AI returned invalid JSON response"
+      );
+    }
 
-    return JSON.parse(repaired);
-  } catch (error) {
-    console.warn(
-      "⚠️ Repaired JSON parsing failed. Trying extraction..."
-    );
-  }
+    try {
+      return JSON.parse(
+        cleaned.substring(start, end + 1)
+      );
+    } catch (parseError) {
+      console.error("Raw Gemini response:");
+      console.error(cleaned);
 
-  // ====================================================
-  // ATTEMPT 3 - EXTRACT OBJECT
-  // ====================================================
-
-  try {
-    const extracted = extractJSONObject(cleaned);
-
-    return JSON.parse(extracted);
-  } catch (error) {
-    console.warn(
-      "⚠️ JSON extraction failed. Trying extraction + repair..."
-    );
-  }
-
-  // ====================================================
-  // ATTEMPT 4 - EXTRACT + REPAIR
-  // ====================================================
-
-  try {
-    const extracted = extractJSONObject(cleaned);
-
-    const repaired = repairJSONString(extracted);
-
-    return JSON.parse(repaired);
-  } catch (error) {
-    console.error(
-      "❌ All JSON parsing attempts failed."
-    );
-
-    console.error(
-      "Raw AI Response:"
-    );
-
-    console.error(text);
-
-    throw new Error(
-      "AI returned invalid JSON response"
-    );
+      throw new Error(
+        "AI returned invalid JSON response"
+      );
+    }
   }
 };
 
 // ======================================================
-// VALIDATE SYSTEM DESIGN RESPONSE
+// VALIDATE RESPONSE
 // ======================================================
 
-const validateSystemDesignResponse = (data) => {
-  if (!data || typeof data !== "object") {
-    throw new Error(
-      "Invalid system design response"
-    );
-  }
-
-  // ----------------------------------------------------
-  // Required top-level fields
-  // ----------------------------------------------------
-
+const validateSystemDesign = (data) => {
   const requiredFields = [
     "title",
     "problemStatement",
@@ -206,7 +107,6 @@ const validateSystemDesignResponse = (data) => {
     "caching",
     "loadBalancing",
     "bottlenecks",
-    "architectureDiagram",
     "interviewExplanation",
     "followUpQuestions",
     "keyTakeaways",
@@ -220,203 +120,24 @@ const validateSystemDesignResponse = (data) => {
     }
   }
 
-  // ----------------------------------------------------
-  // Requirements validation
-  // ----------------------------------------------------
-
   if (
-    !data.requirements ||
-    !Array.isArray(data.requirements.functional) ||
-    !Array.isArray(data.requirements.nonFunctional)
+    !data.architecture ||
+    !Array.isArray(data.architecture.components)
   ) {
     throw new Error(
-      "Invalid requirements structure"
+      "AI response contains invalid architecture components"
     );
   }
 
-  // ----------------------------------------------------
-  // Architecture validation
-  // ----------------------------------------------------
-
   if (
-    !data.architecture ||
-    typeof data.architecture.overview !== "string" ||
-    !Array.isArray(data.architecture.components) ||
     !Array.isArray(data.architecture.requestFlow)
   ) {
     throw new Error(
-      "Invalid architecture structure"
+      "AI response contains invalid request flow"
     );
-  }
-
-  // ----------------------------------------------------
-  // Database validation
-  // ----------------------------------------------------
-
-  if (
-    !data.databaseDesign ||
-    typeof data.databaseDesign.databaseType !== "string" ||
-    !Array.isArray(
-      data.databaseDesign.tablesOrCollections
-    )
-  ) {
-    throw new Error(
-      "Invalid database design structure"
-    );
-  }
-
-  // ----------------------------------------------------
-  // Array validation
-  // ----------------------------------------------------
-
-  const arrayFields = [
-    "apis",
-    "scalability",
-    "reliability",
-    "security",
-    "caching",
-    "bottlenecks",
-    "followUpQuestions",
-    "keyTakeaways",
-  ];
-
-  for (const field of arrayFields) {
-    if (!Array.isArray(data[field])) {
-      throw new Error(
-        `Invalid ${field} structure`
-      );
-    }
   }
 
   return true;
-};
-
-// ======================================================
-// NORMALIZE RESPONSE
-// ======================================================
-
-const normalizeSystemDesignResponse = (data) => {
-  return {
-    title:
-      data.title || "System Design Solution",
-
-    problemStatement:
-      data.problemStatement || "",
-
-    requirements: {
-      functional:
-        Array.isArray(
-          data.requirements?.functional
-        )
-          ? data.requirements.functional
-          : [],
-
-      nonFunctional:
-        Array.isArray(
-          data.requirements?.nonFunctional
-        )
-          ? data.requirements.nonFunctional
-          : [],
-    },
-
-    capacityEstimation: {
-      users:
-        data.capacityEstimation?.users || "",
-
-      requestsPerSecond:
-        data.capacityEstimation?.requestsPerSecond ||
-        "",
-
-      storage:
-        data.capacityEstimation?.storage || "",
-
-      bandwidth:
-        data.capacityEstimation?.bandwidth || "",
-    },
-
-    architecture: {
-      overview:
-        data.architecture?.overview || "",
-
-      components:
-        Array.isArray(
-          data.architecture?.components
-        )
-          ? data.architecture.components
-          : [],
-
-      requestFlow:
-        Array.isArray(
-          data.architecture?.requestFlow
-        )
-          ? data.architecture.requestFlow
-          : [],
-    },
-
-    databaseDesign: {
-      databaseType:
-        data.databaseDesign?.databaseType || "",
-
-      reason:
-        data.databaseDesign?.reason || "",
-
-      tablesOrCollections:
-        Array.isArray(
-          data.databaseDesign?.tablesOrCollections
-        )
-          ? data.databaseDesign.tablesOrCollections
-          : [],
-    },
-
-    apis:
-      Array.isArray(data.apis)
-        ? data.apis
-        : [],
-
-    scalability:
-      Array.isArray(data.scalability)
-        ? data.scalability
-        : [],
-
-    reliability:
-      Array.isArray(data.reliability)
-        ? data.reliability
-        : [],
-
-    security:
-      Array.isArray(data.security)
-        ? data.security
-        : [],
-
-    caching:
-      Array.isArray(data.caching)
-        ? data.caching
-        : [],
-
-    loadBalancing:
-      data.loadBalancing || "",
-
-    bottlenecks:
-      Array.isArray(data.bottlenecks)
-        ? data.bottlenecks
-        : [],
-
-    architectureDiagram:
-      data.architectureDiagram || "",
-
-    interviewExplanation:
-      data.interviewExplanation || "",
-
-    followUpQuestions:
-      Array.isArray(data.followUpQuestions)
-        ? data.followUpQuestions
-        : [],
-
-    keyTakeaways:
-      Array.isArray(data.keyTakeaways)
-        ? data.keyTakeaways
-        : [],
-  };
 };
 
 // ======================================================
@@ -425,10 +146,10 @@ const normalizeSystemDesignResponse = (data) => {
 
 const generateSystemDesign = async (
   problem,
-  difficulty = DEFAULT_DIFFICULTY
+  difficulty = "Beginner"
 ) => {
   // ====================================================
-  // INPUT VALIDATION
+  // VALIDATION
   // ====================================================
 
   if (
@@ -443,25 +164,49 @@ const generateSystemDesign = async (
 
   problem = problem.trim();
 
-  // ----------------------------------------------------
-  // Validate difficulty
-  // ----------------------------------------------------
-
   if (
     !ALLOWED_DIFFICULTIES.includes(difficulty)
   ) {
-    difficulty = DEFAULT_DIFFICULTY;
+    difficulty = "Beginner";
   }
 
-  // ====================================================
-  // PROMPT
-  // ====================================================
+  console.log(
+    "=============================================="
+  );
 
-  const prompt = `
+  console.log(
+    "SYSTEM DESIGN GENERATION STARTED"
+  );
+
+  console.log(
+    "Problem:",
+    problem
+  );
+
+  console.log(
+    "Difficulty:",
+    difficulty
+  );
+
+  console.log(
+    "Model:",
+    TEXT_MODEL
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+  try {
+    // ==================================================
+    // PROMPT
+    // ==================================================
+
+    const prompt = `
 You are an expert Senior Software Architect,
-System Design Interviewer, and Backend Engineer.
+System Design Interviewer and Backend Engineer.
 
-The candidate is practicing a system design interview.
+The candidate wants to practice system design.
 
 ==================================================
 SYSTEM DESIGN PROBLEM
@@ -476,86 +221,105 @@ DIFFICULTY
 ${difficulty}
 
 ==================================================
-YOUR TASK
+TASK
 ==================================================
 
-Create a complete, practical, interview-focused
-system design solution for the given problem.
+Create a complete production-grade system design.
 
-The solution must be appropriate for the selected
-difficulty.
+The system should be explained in an interview-friendly
+and technically accurate way.
 
-BEGINNER:
-- Keep architecture simple.
-- Explain concepts clearly.
-- Use common technologies.
-- Avoid unnecessary distributed-system complexity.
+Cover:
 
-INTERMEDIATE:
-- Use realistic production architecture.
-- Explain scalability.
-- Explain caching.
-- Explain load balancing.
-- Explain database choices.
-- Explain reliability.
-
-ADVANCED:
-- Design a highly scalable distributed system.
-- Explain partitioning.
-- Explain replication.
-- Explain consistency.
-- Explain fault tolerance.
-- Explain queues.
-- Explain caching.
-- Explain observability.
-- Explain failure handling.
+1. Problem Statement
+2. Functional Requirements
+3. Non-Functional Requirements
+4. Capacity Estimation
+5. System Architecture
+6. Architecture Components
+7. Request Flow
+8. Database Design
+9. API Design
+10. Scalability
+11. Reliability
+12. Security
+13. Caching
+14. Load Balancing
+15. Bottlenecks and Solutions
+16. Interview Explanation
+17. Interview Follow-up Questions
+18. Key Takeaways
 
 ==================================================
-IMPORTANT JSON RULES
+IMPORTANT ARCHITECTURE REQUIREMENT
 ==================================================
 
-RETURN ONLY VALID JSON.
+The architecture must be structured so that a frontend
+can convert it into a React Flow diagram.
 
-DO NOT return Markdown.
+Therefore:
 
-DO NOT use:
-\`\`\`json
+- Give clear architecture components.
+- Give logical connections between components.
+- Give source and target component names in requestFlow.
+- Avoid vague architecture descriptions.
+- Use realistic production components.
 
-DO NOT use:
-\`\`\`
+For example:
 
-DO NOT write explanations outside JSON.
+components:
 
-Every property must contain valid JSON values.
+[
+  {
+    "name": "Client",
+    "type": "client",
+    "purpose": "..."
+  },
+  {
+    "name": "API Gateway",
+    "type": "gateway",
+    "purpose": "..."
+  },
+  {
+    "name": "Redis",
+    "type": "cache",
+    "purpose": "..."
+  }
+]
 
-All strings must use double quotes.
+requestFlow:
+
+[
+  {
+    "from": "Client",
+    "to": "API Gateway",
+    "label": "HTTP Request"
+  },
+  {
+    "from": "API Gateway",
+    "to": "Application Service",
+    "label": "Forward Request"
+  },
+  {
+    "from": "Application Service",
+    "to": "Redis",
+    "label": "Read Cache"
+  }
+]
+
+The "from" and "to" values MUST match component names.
 
 ==================================================
-IMPORTANT ARCHITECTURE DIAGRAM RULE
+RETURN ONLY JSON
 ==================================================
 
-For "architectureDiagram":
+Do NOT return markdown.
 
-Return a SIMPLE plain-text flow diagram.
+Do NOT use code fences.
 
-DO NOT use:
-- backslash characters
-- ASCII box drawing
-- special box characters
-- characters such as \\, /, | for drawing boxes
+Do NOT write explanations outside JSON.
 
-Use ONLY simple arrows "->".
-
-Example:
-
-Client -> Load Balancer -> API Server -> Redis
-API Server -> PostgreSQL
-Client -> CDN -> Object Storage
-Upload -> Message Queue -> Transcoding Worker -> Object Storage
-
-==================================================
-REQUIRED JSON STRUCTURE
-==================================================
+Return ONLY this JSON structure:
 
 {
   "title": "string",
@@ -584,12 +348,17 @@ REQUIRED JSON STRUCTURE
     "components": [
       {
         "name": "string",
+        "type": "client | gateway | service | database | cache | queue | storage | cdn | external",
         "purpose": "string"
       }
     ],
 
     "requestFlow": [
-      "string"
+      {
+        "from": "component name",
+        "to": "component name",
+        "label": "string"
+      }
     ]
   },
 
@@ -609,7 +378,7 @@ REQUIRED JSON STRUCTURE
 
   "apis": [
     {
-      "method": "GET",
+      "method": "GET | POST | PUT | DELETE",
       "endpoint": "string",
       "purpose": "string",
       "request": "string",
@@ -642,8 +411,6 @@ REQUIRED JSON STRUCTURE
     }
   ],
 
-  "architectureDiagram": "string",
-
   "interviewExplanation": "string",
 
   "followUpQuestions": [
@@ -654,179 +421,78 @@ REQUIRED JSON STRUCTURE
     "string"
   ]
 }
-
-==================================================
-CONTENT REQUIREMENTS
-==================================================
-
-Include:
-
-1. Problem statement
-
-2. Functional requirements
-
-3. Non-functional requirements
-
-4. Capacity estimation
-
-5. High-level architecture
-
-6. Architecture components
-
-7. Request flow
-
-8. Database design
-
-9. API design
-
-10. Scalability
-
-11. Reliability
-
-12. Security
-
-13. Caching
-
-14. Load balancing
-
-15. Bottlenecks
-
-16. Solutions
-
-17. Interview explanation
-
-18. Follow-up questions
-
-19. Key takeaways
-
-Keep the explanation technically accurate and
-useful for an actual system design interview.
-
-Return ONLY the JSON object.
 `;
 
-  // ====================================================
-  // LOG REQUEST
-  // ====================================================
-
-  console.log(
-    "======================================"
-  );
-
-  console.log(
-    "SYSTEM DESIGN AI REQUEST"
-  );
-
-  console.log(
-    "Problem:",
-    problem
-  );
-
-  console.log(
-    "Difficulty:",
-    difficulty
-  );
-
-  console.log(
-    "======================================"
-  );
-
-  try {
     // ==================================================
-    // GEMINI INTERACTIONS API
+    // GEMINI
     // ==================================================
 
-    const interaction =
-      await genAI.interactions.create({
-        model: "gemini-3.6-flash",
-        input: prompt,
+    console.log(
+      "Generating structured system design..."
+    );
+
+    const response =
+      await genAI.models.generateContent({
+        model: TEXT_MODEL,
+        contents: prompt,
       });
 
-    // ==================================================
-    // GET OUTPUT
-    // ==================================================
-
-    const text = interaction.output_text;
-
-    if (!text) {
-      throw new Error(
-        "AI returned an empty response"
-      );
-    }
+    const text = response.text;
 
     console.log(
-      "System Design AI Response Received"
+      "Gemini response received."
     );
 
     // ==================================================
-    // PARSE RESPONSE
+    // PARSE
     // ==================================================
 
-    const parsedResponse =
-      parseAIResponse(text);
+    const systemDesign =
+      parseAIJSON(text);
 
     // ==================================================
-    // VALIDATE RESPONSE
+    // VALIDATE
     // ==================================================
 
-    validateSystemDesignResponse(
-      parsedResponse
-    );
-
-    // ==================================================
-    // NORMALIZE RESPONSE
-    // ==================================================
-
-    const normalizedResponse =
-      normalizeSystemDesignResponse(
-        parsedResponse
-      );
-
-    console.log(
-      "System Design JSON validated successfully"
+    validateSystemDesign(
+      systemDesign
     );
 
     console.log(
-      "======================================"
+      "System design JSON validated successfully."
     );
 
-    return normalizedResponse;
+    console.log(
+      "=============================================="
+    );
+
+    console.log(
+      "SYSTEM DESIGN GENERATION COMPLETED"
+    );
+
+    console.log(
+      "=============================================="
+    );
+
+    return systemDesign;
 
   } catch (error) {
-    // ==================================================
-    // ERROR LOGGING
-    // ==================================================
-
     console.error(
-      "======================================"
+      "=============================================="
     );
 
     console.error(
-      "SYSTEM DESIGN AI ERROR"
+      "SYSTEM DESIGN SERVICE ERROR"
     );
+
+    console.error(error);
 
     console.error(
-      error
+      "=============================================="
     );
-
-    console.error(
-      "======================================"
-    );
-
-    // --------------------------------------------------
-    // Preserve meaningful error
-    // --------------------------------------------------
-
-    if (
-      error &&
-      error.message
-    ) {
-      throw new Error(
-        error.message
-      );
-    }
 
     throw new Error(
+      error.message ||
       "Failed to generate system design"
     );
   }

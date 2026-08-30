@@ -10,39 +10,55 @@ const {
 // GENERATE SYSTEM DESIGN
 // ======================================================
 
-const generateSystemDesignController = async (req, res) => {
+const generateSystemDesignController = async (
+  req,
+  res
+) => {
   try {
-    const { problem, difficulty } = req.body;
+    const {
+      problem,
+      difficulty,
+    } = req.body;
 
     // ----------------------------------------------
     // VALIDATION
     // ----------------------------------------------
 
-    if (!problem || !problem.trim()) {
+    if (
+      !problem ||
+      typeof problem !== "string" ||
+      !problem.trim()
+    ) {
       return res.status(400).json({
         success: false,
-        message: "System design problem is required",
+        message:
+          "System design problem is required",
       });
     }
 
     // ----------------------------------------------
-    // GENERATE AI RESPONSE
+    // GENERATE
     // ----------------------------------------------
 
-    const systemDesign = await generateSystemDesign(
-      problem.trim(),
-      difficulty || "Beginner"
-    );
+    const systemDesign =
+      await generateSystemDesign(
+        problem.trim(),
+        difficulty || "Beginner"
+      );
 
     // ----------------------------------------------
-    // SUCCESS RESPONSE
+    // SUCCESS
     // ----------------------------------------------
 
     return res.status(200).json({
       success: true,
-      message: "System design generated successfully",
+
+      message:
+        "System design generated successfully",
+
       data: systemDesign,
     });
+
   } catch (error) {
     console.error(
       "Generate System Design Controller Error:",
@@ -51,10 +67,17 @@ const generateSystemDesignController = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Failed to generate system design",
+
+      message:
+        error.message ||
+        "Failed to generate system design",
     });
   }
 };
+
+// ======================================================
+// EXPORT
+// ======================================================
 
 module.exports = {
   generateSystemDesignController,
