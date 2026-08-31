@@ -65,6 +65,14 @@ const Navbar = () => {
             System Design
           </Link>
 
+          {/* AI job */}
+          <Link
+            to="/job-search"
+            className="text-slate-700 hover:text-blue-600 font-medium transition"
+          >
+            AI Job Search
+          </Link>
+
         </div>
       </div>
     </nav>
