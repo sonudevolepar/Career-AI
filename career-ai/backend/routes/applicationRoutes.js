@@ -1,8 +1,11 @@
+
 const express = require("express");
 
 const {
-  submitApplication,
-  getMyApplications,
+  applyForJob,
+  getApplicationById,
+  getAllApplications,
+  updateApplicationStatus,
 } = require("../controllers/applicationController");
 
 const uploadResume = require("../middleware/resumeUpload");
@@ -17,17 +20,38 @@ const router = express.Router();
 router.post(
   "/apply",
   uploadResume.single("resume"),
-  submitApplication
+  applyForJob
 );
 
 // ============================================
-// GET MY APPLICATIONS
-// GET /api/applications/my?email=example@gmail.com
+// GET ALL APPLICATIONS
+// GET /api/applications
 // ============================================
 
 router.get(
-  "/my",
-  getMyApplications
+  "/",
+  getAllApplications
+);
+
+// ============================================
+// GET APPLICATION BY ID
+// GET /api/applications/:id
+// ============================================
+
+router.get(
+  "/:id",
+  getApplicationById
+);
+
+// ============================================
+// UPDATE APPLICATION STATUS
+// PATCH /api/applications/:id/status
+// ============================================
+
+router.patch(
+  "/:id/status",
+  updateApplicationStatus
 );
 
 module.exports = router;
+

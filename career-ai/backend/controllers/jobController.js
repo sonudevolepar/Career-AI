@@ -81,7 +81,9 @@ const searchJobs = async (req, res) => {
       );
 
       return {
+        _id: job._id,
         id: job._id,
+
         title: job.title,
         company: job.company,
         location: job.location,
@@ -90,8 +92,12 @@ const searchJobs = async (req, res) => {
         salary: job.salary,
         skills: job.skills,
         description: job.description,
+
         applyUrl: job.applyUrl,
         companyUrl: job.companyUrl,
+
+        recruiterEmail: job.recruiterEmail,
+
         match,
         matchingSkills,
       };
