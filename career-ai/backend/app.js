@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 
 // ============================================
-// ROUTES
+// ROUTES IMPORT
 // ============================================
 
 const resumeRoutes = require("./routes/resumeRoutes");
@@ -22,12 +22,24 @@ const applicationRoutes = require("./routes/applicationRoutes");
 const app = express();
 
 // ============================================
-// MIDDLEWARE
+// MIDDLEWARE CONFIGURATION
 // ============================================
+
+// Flexible CORS Configuration for Local & Network Access
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(null, true); // Local Dev Flexibility
+      }
+    },
     credentials: true,
   })
 );
@@ -41,82 +53,67 @@ app.use(
 );
 
 // ============================================
-// API ROUTES
+// API ROUTES MOUNTING
 // ============================================
 
 // Resume Analyzer
-app.use(
-  "/api/resume",
-  resumeRoutes
-);
+app.use("/api/resume", resumeRoutes);
 
 // AI Mock Interview
-app.use(
-  "/api/interview",
-  interviewRoutes
-);
+app.use("/api/interview", interviewRoutes);
 
 // DSA Coach
-app.use(
-  "/api/dsa",
-  dsaRoutes
-);
+app.use("/api/dsa", dsaRoutes);
 
 // Roadmap
-app.use(
-  "/api/roadmap",
-  roadmapRoutes
-);
+app.use("/api/roadmap", roadmapRoutes);
 
 // System Design
-app.use(
-  "/api/system-design",
-  systemDesignRoutes
-);
+app.use("/api/system-design", systemDesignRoutes);
 
 // Job Search
-app.use(
-  "/api/jobs",
-  jobRoutes
-);
+app.use("/api/jobs", jobRoutes);
+
+// Job Application & Resume Upload
+app.use("/api/applications", applicationRoutes);
 
 // ============================================
-// JOB APPLICATION
-// ============================================
-
-app.use(
-  "/api/applications",
-  applicationRoutes
-);
-
-// ============================================
-// HEALTH CHECK
+// HEALTH CHECK ENDPOINT
 // ============================================
 
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message:
-      "Career AI Backend API is running successfully",
+    message: "Career AI Backend API is running successfully",
   });
 });
 
 // ============================================
-// ERROR HANDLER
+// 404 NOT FOUND HANDLER
+// ============================================
+
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: `API Endpoint Not Found: ${req.originalUrl}`,
+  });
+});
+
+// ============================================
+// GLOBAL ERROR HANDLER
 // ============================================
 
 app.use((err, req, res, next) => {
-  console.error("Global Error:", err);
+  console.error("Global Error Logged:", err);
 
-  res.status(500).json({
+  res.status(err.status || 500).json({
     success: false,
-    message:
-      err.message || "Internal server error",
+    message: err.message || "Internal server error",
   });
 });
 
 // ============================================
-// EXPORT
+// EXPORT APP MODULE
 // ============================================
 
 module.exports = app;

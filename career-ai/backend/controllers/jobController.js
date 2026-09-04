@@ -1,12 +1,12 @@
 const Job = require("../models/Job");
-
+const { fetchExternalJobs } = require("../services/externalJobService");
 const {
   calculateJobMatch,
   getMatchingSkills,
 } = require("../services/jobMatchingService");
 
 // ========================================
-// SEARCH JOBS
+// SEARCH JOBS (WITH GEMINI API FALLBACK)
 // GET /api/jobs/search
 // ========================================
 
@@ -54,13 +54,28 @@ const searchJobs = async (req, res) => {
       };
     }
 
-    const jobs = await Job.find(query)
+    // 1. Pehle MongoDB me Search Karein
+    let jobs = await Job.find(query)
       .sort({ createdAt: -1 })
       .limit(50);
 
-    // Resume skills
-    let resumeSkills = [];
+    // 2. Agar MongoDB me Jobs NAHI MILIN (Array Khali Hai) -> Gemini API Trigger Karein
+    if (!jobs || jobs.length === 0) {
+      console.log("MongoDB empty: Fetching live jobs via Gemini API...");
+      const externalJobs = await fetchExternalJobs(
+        role.trim() || "Software Engineer",
+        location.trim() || "Bengaluru"
+      );
 
+      return res.status(200).json({
+        success: true,
+        count: externalJobs.length,
+        jobs: externalJobs,
+      });
+    }
+
+    // 3. Agar MongoDB me Jobs mil gayi -> Skills Matching Calculate Karein
+    let resumeSkills = [];
     if (skills.trim()) {
       resumeSkills = skills
         .split(",")
@@ -68,22 +83,13 @@ const searchJobs = async (req, res) => {
         .filter(Boolean);
     }
 
-    // Calculate matching
     const result = jobs.map((job) => {
-      const match = calculateJobMatch(
-        resumeSkills,
-        job.skills
-      );
-
-      const matchingSkills = getMatchingSkills(
-        resumeSkills,
-        job.skills
-      );
+      const match = calculateJobMatch(resumeSkills, job.skills || []);
+      const matchingSkills = getMatchingSkills(resumeSkills, job.skills || []);
 
       return {
         _id: job._id,
         id: job._id,
-
         title: job.title,
         company: job.company,
         location: job.location,
@@ -92,18 +98,14 @@ const searchJobs = async (req, res) => {
         salary: job.salary,
         skills: job.skills,
         description: job.description,
-
         applyUrl: job.applyUrl,
         companyUrl: job.companyUrl,
-
         recruiterEmail: job.recruiterEmail,
-
         match,
         matchingSkills,
       };
     });
 
-    // Highest match first
     result.sort((a, b) => b.match - a.match);
 
     res.status(200).json({
@@ -160,9 +162,14 @@ const getJobById = async (req, res) => {
 
 const getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.find()
+    let jobs = await Job.find()
       .sort({ createdAt: -1 })
       .limit(100);
+
+    // Agar Database Bilkul Khali ho to Gemini API se initial jobs le aaein
+    if (!jobs || jobs.length === 0) {
+      jobs = await fetchExternalJobs("MERN Stack Developer", "India");
+    }
 
     res.status(200).json({
       success: true,
