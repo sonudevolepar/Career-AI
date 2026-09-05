@@ -1,3 +1,4 @@
+// backend/controllers/jobController.js
 const Job = require("../models/Job");
 const { fetchExternalJobs } = require("../services/externalJobService");
 const {
@@ -5,11 +6,18 @@ const {
   getMatchingSkills,
 } = require("../services/jobMatchingService");
 
+// Email Service Import (Safety try-catch ke saath)
+let sendEmail;
+try {
+  sendEmail = require("../services/emailService").sendEmail;
+} catch (err) {
+  sendEmail = null;
+}
+
 // ========================================
-// SEARCH JOBS (WITH GEMINI API FALLBACK)
+// 1. SEARCH JOBS (WITH FLEXIBLE REGEX FILTERS)
 // GET /api/jobs/search
 // ========================================
-
 const searchJobs = async (req, res) => {
   try {
     const {
@@ -22,65 +30,53 @@ const searchJobs = async (req, res) => {
 
     const query = {};
 
-    // Role
-    if (role.trim()) {
-      query.title = {
-        $regex: role.trim(),
-        $options: "i",
-      };
+    // Role Filter (Case-insensitive Regex)
+    if (role && role.trim() !== "") {
+      query.title = { $regex: role.trim(), $options: "i" };
     }
 
-    // Location
-    if (location.trim()) {
-      query.location = {
-        $regex: location.trim(),
-        $options: "i",
-      };
+    // Location Filter (Case-insensitive Regex)
+    if (location && location.trim() !== "") {
+      query.location = { $regex: location.trim(), $options: "i" };
     }
 
-    // Experience
-    if (experience.trim()) {
-      query.experience = {
-        $regex: experience.trim(),
-        $options: "i",
-      };
+    // Experience Filter (FIXED: Ab ye '0-1 Years' exact search ki jagah Regex search karega)
+    if (experience && experience.trim() !== "" && experience !== "Fresher") {
+      // Numbers ko extract karke flexible pattern banaya
+      const expNumber = experience.replace(/[^0-9-]/g, ""); 
+      query.experience = { $regex: expNumber || experience.trim(), $options: "i" };
     }
 
-    // Job Type
-    if (jobType.trim()) {
-      query.type = {
-        $regex: jobType.trim(),
-        $options: "i",
-      };
+    // Job Type Filter
+    if (jobType && jobType.trim() !== "") {
+      query.type = { $regex: jobType.trim(), $options: "i" };
     }
 
-    // 1. Pehle MongoDB me Search Karein
-    let jobs = await Job.find(query)
-      .sort({ createdAt: -1 })
-      .limit(50);
+    console.log("Executing Search Query:", query);
 
-    // 2. Agar MongoDB me Jobs NAHI MILIN (Array Khali Hai) -> Gemini API Trigger Karein
+    // MongoDB DB Query
+    let jobs = await Job.find(query).sort({ createdAt: -1 }).limit(50);
+
+    // FALLBACK: Agar DB Filters Mismatch ki wajah se 0 jobs mili, tab Gemini Live Jobs chalega
     if (!jobs || jobs.length === 0) {
-      console.log("MongoDB empty: Fetching live jobs via Gemini API...");
-      const externalJobs = await fetchExternalJobs(
-        role.trim() || "Software Engineer",
-        location.trim() || "Bengaluru"
-      );
+      console.log("No MongoDB matches found. Triggering Gemini Live Jobs fallback...");
+      
+      const fallbackRole = role.trim() || "Software Engineer";
+      const fallbackLocation = location.trim() || "Bengaluru";
+
+      const externalJobs = await fetchExternalJobs(fallbackRole, fallbackLocation);
 
       return res.status(200).json({
         success: true,
-        count: externalJobs.length,
-        jobs: externalJobs,
+        count: externalJobs ? externalJobs.length : 0,
+        jobs: externalJobs || [],
       });
     }
 
-    // 3. Agar MongoDB me Jobs mil gayi -> Skills Matching Calculate Karein
+    // Skills Match Calculation
     let resumeSkills = [];
-    if (skills.trim()) {
-      resumeSkills = skills
-        .split(",")
-        .map((skill) => skill.trim())
-        .filter(Boolean);
+    if (skills && skills.trim() !== "") {
+      resumeSkills = skills.split(",").map((s) => s.trim()).filter(Boolean);
     }
 
     const result = jobs.map((job) => {
@@ -90,33 +86,33 @@ const searchJobs = async (req, res) => {
       return {
         _id: job._id,
         id: job._id,
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        type: job.type,
-        experience: job.experience,
-        salary: job.salary,
-        skills: job.skills,
-        description: job.description,
-        applyUrl: job.applyUrl,
-        companyUrl: job.companyUrl,
-        recruiterEmail: job.recruiterEmail,
-        match,
-        matchingSkills,
+        title: job.title || "Untitled Job",
+        company: job.company || "Unknown Company",
+        location: job.location || "Not Disclosed",
+        type: job.type || "Full Time",
+        experience: job.experience || "Not Disclosed",
+        salary: job.salary || "Not Disclosed",
+        skills: Array.isArray(job.skills) ? job.skills : [],
+        description: job.description || "",
+        applyUrl: job.applyUrl || "",
+        companyUrl: job.companyUrl || "",
+        recruiterEmail: job.recruiterEmail || "",
+        recruiterPhone: job.recruiterPhone || "",
+        match: Number(match) || 0,
+        matchingSkills: Array.isArray(matchingSkills) ? matchingSkills : [],
       };
     });
 
     result.sort((a, b) => b.match - a.match);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: result.length,
       jobs: result,
     });
   } catch (error) {
-    console.error("Job Search Error:", error);
-
-    res.status(500).json({
+    console.error("Job Search API Error:", error);
+    return res.status(500).json({
       success: false,
       message: "Failed to search jobs",
       error: error.message,
@@ -125,70 +121,76 @@ const searchJobs = async (req, res) => {
 };
 
 // ========================================
-// GET SINGLE JOB
-// GET /api/jobs/:id
+// 2. APPLY TO JOB & NOTIFY RECRUITER
+// POST /api/jobs/apply
 // ========================================
-
-const getJobById = async (req, res) => {
+const applyToJob = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const { jobId, name, email, phone, resumeUrl } = req.body;
 
+    const job = await Job.findById(jobId);
     if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
+
+    // Candidate details recruiter ke email par bhejna
+    if (job.recruiterEmail && sendEmail) {
+      await sendEmail({
+        to: job.recruiterEmail,
+        subject: `New Application for ${job.title} - ${name}`,
+        html: `
+          <h2>New Applicant Submitted Resume</h2>
+          <p><strong>Job Title:</strong> ${job.title}</p>
+          <p><strong>Applicant Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Phone:</strong> ${phone || "Not Provided"}</p>
+          <p><strong>Resume Link:</strong> <a href="${resumeUrl}">${resumeUrl}</a></p>
+        `,
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      job,
+      message: "Application submitted! Recruiter has been notified.",
     });
   } catch (error) {
-    console.error("Get Job Error:", error);
-
-    res.status(500).json({
+    console.error("Apply Job Error:", error);
+    return res.status(500).json({
       success: false,
-      message: "Failed to get job",
+      message: "Failed to send application to recruiter",
       error: error.message,
     });
   }
 };
 
 // ========================================
-// GET ALL JOBS
-// GET /api/jobs
+// 3. GET SINGLE & ALL JOBS
 // ========================================
+const getJobById = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ success: false, message: "Job not found" });
+    return res.status(200).json({ success: true, job });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to get job" });
+  }
+};
 
 const getAllJobs = async (req, res) => {
   try {
-    let jobs = await Job.find()
-      .sort({ createdAt: -1 })
-      .limit(100);
-
-    // Agar Database Bilkul Khali ho to Gemini API se initial jobs le aaein
+    let jobs = await Job.find().sort({ createdAt: -1 }).limit(100);
     if (!jobs || jobs.length === 0) {
-      jobs = await fetchExternalJobs("MERN Stack Developer", "India");
+      jobs = await fetchExternalJobs("Software Engineer", "India");
     }
-
-    res.status(200).json({
-      success: true,
-      count: jobs.length,
-      jobs,
-    });
+    return res.status(200).json({ success: true, count: jobs ? jobs.length : 0, jobs: jobs || [] });
   } catch (error) {
-    console.error("Get Jobs Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to get jobs",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Failed to get jobs" });
   }
 };
 
 module.exports = {
   searchJobs,
+  applyToJob,
   getJobById,
   getAllJobs,
 };
