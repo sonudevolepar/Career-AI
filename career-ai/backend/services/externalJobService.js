@@ -2,65 +2,64 @@
 const axios = require("axios");
 
 const fetchExternalJobs = async (role = "Developer", location = "Bengaluru") => {
-  const rapidApiKey = process.env.RAPIDAPI_KEY;
   const geminiApiKey = process.env.GEMINI_API_KEY;
 
-  // 1. RapidAPI JSearch Method
-  if (rapidApiKey) {
-    try {
-      console.log(`Fetching Live RapidAPI Jobs for "${role}" in "${location}"...`);
+  // ======================================================
+  // 1. FREE OPEN API (REMOTIVE PUBLIC API - NO KEY NEEDED)
+  // ======================================================
+  try {
+    console.log(`Fetching Live Open API Jobs for "${role}"...`);
+    
+    // Remotive Public API Endpoint (Free & Open)
+    const response = await axios.get(`https://remotive.com/api/remote-jobs?search=${encodeURIComponent(role)}&limit=10`);
+    const jobsData = response.data?.jobs || [];
 
-      const response = await axios({
-        method: "GET",
-        url: "https://jsearch.p.rapidapi.com/search",
-        params: {
-          query: `${role} in ${location}`,
-          page: "1",
-          num_pages: "1",
-        },
-        headers: {
-          "x-rapidapi-key": rapidApiKey.trim(),
-          "x-rapidapi-host": "jsearch.p.rapidapi.com",
-        },
-      });
-
-      const jobsData = response.data?.data || [];
-
-      if (jobsData.length > 0) {
-        console.log(`RapidAPI Success: Fetched ${jobsData.length} live postings.`);
-        return jobsData.map((job) => ({
-          _id: job.job_id || String(Math.random()),
-          id: job.job_id || String(Math.random()),
-          title: job.job_title || role,
-          company: job.employer_name || "Tech Company",
-          location: job.job_city ? `${job.job_city}, ${job.job_country || "India"}` : location,
-          type: job.job_employment_type === "FULLTIME" ? "Full Time" : "Part Time",
-          experience: "0-2 Years",
-          salary: job.job_max_salary ? `₹${job.job_max_salary}` : "Not Disclosed",
-          skills: job.job_required_skills || ["JavaScript", "React", "Node.js"],
-          description: job.job_description ? job.job_description.substring(0, 250) + "..." : "",
-          applyUrl: job.job_apply_link || "#",
-          companyUrl: job.employer_website || "#",
-          recruiterEmail: "hr@company.com",
-          recruiterPhone: "+91 9876543210",
-          match: 85,
-          matchingSkills: ["React", "Node.js"],
-        }));
-      }
-    } catch (rapidError) {
-      console.error(
-        "RapidAPI Error Details:",
-        rapidError.response?.data?.message || rapidError.message
-      );
+    if (jobsData.length > 0) {
+      console.log(`Open API Success: Found ${jobsData.length} live jobs!`);
+      
+      return jobsData.slice(0, 5).map((job) => ({
+        _id: String(job.id),
+        id: String(job.id),
+        title: job.title || role,
+        company: job.company_name || "Tech Company",
+        location: job.candidate_required_location || location,
+        type: job.job_type === "full_time" ? "Full Time" : "Remote",
+        experience: "0-2 Years",
+        salary: job.salary ? job.salary : "Not Disclosed",
+        skills: job.tags || ["JavaScript", "React", "Node.js"],
+        description: job.description ? job.description.replace(/<[^>]*>?/gm, "").substring(0, 200) + "..." : "",
+        applyUrl: job.url || "#",
+        companyUrl: "#",
+        recruiterEmail: `hr@${job.company_name ? job.company_name.toLowerCase().replace(/[^a-z0-9]/g, "") : "company"}.com`,
+        recruiterPhone: "+91 9876543210",
+        match: 85,
+        matchingSkills: ["React", "Node.js"]
+      }));
     }
+  } catch (openApiError) {
+    console.error("Open API Error, switching to Gemini Fallback:", openApiError.message);
   }
 
-  // 2. Gemini API Backup (Compatible v1beta Endpoint)
+  // ======================================================
+  // 2. GEMINI AI FALLBACK (IF OPEN API HAS NO MATCHES)
+  // ======================================================
   try {
-    console.log("Fetching Gemini Fallback Jobs...");
+    console.log("Generating Jobs via Gemini AI...");
     const prompt = `Generate 4 realistic IT job listings for role "${role}" in location "${location}". 
-    Return ONLY a JSON array of objects. Do NOT wrap in markdown or backticks.
-    Each object must have these exact keys: "id", "title", "company", "location", "type", "experience", "salary", "skills", "recruiterEmail", "recruiterPhone", "description", "applyUrl".`;
+    Return ONLY a valid JSON array of objects. Do NOT wrap in markdown or backticks.
+    Each object must have these exact keys:
+    - "id": string
+    - "title": string
+    - "company": string
+    - "location": string
+    - "type": string (Full Time / Remote)
+    - "experience": string
+    - "salary": string
+    - "skills": array of strings
+    - "description": string
+    - "applyUrl": string
+    - "recruiterEmail": string
+    - "recruiterPhone": string`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,

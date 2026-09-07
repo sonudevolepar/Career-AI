@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const Application = require("../models/Application");
 const Job = require("../models/Job");
@@ -9,10 +8,9 @@ const {
 } = require("../services/emailService");
 
 // =====================================================
-// APPLY FOR JOB
+// APPLY FOR JOB (Supports DB & External API Jobs)
 // POST /api/applications/apply
 // =====================================================
-
 const applyForJob = async (req, res) => {
   try {
     const {
@@ -22,41 +20,19 @@ const applyForJob = async (req, res) => {
       applicantPhone,
       coverLetter,
       matchScore,
+      jobTitle,
+      company,
     } = req.body;
 
-    // Validate required fields
-    if (
-      !jobId ||
-      !applicantName ||
-      !applicantEmail ||
-      !applicantPhone
-    ) {
+    // 1. Validate required fields
+    if (!jobId || !applicantName || !applicantEmail || !applicantPhone) {
       return res.status(400).json({
         success: false,
-        message:
-          "Job ID, name, email and phone number are required.",
+        message: "Job ID, name, email and phone number are required.",
       });
     }
 
-    // Validate Job ID
-    if (!mongoose.Types.ObjectId.isValid(jobId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Job ID.",
-      });
-    }
-
-    // Find Job
-    const job = await Job.findById(jobId);
-
-    if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found.",
-      });
-    }
-
-    // Resume required
+    // 2. Validate Resume Upload
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -64,79 +40,56 @@ const applyForJob = async (req, res) => {
       });
     }
 
-    // Get recruiter email
-    const recruiterEmail =
-      job.recruiterEmail ||
-      job.email ||
-      job.companyEmail;
+    let job = null;
+    let recruiterEmail = req.body.recruiterEmail || "hr@company.com";
 
-    if (!recruiterEmail) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Recruiter email is not available for this job.",
-      });
+    // 3. Check if Job ID belongs to MongoDB or External API
+    if (mongoose.Types.ObjectId.isValid(jobId)) {
+      job = await Job.findById(jobId);
+      if (job) {
+        recruiterEmail = job.recruiterEmail || job.email || job.companyEmail || recruiterEmail;
+      }
     }
 
-    // Resume information
+    // 4. Handle Resume details from Multer Buffer or File Path
     const resumeName = req.file.originalname;
+    const resumePath = req.file.path || req.file.location || `buffer-${Date.now()}-${resumeName}`;
 
-    const resumePath =
-      req.file.path ||
-      req.file.location ||
-      req.file.filename;
+    const formattedEmail = applicantEmail.trim().toLowerCase();
 
-    // Check duplicate application
-    const existingApplication =
-      await Application.findOne({
-        job: jobId,
-        applicantEmail: applicantEmail
-          .trim()
-          .toLowerCase(),
-      });
+    // 5. Check Duplicate Application
+    const existingApplication = await Application.findOne({
+      jobId: String(jobId),
+      applicantEmail: formattedEmail,
+    });
 
     if (existingApplication) {
       return res.status(409).json({
         success: false,
-        message:
-          "You have already applied for this job.",
+        message: "You have already applied for this job.",
       });
     }
 
-    // Create application
+    // 6. Save Application to MongoDB
     const application = await Application.create({
-      job: jobId,
-
+      jobId: String(jobId),
+      jobTitle: job ? job.title : jobTitle || "Software Position",
+      company: job ? job.company : company || "Tech Company",
       applicantName: applicantName.trim(),
-
-      applicantEmail: applicantEmail
-        .trim()
-        .toLowerCase(),
-
+      applicantEmail: formattedEmail,
       applicantPhone: applicantPhone.trim(),
-
       resumeName,
-
       resumePath,
-
       coverLetter: coverLetter || "",
-
       matchScore: Number(matchScore) || 0,
-
       status: "Applied",
-
-      recruiterEmail: recruiterEmail
-        .trim()
-        .toLowerCase(),
-
+      recruiterEmail: recruiterEmail.trim().toLowerCase(),
       recruiterEmailSent: false,
-
       candidateEmailSent: false,
     });
 
-    // Send recruiter email
+    // 7. Send Recruiter Email Notification
     let recruiterEmailSent = false;
-
     try {
       await sendRecruiterApplicationEmail({
         recruiterEmail,
@@ -144,74 +97,51 @@ const applyForJob = async (req, res) => {
         applicantEmail,
         applicantPhone,
         resumeName,
-        resumePath,
+        resumeBuffer: req.file.buffer, // For memoryStorage attachments
         coverLetter,
-        job,
+        job: job || { title: jobTitle || "Software Role", company: company || "Tech Firm" },
       });
-
       recruiterEmailSent = true;
     } catch (emailError) {
-      console.error(
-        "Recruiter email error:",
-        emailError.message
-      );
+      console.error("Recruiter Email Error:", emailError.message);
     }
 
-    // Send candidate confirmation
+    // 8. Send Candidate Confirmation Email
     let candidateEmailSent = false;
-
     try {
       await sendCandidateConfirmationEmail({
         candidateEmail: applicantEmail,
         applicantName,
-        job,
+        job: job || { title: jobTitle || "Software Role", company: company || "Tech Firm" },
       });
-
       candidateEmailSent = true;
     } catch (emailError) {
-      console.error(
-        "Candidate email error:",
-        emailError.message
-      );
+      console.error("Candidate Email Error:", emailError.message);
     }
 
-    // Update email status
-    application.recruiterEmailSent =
-      recruiterEmailSent;
-
-    application.candidateEmailSent =
-      candidateEmailSent;
-
+    // Update Status Flags
+    application.recruiterEmailSent = recruiterEmailSent;
+    application.candidateEmailSent = candidateEmailSent;
     await application.save();
 
-    // Success response
     return res.status(201).json({
       success: true,
-      message:
-        "Application submitted successfully.",
-
+      message: "Application submitted successfully.",
       application: {
         id: application._id,
-        jobId: application.job,
-        applicantName:
-          application.applicantName,
-        applicantEmail:
-          application.applicantEmail,
+        jobId: application.jobId,
+        applicantName: application.applicantName,
+        applicantEmail: application.applicantEmail,
         status: application.status,
         recruiterEmailSent,
         candidateEmailSent,
       },
     });
   } catch (error) {
-    console.error(
-      "Apply For Job Error:",
-      error
-    );
-
+    console.error("Apply For Job Error:", error);
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to submit application.",
+      message: "Failed to submit application.",
       error: error.message,
     });
   }
@@ -219,9 +149,7 @@ const applyForJob = async (req, res) => {
 
 // =====================================================
 // GET APPLICATION BY ID
-// GET /api/applications/:id
 // =====================================================
-
 const getApplicationById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -229,19 +157,16 @@ const getApplicationById = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Invalid application ID.",
+        message: "Invalid application ID.",
       });
     }
 
-    const application =
-      await Application.findById(id).populate("job");
+    const application = await Application.findById(id);
 
     if (!application) {
       return res.status(404).json({
         success: false,
-        message:
-          "Application not found.",
+        message: "Application not found.",
       });
     }
 
@@ -250,15 +175,10 @@ const getApplicationById = async (req, res) => {
       application,
     });
   } catch (error) {
-    console.error(
-      "Get Application Error:",
-      error
-    );
-
+    console.error("Get Application Error:", error);
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to get application.",
+      message: "Failed to get application.",
       error: error.message,
     });
   }
@@ -266,15 +186,10 @@ const getApplicationById = async (req, res) => {
 
 // =====================================================
 // GET ALL APPLICATIONS
-// GET /api/applications
 // =====================================================
-
 const getAllApplications = async (req, res) => {
   try {
-    const applications =
-      await Application.find()
-        .populate("job")
-        .sort({ createdAt: -1 });
+    const applications = await Application.find().sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -282,15 +197,10 @@ const getAllApplications = async (req, res) => {
       applications,
     });
   } catch (error) {
-    console.error(
-      "Get Applications Error:",
-      error
-    );
-
+    console.error("Get Applications Error:", error);
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to get applications.",
+      message: "Failed to get applications.",
       error: error.message,
     });
   }
@@ -298,13 +208,8 @@ const getAllApplications = async (req, res) => {
 
 // =====================================================
 // UPDATE APPLICATION STATUS
-// PATCH /api/applications/:id/status
 // =====================================================
-
-const updateApplicationStatus = async (
-  req,
-  res
-) => {
+const updateApplicationStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -321,53 +226,37 @@ const updateApplicationStatus = async (
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Invalid application status.",
+        message: "Invalid application status.",
       });
     }
 
-    const application =
-      await Application.findByIdAndUpdate(
-        id,
-        { status },
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+    const application = await Application.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    );
 
     if (!application) {
       return res.status(404).json({
         success: false,
-        message:
-          "Application not found.",
+        message: "Application not found.",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message:
-        "Application status updated successfully.",
+      message: "Application status updated successfully.",
       application,
     });
   } catch (error) {
-    console.error(
-      "Update Application Status Error:",
-      error
-    );
-
+    console.error("Update Application Status Error:", error);
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to update application status.",
+      message: "Failed to update application status.",
       error: error.message,
     });
   }
 };
-
-// =====================================================
-// EXPORT CONTROLLERS
-// =====================================================
 
 module.exports = {
   applyForJob,

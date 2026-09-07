@@ -408,7 +408,6 @@ const JobSearch = () => {
   // =====================================================
   // SEARCH JOBS FROM MONGODB
   // =====================================================
-
   const handleSearch = async (e) => {
     e.preventDefault();
 
@@ -419,179 +418,85 @@ const JobSearch = () => {
     try {
       const params = new URLSearchParams();
 
-      if (role.trim() !== "") {
-        params.append(
-          "role",
-          role.trim()
-        );
-      }
+      if (role.trim() !== "") params.append("role", role.trim());
+      if (location.trim() !== "") params.append("location", location.trim());
+      if (experience.trim() !== "") params.append("experience", experience.trim());
+      if (jobType.trim() !== "") params.append("jobType", jobType.trim());
 
-      if (location.trim() !== "") {
-        params.append(
-          "location",
-          location.trim()
-        );
-      }
+      const url = `${API_BASE_URL}/jobs/search${params.toString() ? `?${params.toString()}` : ""
+        }`;
 
-      if (experience.trim() !== "") {
-        params.append(
-          "experience",
-          experience.trim()
-        );
-      }
-
-      if (jobType.trim() !== "") {
-        params.append(
-          "jobType",
-          jobType.trim()
-        );
-      }
-
-      const url =
-        `${API_BASE_URL}/jobs/search` +
-        (params.toString()
-          ? `?${params.toString()}`
-          : "");
-
-      console.log(
-        "Searching jobs:",
-        url
-      );
+      console.log("Searching jobs URL:", url);
 
       const response = await fetch(url);
+      const data = await response.json();
 
-      const data =
-        await response.json();
-
-      if (
-        !response.ok ||
-        !data.success
-      ) {
-        throw new Error(
-          data.message ||
-            "Failed to search jobs."
-        );
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to search jobs.");
       }
 
       // =================================================
-      // NORMALIZE MONGODB JOBS
+      // NORMALIZE MONGODB & EXTERNAL JOBS DATA
       // =================================================
+      let apiJobs = (data.jobs || []).map((job) => {
+        const uniqueId = job._id || job.id;
 
-      let apiJobs = (
-        data.jobs || []
-      ).map((job) => ({
-        ...job,
+        return {
+          ...job,
 
-        // VERY IMPORTANT:
-        // preserve MongoDB ObjectId
-        _id:
-          job._id ||
-          job.id,
+          // Preserve unique ID for both MongoDB Hex IDs and External Numeric IDs
+          _id: uniqueId,
+          id: uniqueId,
 
-        id:
-          job._id ||
-          job.id,
-
-        title:
-          job.title || "Untitled Job",
-
-        company:
-          job.company || "Unknown Company",
-
-        location:
-          job.location || "Not Disclosed",
-
-        type:
-          job.type || "Full Time",
-
-        experience:
-          job.experience || "Not Disclosed",
-
-        salary:
-          job.salary || "Not Disclosed",
-
-        skills:
-          Array.isArray(job.skills)
-            ? job.skills
-            : [],
-
-        description:
-          job.description || "",
-
-        recruiterEmail:
-          job.recruiterEmail || "",
-
-        match:
-          Number(job.match) || 0,
-
-        matchingSkills:
-          Array.isArray(
-            job.matchingSkills
-          )
+          title: job.title || "Untitled Job",
+          company: job.company || "Unknown Company",
+          location: job.location || "Not Disclosed",
+          type: job.type || "Full Time",
+          experience: job.experience || "Not Disclosed",
+          salary: job.salary || "Not Disclosed",
+          skills: Array.isArray(job.skills) ? job.skills : [],
+          description: job.description || "",
+          recruiterEmail: job.recruiterEmail || "",
+          match: Number(job.match) || 0,
+          matchingSkills: Array.isArray(job.matchingSkills)
             ? job.matchingSkills
             : [],
-
-        // Backend Job model currently
-        // does not have mode.
-        // Keep it safe for UI.
-        mode:
-          job.mode || "",
-      }));
+          mode: job.mode || "",
+        };
+      });
 
       // =================================================
       // WORK MODE FILTER
-      //
-      // Only filter if backend actually
-      // provides job.mode.
-      // This prevents all jobs disappearing
-      // when MongoDB Job schema has no mode.
       // =================================================
-
-      if (
-        workMode !== "Any" &&
-        apiJobs.some(
-          (job) => job.mode
-        )
-      ) {
-        apiJobs =
-          apiJobs.filter(
-            (job) =>
-              job.mode
-                ?.toLowerCase() ===
-              workMode.toLowerCase()
-          );
+      if (workMode !== "Any" && apiJobs.some((job) => job.mode)) {
+        apiJobs = apiJobs.filter(
+          (job) => job.mode?.toLowerCase() === workMode.toLowerCase()
+        );
       }
 
       // =================================================
       // SORT BY MATCH SCORE
       // =================================================
-
-      apiJobs.sort(
-        (a, b) =>
-          (b.match || 0) -
-          (a.match || 0)
-      );
+      apiJobs.sort((a, b) => (b.match || 0) - (a.match || 0));
 
       setJobs(apiJobs);
       setSearched(true);
 
-      console.log(
-        "MongoDB Jobs:",
-        apiJobs
-      );
+      // =================================================
+      // DYNAMIC LOGGING BASED ON SOURCE
+      // =================================================
+      if (data.source === "external" || data.isExternal) {
+        console.log(`Live External API Jobs (${apiJobs.length}):`, apiJobs);
+      } else {
+        console.log(`MongoDB Jobs (${apiJobs.length}):`, apiJobs);
+      }
     } catch (error) {
-      console.error(
-        "Job Search Error:",
-        error
-      );
+      console.error("Job Search Error:", error);
 
       setJobs([]);
       setSearched(true);
 
-      alert(
-        error.message ||
-          "Unable to search jobs."
-      );
+      alert(error.message || "Unable to search jobs.");
     } finally {
       setLoading(false);
     }
@@ -628,7 +533,7 @@ const JobSearch = () => {
         ) {
           throw new Error(
             data.message ||
-              "Failed to load jobs."
+            "Failed to load jobs."
           );
         }
 
@@ -717,7 +622,7 @@ const JobSearch = () => {
 
         alert(
           error.message ||
-            "Unable to load recommended jobs."
+          "Unable to load recommended jobs."
         );
       } finally {
         setLoading(false);
@@ -855,252 +760,138 @@ const JobSearch = () => {
   // =====================================================
   // APPLICATION SUBMIT
   // =====================================================
+  const handleApplicationSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleApplicationSubmit =
-    async (e) => {
-      e.preventDefault();
+    if (!selectedJob) {
+      alert("Please select a job first.");
+      return;
+    }
 
-      if (!selectedJob) {
-        alert(
-          "Please select a job first."
-        );
-        return;
-      }
+    if (
+      !applicantName.trim() ||
+      !applicantEmail.trim() ||
+      !applicantPhone.trim()
+    ) {
+      alert("Please fill in your name, email and phone number.");
+      return;
+    }
 
-      if (
-        !applicantName.trim() ||
-        !applicantEmail.trim() ||
-        !applicantPhone.trim()
-      ) {
-        alert(
-          "Please fill in your name, email and phone number."
-        );
-        return;
-      }
+    if (!resumeFile) {
+      alert("Please upload your resume before applying.");
+      return;
+    }
 
-      if (!resumeFile) {
-        alert(
-          "Please upload your resume before applying."
-        );
-        return;
+    // =================================================
+    // GET JOB ID (Handles Mongo Hex ID & External Numeric ID)
+    // =================================================
+    const mongoJobId = selectedJob._id || selectedJob.id;
+
+    if (!mongoJobId) {
+      alert("This job does not have a valid Job ID.");
+      console.error("Job without ID:", selectedJob);
+      return;
+    }
+
+    setApplying(true);
+
+    try {
+      // =================================================
+      // CREATE FORMDATA WITH ALL JOB DETAILS
+      // =================================================
+      const formData = new FormData();
+
+      formData.append("jobId", String(mongoJobId));
+      formData.append("applicantName", applicantName.trim());
+      formData.append("applicantEmail", applicantEmail.trim());
+      formData.append("applicantPhone", applicantPhone.trim());
+      formData.append("coverLetter", coverLetter.trim());
+      formData.append("matchScore", String(selectedJob.match || 0));
+
+      // Important for External API Jobs (Fallback data)
+      formData.append("jobTitle", selectedJob.title || "Software Position");
+      formData.append("company", selectedJob.company || "Tech Company");
+      formData.append(
+        "recruiterEmail",
+        selectedJob.recruiterEmail || "hr@company.com"
+      );
+
+      // Backend multer expects "resume"
+      formData.append("resume", resumeFile);
+
+      console.log("Submitting application:", {
+        jobId: mongoJobId,
+        jobTitle: selectedJob.title,
+        company: selectedJob.company,
+        applicantName,
+        applicantEmail,
+        applicantPhone,
+        resume: resumeFile.name,
+      });
+
+      // =================================================
+      // SEND TO BACKEND
+      // =================================================
+      const response = await fetch(`${API_BASE_URL}/job/apply`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      console.log("Application API Response:", data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Application submit nahi ho paya.");
       }
 
       // =================================================
-      // GET REAL MONGODB OBJECT ID
+      // LOCAL HISTORY SYNC
       // =================================================
-
-      const mongoJobId =
-        selectedJob._id ||
-        selectedJob.id;
-
-      if (!mongoJobId) {
-        alert(
-          "This job does not have a valid MongoDB ID."
-        );
-
-        console.error(
-          "Job without MongoDB ID:",
-          selectedJob
-        );
-
-        return;
-      }
-
-      setApplying(true);
-
       try {
-        // =================================================
-        // CREATE FORMDATA
-        // =================================================
+        const application = {
+          id: data.application?.id || data.application?._id,
+          jobId: String(mongoJobId),
+          jobTitle: selectedJob.title,
+          company: selectedJob.company,
+          jobLocation: selectedJob.location,
+          applicantName: applicantName.trim(),
+          applicantEmail: applicantEmail.trim(),
+          applicantPhone: applicantPhone.trim(),
+          resumeName: resumeFile.name,
+          coverLetter: coverLetter.trim(),
+          status: data.application?.status || "Applied",
+          recruiterEmailSent: data.application?.recruiterEmailSent || false,
+          candidateEmailSent: data.application?.candidateEmailSent || false,
+          appliedAt: data.application?.createdAt || new Date().toISOString(),
+        };
 
-        const formData =
-          new FormData();
-
-        formData.append(
-          "jobId",
-          mongoJobId
+        const existing = JSON.parse(
+          localStorage.getItem("careerAIApplications") || "[]"
         );
 
-        formData.append(
-          "applicantName",
-          applicantName.trim()
+        localStorage.setItem(
+          "careerAIApplications",
+          JSON.stringify([...existing, application])
         );
-
-        formData.append(
-          "applicantEmail",
-          applicantEmail.trim()
-        );
-
-        formData.append(
-          "applicantPhone",
-          applicantPhone.trim()
-        );
-
-        formData.append(
-          "coverLetter",
-          coverLetter.trim()
-        );
-
-        formData.append(
-          "matchScore",
-          String(
-            selectedJob.match || 0
-          )
-        );
-
-        // IMPORTANT:
-        // Backend multer expects "resume"
-        formData.append(
-          "resume",
-          resumeFile
-        );
-
-        console.log(
-          "Submitting application:",
-          {
-            jobId: mongoJobId,
-            applicantName,
-            applicantEmail,
-            applicantPhone,
-            resume:
-              resumeFile.name,
-          }
-        );
-
-        // =================================================
-        // SEND TO BACKEND
-        // =================================================
-
-        const response =
-          await fetch(
-            `${API_BASE_URL}/applications/apply`,
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
-
-        const data =
-          await response.json();
-
-        console.log(
-          "Application API Response:",
-          data
-        );
-
-        if (
-          !response.ok ||
-          !data.success
-        ) {
-          throw new Error(
-            data.message ||
-              "Application submit nahi ho paya."
-          );
-        }
-
-        // =================================================
-        // OPTIONAL LIGHTWEIGHT LOCAL HISTORY
-        // =================================================
-
-        try {
-          const application = {
-            id:
-              data.application
-                ?.id ||
-              data.application
-                ?._id,
-
-            jobId:
-              mongoJobId,
-
-            jobTitle:
-              selectedJob.title,
-
-            company:
-              selectedJob.company,
-
-            jobLocation:
-              selectedJob.location,
-
-            applicantName:
-              applicantName.trim(),
-
-            applicantEmail:
-              applicantEmail.trim(),
-
-            applicantPhone:
-              applicantPhone.trim(),
-
-            resumeName:
-              resumeFile.name,
-
-            coverLetter:
-              coverLetter.trim(),
-
-            status:
-              data.application
-                ?.status ||
-              "Applied",
-
-            recruiterEmailSent:
-              data.application
-                ?.recruiterEmailSent ||
-              false,
-
-            candidateEmailSent:
-              data.application
-                ?.candidateEmailSent ||
-              false,
-
-            appliedAt:
-              data.application
-                ?.createdAt ||
-              new Date().toISOString(),
-          };
-
-          const existing =
-            JSON.parse(
-              localStorage.getItem(
-                "careerAIApplications"
-              ) || "[]"
-            );
-
-          localStorage.setItem(
-            "careerAIApplications",
-            JSON.stringify([
-              ...existing,
-              application,
-            ])
-          );
-        } catch (localError) {
-          console.warn(
-            "Local history save failed:",
-            localError
-          );
-        }
-
-        // =================================================
-        // SUCCESS
-        // =================================================
-
-        setApplicationSuccess(
-          true
-        );
-      } catch (error) {
-        console.error(
-          "Application Error:",
-          error
-        );
-
-        alert(
-          error.message ||
-            "Application submit nahi ho paya. Please try again."
-        );
-      } finally {
-        setApplying(false);
+      } catch (localError) {
+        console.warn("Local history save failed:", localError);
       }
-    };
 
+      // =================================================
+      // SUCCESS STATE
+      // =================================================
+      setApplicationSuccess(true);
+    } catch (error) {
+      console.error("Application Error:", error);
+
+      alert(
+        error.message || "Application submit nahi ho paya. Please try again."
+      );
+    } finally {
+      setApplying(false);
+    }
+  };
   // =====================================================
   // RESET APPLICATION FORM
   // =====================================================
@@ -1721,30 +1512,30 @@ const JobSearch = () => {
                     {job.matchingSkills?.length >
                       0 && (
 
-                      <div className="matching-skills">
+                        <div className="matching-skills">
 
-                        <h4>
-                          ✓ Matching Skills
-                        </h4>
+                          <h4>
+                            ✓ Matching Skills
+                          </h4>
 
-                        <div className="skills">
+                          <div className="skills">
 
-                          {job.matchingSkills.map(
-                            (skill) => (
-                              <span
-                                key={
-                                  skill
-                                }
-                              >
-                                {skill}
-                              </span>
-                            )
-                          )}
+                            {job.matchingSkills.map(
+                              (skill) => (
+                                <span
+                                  key={
+                                    skill
+                                  }
+                                >
+                                  {skill}
+                                </span>
+                              )
+                            )}
+
+                          </div>
 
                         </div>
-
-                      </div>
-                    )}
+                      )}
 
                     {/* AI REASON */}
 
@@ -2208,10 +1999,7 @@ const JobSearch = () => {
                         <input
                           type="file"
                           accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                          onChange={
-                            handleResumeChange
-                          }
-                          required
+                          onChange={handleResumeChange}
                         />
 
                         <span className="upload-icon">
