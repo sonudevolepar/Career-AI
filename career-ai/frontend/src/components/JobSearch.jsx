@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import "./JobSearch.css";
 
@@ -53,7 +54,7 @@ const JobSearch = () => {
     useState(false);
 
   // =====================================================
-  // JOB ROLES
+  // JOB CATEGORIES
   // =====================================================
 
   const jobCategories = [
@@ -85,7 +86,6 @@ const JobSearch = () => {
         "Ruby on Rails Developer",
       ],
     },
-
     {
       name: "Mobile Development",
       roles: [
@@ -96,7 +96,6 @@ const JobSearch = () => {
         "React Native Developer",
       ],
     },
-
     {
       name: "Data & AI",
       roles: [
@@ -112,7 +111,6 @@ const JobSearch = () => {
         "BI Developer",
       ],
     },
-
     {
       name: "Cloud & DevOps",
       roles: [
@@ -126,7 +124,6 @@ const JobSearch = () => {
         "Platform Engineer",
       ],
     },
-
     {
       name: "Cyber Security",
       roles: [
@@ -140,7 +137,6 @@ const JobSearch = () => {
         "Application Security Engineer",
       ],
     },
-
     {
       name: "Testing & QA",
       roles: [
@@ -152,7 +148,6 @@ const JobSearch = () => {
         "Test Automation Engineer",
       ],
     },
-
     {
       name: "Database",
       roles: [
@@ -163,7 +158,6 @@ const JobSearch = () => {
         "Oracle Developer",
       ],
     },
-
     {
       name: "Networking & Support",
       roles: [
@@ -175,7 +169,6 @@ const JobSearch = () => {
         "Network Administrator",
       ],
     },
-
     {
       name: "Architecture",
       roles: [
@@ -184,7 +177,6 @@ const JobSearch = () => {
         "Technical Architect",
       ],
     },
-
     {
       name: "UI / UX",
       roles: [
@@ -194,7 +186,6 @@ const JobSearch = () => {
         "Product Designer",
       ],
     },
-
     {
       name: "Business & Management",
       roles: [
@@ -207,7 +198,6 @@ const JobSearch = () => {
         "Project Manager",
       ],
     },
-
     {
       name: "Emerging Technologies",
       roles: [
@@ -233,7 +223,6 @@ const JobSearch = () => {
         "Mangaluru",
       ],
     },
-
     {
       state: "Maharashtra",
       cities: [
@@ -243,7 +232,6 @@ const JobSearch = () => {
         "Nashik",
       ],
     },
-
     {
       state: "Telangana",
       cities: [
@@ -251,7 +239,6 @@ const JobSearch = () => {
         "Warangal",
       ],
     },
-
     {
       state: "Tamil Nadu",
       cities: [
@@ -260,7 +247,6 @@ const JobSearch = () => {
         "Madurai",
       ],
     },
-
     {
       state: "Delhi NCR",
       cities: [
@@ -272,7 +258,6 @@ const JobSearch = () => {
         "Faridabad",
       ],
     },
-
     {
       state: "Uttar Pradesh",
       cities: [
@@ -282,12 +267,10 @@ const JobSearch = () => {
         "Varanasi",
       ],
     },
-
     {
       state: "West Bengal",
       cities: ["Kolkata"],
     },
-
     {
       state: "Gujarat",
       cities: [
@@ -297,7 +280,6 @@ const JobSearch = () => {
         "Surat",
       ],
     },
-
     {
       state: "Rajasthan",
       cities: [
@@ -306,7 +288,6 @@ const JobSearch = () => {
         "Jodhpur",
       ],
     },
-
     {
       state: "Kerala",
       cities: [
@@ -315,7 +296,6 @@ const JobSearch = () => {
         "Kozhikode",
       ],
     },
-
     {
       state: "Andhra Pradesh",
       cities: [
@@ -324,7 +304,6 @@ const JobSearch = () => {
         "Tirupati",
       ],
     },
-
     {
       state: "Bihar",
       cities: [
@@ -332,7 +311,6 @@ const JobSearch = () => {
         "Gaya",
       ],
     },
-
     {
       state: "Jharkhand",
       cities: [
@@ -340,7 +318,6 @@ const JobSearch = () => {
         "Jamshedpur",
       ],
     },
-
     {
       state: "Odisha",
       cities: [
@@ -348,7 +325,6 @@ const JobSearch = () => {
         "Cuttack",
       ],
     },
-
     {
       state: "Madhya Pradesh",
       cities: [
@@ -356,7 +332,6 @@ const JobSearch = () => {
         "Bhopal",
       ],
     },
-
     {
       state: "Chhattisgarh",
       cities: [
@@ -364,7 +339,6 @@ const JobSearch = () => {
         "Bhilai",
       ],
     },
-
     {
       state: "Punjab",
       cities: [
@@ -373,22 +347,18 @@ const JobSearch = () => {
         "Amritsar",
       ],
     },
-
     {
       state: "Chandigarh",
       cities: ["Chandigarh"],
     },
-
     {
       state: "Goa",
       cities: ["Panaji"],
     },
-
     {
       state: "Uttarakhand",
       cities: ["Dehradun"],
     },
-
     {
       state: "Himachal Pradesh",
       cities: [
@@ -396,7 +366,6 @@ const JobSearch = () => {
         "Dharamshala",
       ],
     },
-
     {
       state: "Jammu & Kashmir",
       cities: [
@@ -407,8 +376,186 @@ const JobSearch = () => {
   ];
 
   // =====================================================
-  // SEARCH JOBS FROM MONGODB
+  // NORMALIZE JOB
   // =====================================================
+
+  const normalizeJob = (job) => {
+    const uniqueId =
+      job?._id ||
+      job?.id ||
+      `${job?.company}-${job?.title}-${job?.location}`;
+
+    return {
+      ...job,
+
+      _id: String(uniqueId),
+      id: String(uniqueId),
+
+      title:
+        job?.title ||
+        "Untitled Job",
+
+      company:
+        job?.company ||
+        "Unknown Company",
+
+      location:
+        job?.location ||
+        "Not Disclosed",
+
+      type:
+        job?.type ||
+        "Full Time",
+
+      experience:
+        job?.experience ||
+        "Not Disclosed",
+
+      salary:
+        job?.salary ||
+        "Not Disclosed",
+
+      skills:
+        Array.isArray(job?.skills)
+          ? job.skills
+          : [],
+
+      description:
+        job?.description ||
+        "",
+
+      applyUrl:
+        job?.applyUrl ||
+        "#",
+
+      companyUrl:
+        job?.companyUrl ||
+        "#",
+
+      recruiterEmail:
+        job?.recruiterEmail ||
+        "",
+
+      recruiterPhone:
+        job?.recruiterPhone ||
+        "",
+
+      match:
+        Number(job?.match) || 0,
+
+      matchingSkills:
+        Array.isArray(
+          job?.matchingSkills
+        )
+          ? job.matchingSkills
+          : [],
+
+      mode:
+        job?.mode ||
+        "",
+
+      source:
+        job?.source ||
+        "mongodb",
+
+      provider:
+        job?.provider ||
+        "MongoDB",
+
+      isExternal:
+        Boolean(job?.isExternal),
+
+      externalId:
+        job?.externalId ||
+        "",
+    };
+  };
+
+  // =====================================================
+  // LOCATION MATCH
+  // =====================================================
+
+  const locationMatches = (
+    jobLocation,
+    selectedLocation
+  ) => {
+    if (!selectedLocation) {
+      return true;
+    }
+
+    const jobText =
+      String(jobLocation || "")
+        .toLowerCase();
+
+    const selected =
+      String(selectedLocation || "")
+        .toLowerCase();
+
+    // Bengaluru / Bangalore
+    if (
+      selected === "bengaluru" ||
+      selected === "bangalore"
+    ) {
+      return (
+        jobText.includes("bengaluru") ||
+        jobText.includes("bangalore")
+      );
+    }
+
+    // Mumbai / Bombay
+    if (selected === "mumbai") {
+      return (
+        jobText.includes("mumbai") ||
+        jobText.includes("bombay")
+      );
+    }
+
+    // Gurugram / Gurgaon
+    if (
+      selected === "gurugram" ||
+      selected === "gurgaon"
+    ) {
+      return (
+        jobText.includes("gurugram") ||
+        jobText.includes("gurgaon")
+      );
+    }
+
+    return jobText.includes(
+      selected
+    );
+  };
+
+  // =====================================================
+  // WORK MODE FILTER
+  // =====================================================
+
+  const filterByWorkMode = (
+    jobList
+  ) => {
+    if (workMode === "Any") {
+      return jobList;
+    }
+
+    return jobList.filter(
+      (job) => {
+        const mode =
+          String(
+            job?.mode || ""
+          ).toLowerCase();
+
+        return (
+          mode ===
+          workMode.toLowerCase()
+        );
+      }
+    );
+  };
+
+  // =====================================================
+  // SEARCH JOBS
+  // =====================================================
+
   const handleSearch = async (e) => {
     e.preventDefault();
 
@@ -419,98 +566,263 @@ const JobSearch = () => {
     try {
       const params = new URLSearchParams();
 
-      if (role.trim() !== "") params.append("role", role.trim());
-      if (location.trim() !== "") params.append("location", location.trim());
-      if (experience.trim() !== "") params.append("experience", experience.trim());
-      if (jobType.trim() !== "") params.append("jobType", jobType.trim());
-
-      const url = `${API_BASE_URL}/jobs/search${params.toString() ? `?${params.toString()}` : ""
-        }`;
-
-      console.log("Searching jobs URL:", url);
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to search jobs.");
+      if (role.trim()) {
+        params.append("role", role.trim());
       }
 
-      // =================================================
-      // NORMALIZE MONGODB & EXTERNAL JOBS DATA
-      // =================================================
-      let apiJobs = (data.jobs || []).map((job) => {
-        const uniqueId = job._id || job.id;
+      if (location.trim()) {
+        params.append("location", location.trim());
+      }
 
-        return {
-          ...job,
+      if (experience.trim()) {
+        params.append("experience", experience.trim());
+      }
 
-          // Preserve unique ID for both MongoDB Hex IDs and External Numeric IDs
-          _id: uniqueId,
-          id: uniqueId,
+      if (jobType.trim()) {
+        params.append("jobType", jobType.trim());
+      }
 
-          title: job.title || "Untitled Job",
-          company: job.company || "Unknown Company",
-          location: job.location || "Not Disclosed",
-          type: job.type || "Full Time",
-          experience: job.experience || "Not Disclosed",
-          salary: job.salary || "Not Disclosed",
-          skills: Array.isArray(job.skills) ? job.skills : [],
-          description: job.description || "",
-          recruiterEmail: job.recruiterEmail || "",
-          match: Number(job.match) || 0,
-          matchingSkills: Array.isArray(job.matchingSkills)
-            ? job.matchingSkills
-            : [],
-          mode: job.mode || "",
-        };
+      if (workMode !== "Any") {
+        params.append("workMode", workMode);
+      }
+
+      const url =
+        `${API_BASE_URL}/jobs/search?${params.toString()}`;
+
+      console.log("========================================");
+      console.log("SEARCH REQUEST");
+      console.log("========================================");
+      console.log("URL:", url);
+      console.log("Filters:", {
+        role,
+        location,
+        experience,
+        jobType,
+        workMode,
       });
 
-      // =================================================
-      // WORK MODE FILTER
-      // =================================================
-      if (workMode !== "Any" && apiJobs.some((job) => job.mode)) {
-        apiJobs = apiJobs.filter(
-          (job) => job.mode?.toLowerCase() === workMode.toLowerCase()
+      const response = await fetch(url);
+
+      const data = await response.json();
+
+      console.log("========================================");
+      console.log("BACKEND RESPONSE");
+      console.log("========================================");
+      console.log("Success:", data.success);
+      console.log("Count:", data.count);
+      console.log("Jobs:", data.jobs);
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Failed to search jobs."
         );
       }
 
       // =================================================
+      // NORMALIZE BACKEND JOBS
+      // =================================================
+
+      let apiJobs = Array.isArray(data.jobs)
+        ? data.jobs.map(normalizeJob)
+        : [];
+
+      console.log(
+        "Jobs after normalize:",
+        apiJobs.length
+      );
+
+      // =================================================
+      // IMPORTANT:
+      // DO NOT APPLY STRICT LOCATION FILTER HERE
+      //
+      // Backend already handles location.
+      // External APIs can return:
+      // Worldwide / Remote / Anywhere / Country etc.
+      // =================================================
+
+      // =================================================
+      // WORK MODE
+      // =================================================
+
+      if (workMode !== "Any") {
+        apiJobs = apiJobs.filter((job) => {
+          const mode = String(job.mode || "").toLowerCase();
+          const type = String(job.type || "").toLowerCase();
+          const locationText = String(
+            job.location || ""
+          ).toLowerCase();
+
+          const requestedMode =
+            workMode.toLowerCase();
+
+          // -------------------------------
+          // REMOTE
+          // -------------------------------
+
+          if (requestedMode === "remote") {
+            return (
+              mode.includes("remote") ||
+              type.includes("remote") ||
+              locationText.includes("remote") ||
+              locationText.includes("worldwide") ||
+              locationText.includes("anywhere") ||
+              job.source === "external"
+            );
+          }
+
+          // -------------------------------
+          // HYBRID
+          // -------------------------------
+
+          if (requestedMode === "hybrid") {
+            return (
+              mode.includes("hybrid") ||
+              locationText.includes("hybrid")
+            );
+          }
+
+          // -------------------------------
+          // ON-SITE
+          // -------------------------------
+
+          if (
+            requestedMode === "on-site" ||
+            requestedMode === "onsite"
+          ) {
+            return (
+              mode.includes("on-site") ||
+              mode.includes("onsite") ||
+              locationText.includes("on-site") ||
+              locationText.includes("onsite")
+            );
+          }
+
+          return true;
+        });
+      }
+
+      console.log(
+        "Jobs after work mode filter:",
+        apiJobs.length
+      );
+
+      // =================================================
+      // REMOVE DUPLICATES
+      // =================================================
+
+      const uniqueJobs = [];
+      const seen = new Set();
+
+      apiJobs.forEach((job) => {
+        const normalizedTitle = String(
+          job.title || ""
+        )
+          .toLowerCase()
+          .trim();
+
+        const normalizedCompany = String(
+          job.company || ""
+        )
+          .toLowerCase()
+          .trim();
+
+        const normalizedLocation = String(
+          job.location || ""
+        )
+          .toLowerCase()
+          .trim();
+
+        const key =
+          job.applyUrl &&
+            job.applyUrl !== "#"
+            ? job.applyUrl
+            : `${normalizedTitle}|${normalizedCompany}|${normalizedLocation}`;
+
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueJobs.push(job);
+        }
+      });
+
+      // =================================================
       // SORT BY MATCH SCORE
       // =================================================
-      apiJobs.sort((a, b) => (b.match || 0) - (a.match || 0));
 
-      setJobs(apiJobs);
+      uniqueJobs.sort(
+        (a, b) =>
+          Number(b.match || 0) -
+          Number(a.match || 0)
+      );
+
+      // =================================================
+      // SET RESULTS
+      // =================================================
+
+      setJobs(uniqueJobs);
       setSearched(true);
 
       // =================================================
-      // DYNAMIC LOGGING BASED ON SOURCE
+      // DEBUG
       // =================================================
-      if (data.source === "external" || data.isExternal) {
-        console.log(`Live External API Jobs (${apiJobs.length}):`, apiJobs);
-      } else {
-        console.log(`MongoDB Jobs (${apiJobs.length}):`, apiJobs);
-      }
+
+      const mongoJobs = uniqueJobs.filter(
+        (job) =>
+          job.source === "mongodb" ||
+          job.source === "internal"
+      );
+
+      const externalJobs = uniqueJobs.filter(
+        (job) =>
+          job.source === "external" ||
+          job.isExternal === true
+      );
+
+      console.log("========================================");
+      console.log("FINAL JOB RESULTS");
+      console.log("========================================");
+      console.log("Total Jobs:", uniqueJobs.length);
+      console.log("MongoDB Jobs:", mongoJobs.length);
+      console.log("External Jobs:", externalJobs.length);
+      console.log("========================================");
+
+      console.table(
+        uniqueJobs.map((job) => ({
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          type: job.type,
+          mode: job.mode,
+          source: job.source,
+          provider: job.provider,
+          external: job.isExternal,
+          match: job.match,
+        }))
+      );
+
     } catch (error) {
-      console.error("Job Search Error:", error);
+      console.error(
+        "Job Search Error:",
+        error
+      );
 
       setJobs([]);
       setSearched(true);
 
-      alert(error.message || "Unable to search jobs.");
+      alert(
+        error.message ||
+        "Unable to search jobs."
+      );
     } finally {
       setLoading(false);
     }
   };
-
   // =====================================================
   // RESUME SEARCH
   //
-  // Current backend does not expose a resume
-  // upload/job recommendation endpoint.
-  //
-  // So this button loads MongoDB jobs instead of
-  // using demoJobs.
+  // NOTE:
+  // Actual resume AI recommendation requires
+  // a resume upload + backend resume analysis API.
+  // This function currently loads all available jobs.
   // =====================================================
 
   const handleResumeSearch =
@@ -538,71 +850,12 @@ const JobSearch = () => {
           );
         }
 
-        let apiJobs = (
-          data.jobs || []
-        ).map((job) => ({
-          ...job,
-
-          _id:
-            job._id ||
-            job.id,
-
-          id:
-            job._id ||
-            job.id,
-
-          title:
-            job.title ||
-            "Untitled Job",
-
-          company:
-            job.company ||
-            "Unknown Company",
-
-          location:
-            job.location ||
-            "Not Disclosed",
-
-          type:
-            job.type ||
-            "Full Time",
-
-          experience:
-            job.experience ||
-            "Not Disclosed",
-
-          salary:
-            job.salary ||
-            "Not Disclosed",
-
-          skills:
-            Array.isArray(
-              job.skills
+        let apiJobs =
+          Array.isArray(data.jobs)
+            ? data.jobs.map(
+              normalizeJob
             )
-              ? job.skills
-              : [],
-
-          description:
-            job.description ||
-            "",
-
-          recruiterEmail:
-            job.recruiterEmail ||
-            "",
-
-          match:
-            Number(job.match) || 0,
-
-          matchingSkills:
-            Array.isArray(
-              job.matchingSkills
-            )
-              ? job.matchingSkills
-              : [],
-
-          mode:
-            job.mode || "",
-        }));
+            : [];
 
         apiJobs.sort(
           (a, b) =>
@@ -623,7 +876,7 @@ const JobSearch = () => {
 
         alert(
           error.message ||
-          "Unable to load recommended jobs."
+          "Unable to load jobs."
         );
       } finally {
         setLoading(false);
@@ -665,14 +918,47 @@ const JobSearch = () => {
     job
   ) => {
     setSelectedJob(job);
-
-    setApplicationSuccess(
-      false
-    );
-
+    setApplicationSuccess(false);
     setApplying(false);
-
     setShowJobModal(false);
+
+    // ---------------------------------------------------
+    // EXTERNAL JOB
+    // ---------------------------------------------------
+
+    if (
+      job?.isExternal ||
+      job?.source === "external"
+    ) {
+      if (
+        job.applyUrl &&
+        job.applyUrl !== "#"
+      ) {
+        const shouldContinue =
+          window.confirm(
+            `You are being redirected to ${job.company}'s application page. Continue?`
+          );
+
+        if (shouldContinue) {
+          window.open(
+            job.applyUrl,
+            "_blank",
+            "noopener,noreferrer"
+          );
+        }
+      } else {
+        alert(
+          "This external job does not have a valid application link."
+        );
+      }
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // MONGODB JOB
+    // ---------------------------------------------------
+
     setShowApplyModal(true);
   };
 
@@ -711,17 +997,17 @@ const JobSearch = () => {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ];
 
-    const extension =
-      file.name
-        .toLowerCase()
-        .split(".")
-        .pop();
-
     const allowedExtensions = [
       "pdf",
       "doc",
       "docx",
     ];
+
+    const extension =
+      file.name
+        .toLowerCase()
+        .split(".")
+        .pop();
 
     if (
       !allowedTypes.includes(
@@ -761,140 +1047,256 @@ const JobSearch = () => {
   // =====================================================
   // APPLICATION SUBMIT
   // =====================================================
-  const handleApplicationSubmit = async (e) => {
-    e.preventDefault();
 
-    if (!selectedJob) {
-      alert("Please select a job first.");
-      return;
-    }
+  const handleApplicationSubmit =
+    async (e) => {
+      e.preventDefault();
 
-    if (
-      !applicantName.trim() ||
-      !applicantEmail.trim() ||
-      !applicantPhone.trim()
-    ) {
-      alert("Please fill in your name, email and phone number.");
-      return;
-    }
-
-    if (!resumeFile) {
-      alert("Please upload your resume before applying.");
-      return;
-    }
-
-    // =================================================
-    // GET JOB ID (Handles Mongo Hex ID & External Numeric ID)
-    // =================================================
-    const mongoJobId = selectedJob._id || selectedJob.id;
-
-    if (!mongoJobId) {
-      alert("This job does not have a valid Job ID.");
-      console.error("Job without ID:", selectedJob);
-      return;
-    }
-
-    setApplying(true);
-
-    try {
-      // =================================================
-      // CREATE FORMDATA WITH ALL JOB DETAILS
-      // =================================================
-      const formData = new FormData();
-
-      formData.append("jobId", String(mongoJobId));
-      formData.append("applicantName", applicantName.trim());
-      formData.append("applicantEmail", applicantEmail.trim());
-      formData.append("applicantPhone", applicantPhone.trim());
-      formData.append("coverLetter", coverLetter.trim());
-      formData.append("matchScore", String(selectedJob.match || 0));
-
-      // Important for External API Jobs (Fallback data)
-      formData.append("jobTitle", selectedJob.title || "Software Position");
-      formData.append("company", selectedJob.company || "Tech Company");
-      formData.append(
-        "recruiterEmail",
-        selectedJob.recruiterEmail || "hr@company.com"
-      );
-
-      // Backend multer expects "resume"
-      formData.append("resume", resumeFile);
-
-      console.log("Submitting application:", {
-        jobId: mongoJobId,
-        jobTitle: selectedJob.title,
-        company: selectedJob.company,
-        applicantName,
-        applicantEmail,
-        applicantPhone,
-        resume: resumeFile.name,
-      });
-
-      // =================================================
-      // SEND TO BACKEND
-      // =================================================
-      const response = await fetch(`${API_BASE_URL}/job/apply`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      console.log("Application API Response:", data);
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Application submit nahi ho paya.");
+      if (!selectedJob) {
+        alert(
+          "Please select a job first."
+        );
+        return;
       }
 
-      // =================================================
-      // LOCAL HISTORY SYNC
-      // =================================================
+      if (
+        !applicantName.trim() ||
+        !applicantEmail.trim() ||
+        !applicantPhone.trim()
+      ) {
+        alert(
+          "Please fill in your name, email and phone number."
+        );
+        return;
+      }
+
+      if (!resumeFile) {
+        alert(
+          "Please upload your resume before applying."
+        );
+        return;
+      }
+
+      // External job should never reach this form.
+      if (
+        selectedJob.isExternal ||
+        selectedJob.source ===
+        "external"
+      ) {
+        alert(
+          "External jobs must be applied for through the company's application page."
+        );
+        return;
+      }
+
+      const jobId =
+        selectedJob._id ||
+        selectedJob.id;
+
+      if (!jobId) {
+        alert(
+          "This job does not have a valid Job ID."
+        );
+        return;
+      }
+
+      setApplying(true);
+
       try {
-        const application = {
-          id: data.application?.id || data.application?._id,
-          jobId: String(mongoJobId),
-          jobTitle: selectedJob.title,
-          company: selectedJob.company,
-          jobLocation: selectedJob.location,
-          applicantName: applicantName.trim(),
-          applicantEmail: applicantEmail.trim(),
-          applicantPhone: applicantPhone.trim(),
-          resumeName: resumeFile.name,
-          coverLetter: coverLetter.trim(),
-          status: data.application?.status || "Applied",
-          recruiterEmailSent: data.application?.recruiterEmailSent || false,
-          candidateEmailSent: data.application?.candidateEmailSent || false,
-          appliedAt: data.application?.createdAt || new Date().toISOString(),
-        };
+        const formData =
+          new FormData();
 
-        const existing = JSON.parse(
-          localStorage.getItem("careerAIApplications") || "[]"
+        formData.append(
+          "jobId",
+          String(jobId)
         );
 
-        localStorage.setItem(
-          "careerAIApplications",
-          JSON.stringify([...existing, application])
+        formData.append(
+          "applicantName",
+          applicantName.trim()
         );
-      } catch (localError) {
-        console.warn("Local history save failed:", localError);
+
+        formData.append(
+          "applicantEmail",
+          applicantEmail.trim()
+        );
+
+        formData.append(
+          "applicantPhone",
+          applicantPhone.trim()
+        );
+
+        formData.append(
+          "coverLetter",
+          coverLetter.trim()
+        );
+
+        formData.append(
+          "matchScore",
+          String(
+            selectedJob.match || 0
+          )
+        );
+
+        formData.append(
+          "jobTitle",
+          selectedJob.title || ""
+        );
+
+        formData.append(
+          "company",
+          selectedJob.company || ""
+        );
+
+        formData.append(
+          "resume",
+          resumeFile
+        );
+
+        console.log(
+          "Submitting MongoDB job application:",
+          {
+            jobId,
+            jobTitle:
+              selectedJob.title,
+            company:
+              selectedJob.company,
+            applicantName,
+            applicantEmail,
+            applicantPhone,
+            resume:
+              resumeFile.name,
+          }
+        );
+
+        // IMPORTANT:
+        // Backend route is /api/jobs/apply
+        const response =
+          await fetch(
+            `${API_BASE_URL}/jobs/apply`,
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+        const data =
+          await response.json();
+
+        console.log(
+          "Application API Response:",
+          data
+        );
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+          throw new Error(
+            data.message ||
+            "Application submit nahi ho paya."
+          );
+        }
+
+        // -------------------------------------------------
+        // LOCAL APPLICATION HISTORY
+        // -------------------------------------------------
+
+        try {
+          const application = {
+            id:
+              data.application?.id ||
+              data.application?._id ||
+              `${Date.now()}`,
+
+            jobId: String(jobId),
+
+            jobTitle:
+              selectedJob.title,
+
+            company:
+              selectedJob.company,
+
+            jobLocation:
+              selectedJob.location,
+
+            applicantName:
+              applicantName.trim(),
+
+            applicantEmail:
+              applicantEmail.trim(),
+
+            applicantPhone:
+              applicantPhone.trim(),
+
+            resumeName:
+              resumeFile.name,
+
+            coverLetter:
+              coverLetter.trim(),
+
+            status:
+              data.application
+                ?.status ||
+              "Applied",
+
+            recruiterEmailSent:
+              data.application
+                ?.recruiterEmailSent ||
+              false,
+
+            candidateEmailSent:
+              data.application
+                ?.candidateEmailSent ||
+              false,
+
+            appliedAt:
+              data.application
+                ?.createdAt ||
+              new Date().toISOString(),
+          };
+
+          const existing =
+            JSON.parse(
+              localStorage.getItem(
+                "careerAIApplications"
+              ) || "[]"
+            );
+
+          localStorage.setItem(
+            "careerAIApplications",
+            JSON.stringify([
+              ...existing,
+              application,
+            ])
+          );
+        } catch (localError) {
+          console.warn(
+            "Local history save failed:",
+            localError
+          );
+        }
+
+        setApplicationSuccess(
+          true
+        );
+      } catch (error) {
+        console.error(
+          "Application Error:",
+          error
+        );
+
+        alert(
+          error.message ||
+          "Application submit nahi ho paya. Please try again."
+        );
+      } finally {
+        setApplying(false);
       }
+    };
 
-      // =================================================
-      // SUCCESS STATE
-      // =================================================
-      setApplicationSuccess(true);
-    } catch (error) {
-      console.error("Application Error:", error);
-
-      alert(
-        error.message || "Application submit nahi ho paya. Please try again."
-      );
-    } finally {
-      setApplying(false);
-    }
-  };
   // =====================================================
-  // RESET APPLICATION FORM
+  // RESET APPLICATION
   // =====================================================
 
   const resetApplicationForm =
@@ -915,10 +1317,7 @@ const JobSearch = () => {
     <div className="job-page">
       <div className="job-container">
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
+        {/* HEADER */}
         <div className="page-header">
           <div className="header-icon">
             💼
@@ -930,21 +1329,17 @@ const JobSearch = () => {
             </h1>
 
             <p>
-              Find IT jobs based on
-              your skills, experience
-              and career goals.
+              Find IT jobs from your
+              database and live external
+              job sources.
             </p>
           </div>
         </div>
 
-        {/* =================================================
-            SEARCH CARD
-        ================================================= */}
-
+        {/* SEARCH CARD */}
         <div className="search-card">
 
           <div className="section-heading">
-
             <div className="heading-icon">
               🔍
             </div>
@@ -955,26 +1350,18 @@ const JobSearch = () => {
               </h2>
 
               <p>
-                Select your preferred
-                role, location and work
-                preferences.
+                Search MongoDB jobs and
+                live external jobs together.
               </p>
             </div>
-
           </div>
 
-          <form
-            onSubmit={
-              handleSearch
-            }
-          >
+          <form onSubmit={handleSearch}>
 
             <div className="search-grid">
 
               {/* ROLE */}
-
               <div className="form-group">
-
                 <label>
                   Job Role
                 </label>
@@ -987,7 +1374,6 @@ const JobSearch = () => {
                     )
                   }
                 >
-
                   <option value="">
                     All IT Jobs
                   </option>
@@ -1002,7 +1388,6 @@ const JobSearch = () => {
                           category.name
                         }
                       >
-
                         {category.roles.map(
                           (jobRole) => (
                             <option
@@ -1017,19 +1402,14 @@ const JobSearch = () => {
                             </option>
                           )
                         )}
-
                       </optgroup>
                     )
                   )}
-
                 </select>
-
               </div>
 
               {/* LOCATION */}
-
               <div className="form-group">
-
                 <label>
                   Location
                 </label>
@@ -1042,7 +1422,6 @@ const JobSearch = () => {
                     )
                   }
                 >
-
                   <option value="">
                     All India
                   </option>
@@ -1057,49 +1436,36 @@ const JobSearch = () => {
                           item.state
                         }
                       >
-
                         {item.cities.map(
                           (city) => (
                             <option
-                              key={
-                                city
-                              }
-                              value={
-                                city
-                              }
+                              key={city}
+                              value={city}
                             >
                               {city}
                             </option>
                           )
                         )}
-
                       </optgroup>
                     )
                   )}
-
                 </select>
-
               </div>
 
               {/* EXPERIENCE */}
-
               <div className="form-group">
-
                 <label>
                   Experience
                 </label>
 
                 <select
-                  value={
-                    experience
-                  }
+                  value={experience}
                   onChange={(e) =>
                     setExperience(
                       e.target.value
                     )
                   }
                 >
-
                   <option value="Fresher">
                     Fresher
                   </option>
@@ -1119,30 +1485,23 @@ const JobSearch = () => {
                   <option value="3+ Years">
                     3+ Years
                   </option>
-
                 </select>
-
               </div>
 
               {/* JOB TYPE */}
-
               <div className="form-group">
-
                 <label>
                   Job Type
                 </label>
 
                 <select
-                  value={
-                    jobType
-                  }
+                  value={jobType}
                   onChange={(e) =>
                     setJobType(
                       e.target.value
                     )
                   }
                 >
-
                   <option value="Full Time">
                     Full Time
                   </option>
@@ -1158,30 +1517,23 @@ const JobSearch = () => {
                   <option value="Remote">
                     Remote
                   </option>
-
                 </select>
-
               </div>
 
               {/* WORK MODE */}
-
               <div className="form-group">
-
                 <label>
                   Work Mode
                 </label>
 
                 <select
-                  value={
-                    workMode
-                  }
+                  value={workMode}
                   onChange={(e) =>
                     setWorkMode(
                       e.target.value
                     )
                   }
                 >
-
                   <option value="Any">
                     Any
                   </option>
@@ -1197,14 +1549,9 @@ const JobSearch = () => {
                   <option value="On-site">
                     On-site
                   </option>
-
                 </select>
-
               </div>
-
             </div>
-
-            {/* BUTTONS */}
 
             <div className="search-buttons">
 
@@ -1230,15 +1577,10 @@ const JobSearch = () => {
               </button>
 
             </div>
-
           </form>
-
         </div>
 
-        {/* =================================================
-            RESUME SEARCH
-        ================================================= */}
-
+        {/* RESUME CARD */}
         <div className="resume-card">
 
           <div className="resume-left">
@@ -1248,21 +1590,17 @@ const JobSearch = () => {
             </div>
 
             <div>
-
               <h2>
                 Find Jobs Using My Resume
               </h2>
 
               <p>
-                Let AI analyze your
-                resume skills, experience
-                and projects and find the
-                most relevant IT jobs for
-                you.
+                Resume-based AI matching
+                will be connected to your
+                resume analyzer backend.
               </p>
 
               <div className="resume-points">
-
                 <span>
                   ✓ Skills Matching
                 </span>
@@ -1274,9 +1612,7 @@ const JobSearch = () => {
                 <span>
                   ✓ Skill Gap
                 </span>
-
               </div>
-
             </div>
 
           </div>
@@ -1289,24 +1625,21 @@ const JobSearch = () => {
             }
             disabled={loading}
           >
-            {loading && resumeMode
-              ? "Analyzing..."
+            {loading &&
+              resumeMode
+              ? "Loading..."
               : "🤖 Find Jobs From My Resume"}
           </button>
 
         </div>
 
-        {/* =================================================
-            RESULTS
-        ================================================= */}
-
+        {/* RESULTS */}
         {searched && (
           <div className="results-section">
 
             <div className="results-header">
 
               <div>
-
                 <h2>
                   {resumeMode
                     ? "AI Recommended Jobs"
@@ -1315,10 +1648,9 @@ const JobSearch = () => {
 
                 <p>
                   {resumeMode
-                    ? "Jobs recommended according to your profile."
-                    : "Jobs matching your selected filters."}
+                    ? "Available jobs from your connected job sources."
+                    : "MongoDB and external jobs matching your search."}
                 </p>
-
               </div>
 
               <div className="job-count">
@@ -1326,8 +1658,6 @@ const JobSearch = () => {
               </div>
 
             </div>
-
-            {/* NO JOBS */}
 
             {jobs.length === 0 ? (
 
@@ -1373,8 +1703,7 @@ const JobSearch = () => {
                     }
                   >
 
-                    {/* JOB TOP */}
-
+                    {/* TOP */}
                     <div className="job-top">
 
                       <div className="company-logo">
@@ -1410,45 +1739,60 @@ const JobSearch = () => {
 
                     </div>
 
-                    {/* JOB INFO */}
+                    {/* SOURCE */}
+                    <div className="job-source">
 
+                      {job.source ===
+                        "external" ? (
+                        <span>
+                          🌐 Live External Job
+                        </span>
+                      ) : (
+                        <span>
+                          🗄️ Career AI Job
+                        </span>
+                      )}
+
+                      {job.provider && (
+                        <small>
+                          {job.provider}
+                        </small>
+                      )}
+
+                    </div>
+
+                    {/* INFO */}
                     <div className="job-info">
 
                       <span>
-                        📍{" "}
-                        {job.location}
+                        📍 {job.location}
                       </span>
 
                       <span>
-                        💼{" "}
-                        {job.type}
+                        💼 {job.type}
                       </span>
 
                       {job.mode && (
                         <span>
-                          🏠{" "}
-                          {job.mode}
+                          🏠 {job.mode}
                         </span>
                       )}
 
                       <span>
-                        🎓{" "}
-                        {job.experience}
+                        🎓 {job.experience}
                       </span>
 
                       <span>
-                        💰{" "}
-                        {job.salary}
+                        💰 {job.salary}
                       </span>
 
                     </div>
 
-                    {/* AI MATCH */}
-
+                    {/* MATCH */}
                     <div className="ai-match">
 
                       <div className="ai-match-title">
-                        🎯 AI Resume Match
+                        🎯 Job Match
                       </div>
 
                       <div className="progress">
@@ -1472,18 +1816,16 @@ const JobSearch = () => {
                       </div>
 
                       <p>
-                        Your profile matches{" "}
+                        Current match:
+                        {" "}
                         <strong>
                           {job.match || 0}%
-                        </strong>{" "}
-                        of this job's
-                        requirements.
+                        </strong>
                       </p>
 
                     </div>
 
                     {/* SKILLS */}
-
                     <div className="skills-box">
 
                       <h4>
@@ -1492,7 +1834,10 @@ const JobSearch = () => {
 
                       <div className="skills">
 
-                        {(job.skills || []).map(
+                        {(
+                          job.skills ||
+                          []
+                        ).map(
                           (skill) => (
                             <span
                               key={
@@ -1509,10 +1854,9 @@ const JobSearch = () => {
                     </div>
 
                     {/* MATCHING SKILLS */}
-
-                    {job.matchingSkills?.length >
+                    {job.matchingSkills
+                      ?.length >
                       0 && (
-
                         <div className="matching-skills">
 
                           <h4>
@@ -1538,31 +1882,7 @@ const JobSearch = () => {
                         </div>
                       )}
 
-                    {/* AI REASON */}
-
-                    {resumeMode && (
-
-                      <div className="ai-reason">
-
-                        <strong>
-                          🤖 Why AI recommended this?
-                        </strong>
-
-                        <p>
-                          This job matches
-                          your technical
-                          skills and is
-                          suitable for your
-                          current career
-                          profile.
-                        </p>
-
-                      </div>
-
-                    )}
-
                     {/* ACTIONS */}
-
                     <div className="job-actions">
 
                       <button
@@ -1586,7 +1906,11 @@ const JobSearch = () => {
                           )
                         }
                       >
-                        Apply Now →
+                        {job.isExternal ||
+                          job.source ===
+                          "external"
+                          ? "Apply on Company Site →"
+                          : "Apply Now →"}
                       </button>
 
                     </div>
@@ -1652,11 +1976,15 @@ const JobSearch = () => {
                 <div>
 
                   <h2>
-                    {selectedJob.title}
+                    {
+                      selectedJob.title
+                    }
                   </h2>
 
                   <p>
-                    {selectedJob.company}
+                    {
+                      selectedJob.company
+                    }
                   </p>
 
                 </div>
@@ -1667,35 +1995,63 @@ const JobSearch = () => {
 
                 <span>
                   📍{" "}
-                  {selectedJob.location}
+                  {
+                    selectedJob.location
+                  }
                 </span>
 
                 <span>
                   💼{" "}
-                  {selectedJob.type}
+                  {
+                    selectedJob.type
+                  }
                 </span>
 
                 {selectedJob.mode && (
                   <span>
                     🏠{" "}
-                    {selectedJob.mode}
+                    {
+                      selectedJob.mode
+                    }
                   </span>
                 )}
 
                 <span>
                   🎓{" "}
-                  {selectedJob.experience}
+                  {
+                    selectedJob.experience
+                  }
                 </span>
 
                 <span>
                   💰{" "}
-                  {selectedJob.salary}
+                  {
+                    selectedJob.salary
+                  }
+                </span>
+
+              </div>
+
+              {/* SOURCE */}
+              <div className="selected-search-info">
+
+                <strong>
+                  Job Source:
+                </strong>
+
+                <span>
+                  {selectedJob.source ===
+                    "external"
+                    ? `Live External Job${selectedJob.provider
+                      ? ` (${selectedJob.provider})`
+                      : ""
+                    }`
+                    : "Career AI MongoDB"}
                 </span>
 
               </div>
 
               {/* DESCRIPTION */}
-
               {selectedJob.description && (
 
                 <div className="modal-section">
@@ -1715,7 +2071,6 @@ const JobSearch = () => {
               )}
 
               {/* SKILLS */}
-
               <div className="modal-section">
 
                 <h3>
@@ -1744,7 +2099,6 @@ const JobSearch = () => {
               </div>
 
               {/* SEARCH INFO */}
-
               <div className="selected-search-info">
 
                 <strong>
@@ -1765,14 +2119,33 @@ const JobSearch = () => {
 
               </div>
 
-              {/* MONGODB ID */}
+              {/* EXTERNAL SOURCE LINK */}
+              {selectedJob.source ===
+                "external" &&
+                selectedJob.applyUrl &&
+                selectedJob.applyUrl !==
+                "#" && (
+                  <a
+                    href={
+                      selectedJob.applyUrl
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="modal-apply-button"
+                    style={{
+                      display:
+                        "block",
+                      textAlign:
+                        "center",
+                      textDecoration:
+                        "none",
+                    }}
+                  >
+                    Open Original Job →
+                  </a>
+                )}
 
-              <div className="job-id-info">
-                Job ID:{" "}
-                {selectedJob._id ||
-                  selectedJob.id}
-              </div>
-
+              {/* APPLY */}
               <button
                 type="button"
                 className="modal-apply-button"
@@ -1782,7 +2155,10 @@ const JobSearch = () => {
                   )
                 }
               >
-                Apply With My Resume →
+                {selectedJob.source ===
+                  "external"
+                  ? "Apply on Company Site →"
+                  : "Apply With My Resume →"}
               </button>
 
             </div>
@@ -1791,7 +2167,7 @@ const JobSearch = () => {
         )}
 
       {/* =====================================================
-          APPLY MODAL
+          APPLY MODAL - ONLY MONGODB JOBS
       ===================================================== */}
 
       {showApplyModal &&
@@ -1825,7 +2201,6 @@ const JobSearch = () => {
               {!applicationSuccess ? (
 
                 <>
-
                   <div className="apply-modal-header">
 
                     <div className="apply-icon">
@@ -1855,8 +2230,6 @@ const JobSearch = () => {
 
                   </div>
 
-                  {/* JOB SUMMARY */}
-
                   <div className="application-job-summary">
 
                     <span>
@@ -1864,8 +2237,7 @@ const JobSearch = () => {
                       {
                         selectedJob.match ||
                         0
-                      }%
-                      AI Match
+                      }% Match
                     </span>
 
                     <span>
@@ -1884,8 +2256,6 @@ const JobSearch = () => {
 
                   </div>
 
-                  {/* APPLICATION FORM */}
-
                   <form
                     onSubmit={
                       handleApplicationSubmit
@@ -1893,8 +2263,6 @@ const JobSearch = () => {
                   >
 
                     <div className="application-grid">
-
-                      {/* NAME */}
 
                       <div className="application-field">
 
@@ -1918,8 +2286,6 @@ const JobSearch = () => {
 
                       </div>
 
-                      {/* EMAIL */}
-
                       <div className="application-field">
 
                         <label>
@@ -1941,8 +2307,6 @@ const JobSearch = () => {
                         />
 
                       </div>
-
-                      {/* PHONE */}
 
                       <div className="application-field">
 
@@ -1966,8 +2330,6 @@ const JobSearch = () => {
 
                       </div>
 
-                      {/* SELECTED ROLE */}
-
                       <div className="application-field">
 
                         <label>
@@ -1987,7 +2349,6 @@ const JobSearch = () => {
                     </div>
 
                     {/* RESUME */}
-
                     <div className="application-field">
 
                       <label>
@@ -2000,7 +2361,9 @@ const JobSearch = () => {
                         <input
                           type="file"
                           accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                          onChange={handleResumeChange}
+                          onChange={
+                            handleResumeChange
+                          }
                         />
 
                         <span className="upload-icon">
@@ -2015,8 +2378,8 @@ const JobSearch = () => {
 
                         <small>
                           {resumeFile
-                            ? "This resume will be submitted with your application."
-                            : "Upload your resume in PDF, DOC or DOCX format."}
+                            ? "Resume ready for submission."
+                            : "PDF, DOC or DOCX — maximum 5 MB."}
                         </small>
 
                       </label>
@@ -2024,12 +2387,11 @@ const JobSearch = () => {
                     </div>
 
                     {/* COVER LETTER */}
-
                     <div className="application-field">
 
                       <label>
-                        Cover Letter /
-                        Message (Optional)
+                        Cover Letter / Message
+                        (Optional)
                       </label>
 
                       <textarea
@@ -2046,8 +2408,6 @@ const JobSearch = () => {
                       />
 
                     </div>
-
-                    {/* APPLICATION INFO */}
 
                     <div className="application-selected">
 
@@ -2080,8 +2440,6 @@ const JobSearch = () => {
 
                     </div>
 
-                    {/* ACTIONS */}
-
                     <div className="application-actions">
 
                       <button
@@ -2112,14 +2470,9 @@ const JobSearch = () => {
                     </div>
 
                   </form>
-
                 </>
 
               ) : (
-
-                /* =================================================
-                   SUCCESS
-                ================================================= */
 
                 <div className="application-success">
 
@@ -2151,7 +2504,6 @@ const JobSearch = () => {
                   <div className="success-details">
 
                     <div>
-
                       <span>
                         📄 Resume
                       </span>
@@ -2161,11 +2513,9 @@ const JobSearch = () => {
                           resumeFile?.name
                         }
                       </strong>
-
                     </div>
 
                     <div>
-
                       <span>
                         📍 Location
                       </span>
@@ -2175,13 +2525,11 @@ const JobSearch = () => {
                           selectedJob.location
                         }
                       </strong>
-
                     </div>
 
                     <div>
-
                       <span>
-                        🎯 AI Match
+                        🎯 Match
                       </span>
 
                       <strong>
@@ -2190,18 +2538,14 @@ const JobSearch = () => {
                           0
                         }%
                       </strong>
-
                     </div>
 
                   </div>
 
                   <p className="success-note">
                     Your application has
-                    been saved successfully.
-                    The recruiter email and
-                    candidate confirmation
-                    are handled by the
-                    backend.
+                    been submitted to the
+                    Career AI backend.
                   </p>
 
                   <div className="success-actions">
@@ -2229,7 +2573,6 @@ const JobSearch = () => {
                   </div>
 
                 </div>
-
               )}
 
             </div>
@@ -2237,11 +2580,9 @@ const JobSearch = () => {
           </div>
         )}
 
-
-
-
     </div>
   );
 };
 
 export default JobSearch;
+
