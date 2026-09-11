@@ -1,742 +1,291 @@
+import React, { useEffect, useState } from "react";
+import "./jobSearch.css";
 
-import React, { useState } from "react";
-import "./JobSearch.css";
+const API_BASE = "http://localhost:5000/api/jobs";
 
-const API_BASE_URL = "http://localhost:5000/api";
+// ======================================================
+// FILTER OPTIONS
+// ======================================================
+
+const roles = [
+  "All IT Jobs",
+  "Software Engineer",
+  "Software Developer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Full Stack Developer",
+  "MERN Stack Developer",
+  "React Developer",
+  "Node.js Developer",
+  "Java Developer",
+  "Python Developer",
+  "AI Engineer",
+  "Machine Learning Engineer",
+  "Data Scientist",
+  "Data Analyst",
+  "DevOps Engineer",
+  "Cloud Engineer",
+  "Cyber Security Engineer",
+  "QA Engineer",
+  "Automation Tester",
+  "Android Developer",
+  "iOS Developer",
+  "UI/UX Designer",
+];
+
+const locations = [
+  "All India",
+  "Bengaluru",
+  "Hyderabad",
+  "Pune",
+  "Mumbai",
+  "Delhi",
+  "Noida",
+  "Gurugram",
+  "Chennai",
+  "Kolkata",
+  "Ahmedabad",
+  "Jaipur",
+  "Chandigarh",
+  "Lucknow",
+  "Patna",
+  "Bhubaneswar",
+  "Indore",
+  "Coimbatore",
+  "Remote",
+];
+
+const experiences = [
+  "Fresher",
+  "0-1 Years",
+  "1-2 Years",
+  "2-3 Years",
+  "3+ Years",
+];
+
+const jobTypes = [
+  "Full Time",
+  "Part Time",
+];
+
+const workModes = [
+  "Any",
+  "Remote",
+  "Hybrid",
+  "On-site",
+];
+
+// ======================================================
+// HELPERS
+// ======================================================
+
+const getMatchClass = (match) => {
+  const score = Number(match) || 0;
+
+  if (score >= 90) return "excellent";
+  if (score >= 75) return "good";
+  if (score >= 60) return "average";
+
+  return "low";
+};
+
+const getInitials = (company = "Company") => {
+  return company
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+};
+
+const cleanDescription = (description = "") => {
+  return description
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const formatDate = (date) => {
+  if (!date) return "Recently";
+
+  const jobDate = new Date(date);
+
+  if (Number.isNaN(jobDate.getTime())) {
+    return "Recently";
+  }
+
+  return jobDate.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+// ======================================================
+// COMPONENT
+// ======================================================
 
 const JobSearch = () => {
-  // =====================================================
-  // SEARCH STATES
-  // =====================================================
+  // ======================================================
+  // FILTER STATE
+  // ======================================================
 
-  const [role, setRole] = useState("");
-  const [location, setLocation] = useState("");
-  const [experience, setExperience] = useState("Fresher");
-  const [jobType, setJobType] = useState("Full Time");
-  const [workMode, setWorkMode] = useState("Any");
+  const [filters, setFilters] = useState({
+    role: "All IT Jobs",
+    location: "All India",
+    experience: "Fresher",
+    jobType: "Full Time",
+    workMode: "Any",
+  });
+
+  // ======================================================
+  // JOB STATE
+  // ======================================================
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [resumeMode, setResumeMode] = useState(false);
+  const [error, setError] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
 
-  // =====================================================
-  // APPLICATION STATES
-  // =====================================================
+  // ======================================================
+  // MODAL STATE
+  // ======================================================
 
   const [selectedJob, setSelectedJob] = useState(null);
+  const [showJobModal, setShowJobModal] = useState(false);
 
-  const [showApplyModal, setShowApplyModal] =
+  const [showApplyModal, setShowApplyModal] = useState(false);
+
+  // ======================================================
+  // APPLICATION STATE
+  // ======================================================
+
+  const [applicationForm, setApplicationForm] = useState({
+    applicantName: "",
+    applicantEmail: "",
+    applicantPhone: "",
+    coverLetter: "",
+  });
+
+  const [resume, setResume] = useState(null);
+
+  const [applicationLoading, setApplicationLoading] =
     useState(false);
 
-  const [showJobModal, setShowJobModal] =
-    useState(false);
-
-  const [resumeFile, setResumeFile] =
-    useState(null);
-
-  const [applicantName, setApplicantName] =
+  const [applicationMessage, setApplicationMessage] =
     useState("");
-
-  const [applicantEmail, setApplicantEmail] =
-    useState("");
-
-  const [applicantPhone, setApplicantPhone] =
-    useState("");
-
-  const [coverLetter, setCoverLetter] =
-    useState("");
-
-  const [applying, setApplying] =
-    useState(false);
 
   const [applicationSuccess, setApplicationSuccess] =
     useState(false);
 
-  // =====================================================
-  // JOB CATEGORIES
-  // =====================================================
+  // ======================================================
+  // FILTER CHANGE
+  // ======================================================
 
-  const jobCategories = [
-    {
-      name: "Software Development",
-      roles: [
-        "Software Engineer",
-        "Software Developer",
-        "Frontend Developer",
-        "Backend Developer",
-        "Full Stack Developer",
-        "MERN Stack Developer",
-        "MEAN Stack Developer",
-        "React Developer",
-        "Angular Developer",
-        "Vue.js Developer",
-        "Node.js Developer",
-        "Java Developer",
-        "Python Developer",
-        "Django Developer",
-        "Spring Boot Developer",
-        ".NET Developer",
-        "C# Developer",
-        "PHP Developer",
-        "Laravel Developer",
-        "C++ Developer",
-        "C Developer",
-        "Go Developer",
-        "Ruby on Rails Developer",
-      ],
-    },
-    {
-      name: "Mobile Development",
-      roles: [
-        "Mobile App Developer",
-        "Android Developer",
-        "iOS Developer",
-        "Flutter Developer",
-        "React Native Developer",
-      ],
-    },
-    {
-      name: "Data & AI",
-      roles: [
-        "Data Analyst",
-        "Data Scientist",
-        "Data Engineer",
-        "Machine Learning Engineer",
-        "AI Engineer",
-        "Generative AI Engineer",
-        "NLP Engineer",
-        "Computer Vision Engineer",
-        "Business Intelligence Analyst",
-        "BI Developer",
-      ],
-    },
-    {
-      name: "Cloud & DevOps",
-      roles: [
-        "DevOps Engineer",
-        "Cloud Engineer",
-        "Cloud Architect",
-        "AWS Engineer",
-        "Azure Engineer",
-        "Google Cloud Engineer",
-        "Site Reliability Engineer",
-        "Platform Engineer",
-      ],
-    },
-    {
-      name: "Cyber Security",
-      roles: [
-        "Cyber Security Analyst",
-        "Cyber Security Engineer",
-        "Security Engineer",
-        "Information Security Analyst",
-        "Ethical Hacker",
-        "Penetration Tester",
-        "SOC Analyst",
-        "Application Security Engineer",
-      ],
-    },
-    {
-      name: "Testing & QA",
-      roles: [
-        "QA Engineer",
-        "Software Tester",
-        "Automation Tester",
-        "Selenium Tester",
-        "Performance Tester",
-        "Test Automation Engineer",
-      ],
-    },
-    {
-      name: "Database",
-      roles: [
-        "Database Administrator",
-        "Database Engineer",
-        "SQL Developer",
-        "MongoDB Developer",
-        "Oracle Developer",
-      ],
-    },
-    {
-      name: "Networking & Support",
-      roles: [
-        "Network Engineer",
-        "System Administrator",
-        "System Engineer",
-        "IT Support Engineer",
-        "Technical Support Engineer",
-        "Network Administrator",
-      ],
-    },
-    {
-      name: "Architecture",
-      roles: [
-        "Solutions Architect",
-        "Software Architect",
-        "Technical Architect",
-      ],
-    },
-    {
-      name: "UI / UX",
-      roles: [
-        "UI Designer",
-        "UX Designer",
-        "UI/UX Designer",
-        "Product Designer",
-      ],
-    },
-    {
-      name: "Business & Management",
-      roles: [
-        "Business Analyst",
-        "Technical Business Analyst",
-        "Product Manager",
-        "Technical Product Manager",
-        "IT Project Manager",
-        "Scrum Master",
-        "Project Manager",
-      ],
-    },
-    {
-      name: "Emerging Technologies",
-      roles: [
-        "Blockchain Developer",
-        "Web3 Developer",
-        "AR/VR Developer",
-        "Robotics Engineer",
-        "IoT Engineer",
-      ],
-    },
-  ];
+  const handleFilterChange = (event) => {
+    const { name, value } = event.target;
 
-  // =====================================================
-  // LOCATIONS
-  // =====================================================
-
-  const locations = [
-    {
-      state: "Karnataka",
-      cities: [
-        "Bengaluru",
-        "Mysuru",
-        "Mangaluru",
-      ],
-    },
-    {
-      state: "Maharashtra",
-      cities: [
-        "Pune",
-        "Mumbai",
-        "Nagpur",
-        "Nashik",
-      ],
-    },
-    {
-      state: "Telangana",
-      cities: [
-        "Hyderabad",
-        "Warangal",
-      ],
-    },
-    {
-      state: "Tamil Nadu",
-      cities: [
-        "Chennai",
-        "Coimbatore",
-        "Madurai",
-      ],
-    },
-    {
-      state: "Delhi NCR",
-      cities: [
-        "New Delhi",
-        "Noida",
-        "Greater Noida",
-        "Gurugram",
-        "Ghaziabad",
-        "Faridabad",
-      ],
-    },
-    {
-      state: "Uttar Pradesh",
-      cities: [
-        "Lucknow",
-        "Kanpur",
-        "Prayagraj",
-        "Varanasi",
-      ],
-    },
-    {
-      state: "West Bengal",
-      cities: ["Kolkata"],
-    },
-    {
-      state: "Gujarat",
-      cities: [
-        "Ahmedabad",
-        "Gandhinagar",
-        "Vadodara",
-        "Surat",
-      ],
-    },
-    {
-      state: "Rajasthan",
-      cities: [
-        "Jaipur",
-        "Udaipur",
-        "Jodhpur",
-      ],
-    },
-    {
-      state: "Kerala",
-      cities: [
-        "Kochi",
-        "Thiruvananthapuram",
-        "Kozhikode",
-      ],
-    },
-    {
-      state: "Andhra Pradesh",
-      cities: [
-        "Visakhapatnam",
-        "Vijayawada",
-        "Tirupati",
-      ],
-    },
-    {
-      state: "Bihar",
-      cities: [
-        "Patna",
-        "Gaya",
-      ],
-    },
-    {
-      state: "Jharkhand",
-      cities: [
-        "Ranchi",
-        "Jamshedpur",
-      ],
-    },
-    {
-      state: "Odisha",
-      cities: [
-        "Bhubaneswar",
-        "Cuttack",
-      ],
-    },
-    {
-      state: "Madhya Pradesh",
-      cities: [
-        "Indore",
-        "Bhopal",
-      ],
-    },
-    {
-      state: "Chhattisgarh",
-      cities: [
-        "Raipur",
-        "Bhilai",
-      ],
-    },
-    {
-      state: "Punjab",
-      cities: [
-        "Mohali",
-        "Ludhiana",
-        "Amritsar",
-      ],
-    },
-    {
-      state: "Chandigarh",
-      cities: ["Chandigarh"],
-    },
-    {
-      state: "Goa",
-      cities: ["Panaji"],
-    },
-    {
-      state: "Uttarakhand",
-      cities: ["Dehradun"],
-    },
-    {
-      state: "Himachal Pradesh",
-      cities: [
-        "Shimla",
-        "Dharamshala",
-      ],
-    },
-    {
-      state: "Jammu & Kashmir",
-      cities: [
-        "Srinagar",
-        "Jammu",
-      ],
-    },
-  ];
-
-  // =====================================================
-  // NORMALIZE JOB
-  // =====================================================
-
-  const normalizeJob = (job) => {
-    const uniqueId =
-      job?._id ||
-      job?.id ||
-      `${job?.company}-${job?.title}-${job?.location}`;
-
-    return {
-      ...job,
-
-      _id: String(uniqueId),
-      id: String(uniqueId),
-
-      title:
-        job?.title ||
-        "Untitled Job",
-
-      company:
-        job?.company ||
-        "Unknown Company",
-
-      location:
-        job?.location ||
-        "Not Disclosed",
-
-      type:
-        job?.type ||
-        "Full Time",
-
-      experience:
-        job?.experience ||
-        "Not Disclosed",
-
-      salary:
-        job?.salary ||
-        "Not Disclosed",
-
-      skills:
-        Array.isArray(job?.skills)
-          ? job.skills
-          : [],
-
-      description:
-        job?.description ||
-        "",
-
-      applyUrl:
-        job?.applyUrl ||
-        "#",
-
-      companyUrl:
-        job?.companyUrl ||
-        "#",
-
-      recruiterEmail:
-        job?.recruiterEmail ||
-        "",
-
-      recruiterPhone:
-        job?.recruiterPhone ||
-        "",
-
-      match:
-        Number(job?.match) || 0,
-
-      matchingSkills:
-        Array.isArray(
-          job?.matchingSkills
-        )
-          ? job.matchingSkills
-          : [],
-
-      mode:
-        job?.mode ||
-        "",
-
-      source:
-        job?.source ||
-        "mongodb",
-
-      provider:
-        job?.provider ||
-        "MongoDB",
-
-      isExternal:
-        Boolean(job?.isExternal),
-
-      externalId:
-        job?.externalId ||
-        "",
-    };
+    setFilters((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   };
 
-  // =====================================================
-  // LOCATION MATCH
-  // =====================================================
-
-  const locationMatches = (
-    jobLocation,
-    selectedLocation
-  ) => {
-    if (!selectedLocation) {
-      return true;
-    }
-
-    const jobText =
-      String(jobLocation || "")
-        .toLowerCase();
-
-    const selected =
-      String(selectedLocation || "")
-        .toLowerCase();
-
-    // Bengaluru / Bangalore
-    if (
-      selected === "bengaluru" ||
-      selected === "bangalore"
-    ) {
-      return (
-        jobText.includes("bengaluru") ||
-        jobText.includes("bangalore")
-      );
-    }
-
-    // Mumbai / Bombay
-    if (selected === "mumbai") {
-      return (
-        jobText.includes("mumbai") ||
-        jobText.includes("bombay")
-      );
-    }
-
-    // Gurugram / Gurgaon
-    if (
-      selected === "gurugram" ||
-      selected === "gurgaon"
-    ) {
-      return (
-        jobText.includes("gurugram") ||
-        jobText.includes("gurgaon")
-      );
-    }
-
-    return jobText.includes(
-      selected
-    );
-  };
-
-  // =====================================================
-  // WORK MODE FILTER
-  // =====================================================
-
-  const filterByWorkMode = (
-    jobList
-  ) => {
-    if (workMode === "Any") {
-      return jobList;
-    }
-
-    return jobList.filter(
-      (job) => {
-        const mode =
-          String(
-            job?.mode || ""
-          ).toLowerCase();
-
-        return (
-          mode ===
-          workMode.toLowerCase()
-        );
-      }
-    );
-  };
-
-  // =====================================================
+  // ======================================================
   // SEARCH JOBS
-  // =====================================================
+  // ======================================================
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  const handleSearch = async (event) => {
+    if (event) {
+      event.preventDefault();
+    }
 
     setLoading(true);
-    setSearched(false);
-    setResumeMode(false);
+    setError("");
+    setHasSearched(true);
 
     try {
       const params = new URLSearchParams();
 
-      if (role.trim()) {
-        params.append("role", role.trim());
+      if (filters.role && filters.role !== "All IT Jobs") {
+        params.append("role", filters.role);
       }
 
-      if (location.trim()) {
-        params.append("location", location.trim());
+      if (
+        filters.location &&
+        filters.location !== "All India"
+      ) {
+        params.append("location", filters.location);
       }
 
-      if (experience.trim()) {
-        params.append("experience", experience.trim());
+      if (filters.experience) {
+        params.append("experience", filters.experience);
       }
 
-      if (jobType.trim()) {
-        params.append("jobType", jobType.trim());
+      if (filters.jobType) {
+        params.append("jobType", filters.jobType);
       }
 
-      if (workMode !== "Any") {
-        params.append("workMode", workMode);
+      if (
+        filters.workMode &&
+        filters.workMode !== "Any"
+      ) {
+        params.append("workMode", filters.workMode);
       }
 
-      const url =
-        `${API_BASE_URL}/jobs/search?${params.toString()}`;
+      console.log(
+        "Searching jobs:",
+        params.toString()
+      );
 
-      console.log("========================================");
-      console.log("SEARCH REQUEST");
-      console.log("========================================");
-      console.log("URL:", url);
-      console.log("Filters:", {
-        role,
-        location,
-        experience,
-        jobType,
-        workMode,
-      });
+      const response = await fetch(
+        `${API_BASE}/search?${params.toString()}`
+      );
 
-      const response = await fetch(url);
-
-      const data = await response.json();
-
-      console.log("========================================");
-      console.log("BACKEND RESPONSE");
-      console.log("========================================");
-      console.log("Success:", data.success);
-      console.log("Count:", data.count);
-      console.log("Jobs:", data.jobs);
-
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         throw new Error(
-          data.message || "Failed to search jobs."
+          `Server returned ${response.status}`
         );
       }
 
-      // =================================================
-      // NORMALIZE BACKEND JOBS
-      // =================================================
-
-      let apiJobs = Array.isArray(data.jobs)
-        ? data.jobs.map(normalizeJob)
-        : [];
+      const data = await response.json();
 
       console.log(
-        "Jobs after normalize:",
-        apiJobs.length
+        "Job Search Response:",
+        data
       );
 
-      // =================================================
-      // IMPORTANT:
-      // DO NOT APPLY STRICT LOCATION FILTER HERE
-      //
-      // Backend already handles location.
-      // External APIs can return:
-      // Worldwide / Remote / Anywhere / Country etc.
-      // =================================================
-
-      // =================================================
-      // WORK MODE
-      // =================================================
-
-      if (workMode !== "Any") {
-        apiJobs = apiJobs.filter((job) => {
-          const mode = String(job.mode || "").toLowerCase();
-          const type = String(job.type || "").toLowerCase();
-          const locationText = String(
-            job.location || ""
-          ).toLowerCase();
-
-          const requestedMode =
-            workMode.toLowerCase();
-
-          // -------------------------------
-          // REMOTE
-          // -------------------------------
-
-          if (requestedMode === "remote") {
-            return (
-              mode.includes("remote") ||
-              type.includes("remote") ||
-              locationText.includes("remote") ||
-              locationText.includes("worldwide") ||
-              locationText.includes("anywhere") ||
-              job.source === "external"
-            );
-          }
-
-          // -------------------------------
-          // HYBRID
-          // -------------------------------
-
-          if (requestedMode === "hybrid") {
-            return (
-              mode.includes("hybrid") ||
-              locationText.includes("hybrid")
-            );
-          }
-
-          // -------------------------------
-          // ON-SITE
-          // -------------------------------
-
-          if (
-            requestedMode === "on-site" ||
-            requestedMode === "onsite"
-          ) {
-            return (
-              mode.includes("on-site") ||
-              mode.includes("onsite") ||
-              locationText.includes("on-site") ||
-              locationText.includes("onsite")
-            );
-          }
-
-          return true;
-        });
+      if (!data.success) {
+        throw new Error(
+          data.message ||
+            "Failed to search jobs"
+        );
       }
 
-      console.log(
-        "Jobs after work mode filter:",
-        apiJobs.length
-      );
+      const receivedJobs = Array.isArray(
+        data.jobs
+      )
+        ? data.jobs
+        : [];
 
-      // =================================================
+      // ==================================================
       // REMOVE DUPLICATES
-      // =================================================
+      // ==================================================
 
       const uniqueJobs = [];
       const seen = new Set();
 
-      apiJobs.forEach((job) => {
-        const normalizedTitle = String(
-          job.title || ""
-        )
+      receivedJobs.forEach((job) => {
+        const key = [
+          job.id || job._id || "",
+          job.title || "",
+          job.company || "",
+          job.location || "",
+        ]
+          .join("-")
           .toLowerCase()
           .trim();
-
-        const normalizedCompany = String(
-          job.company || ""
-        )
-          .toLowerCase()
-          .trim();
-
-        const normalizedLocation = String(
-          job.location || ""
-        )
-          .toLowerCase()
-          .trim();
-
-        const key =
-          job.applyUrl &&
-            job.applyUrl !== "#"
-            ? job.applyUrl
-            : `${normalizedTitle}|${normalizedCompany}|${normalizedLocation}`;
 
         if (!seen.has(key)) {
           seen.add(key);
@@ -744,286 +293,132 @@ const JobSearch = () => {
         }
       });
 
-      // =================================================
-      // SORT BY MATCH SCORE
-      // =================================================
-
-      uniqueJobs.sort(
-        (a, b) =>
-          Number(b.match || 0) -
-          Number(a.match || 0)
-      );
-
-      // =================================================
-      // SET RESULTS
-      // =================================================
-
       setJobs(uniqueJobs);
-      setSearched(true);
 
-      // =================================================
-      // DEBUG
-      // =================================================
-
-      const mongoJobs = uniqueJobs.filter(
-        (job) =>
-          job.source === "mongodb" ||
-          job.source === "internal"
-      );
-
-      const externalJobs = uniqueJobs.filter(
-        (job) =>
-          job.source === "external" ||
-          job.isExternal === true
-      );
-
-      console.log("========================================");
-      console.log("FINAL JOB RESULTS");
-      console.log("========================================");
-      console.log("Total Jobs:", uniqueJobs.length);
-      console.log("MongoDB Jobs:", mongoJobs.length);
-      console.log("External Jobs:", externalJobs.length);
-      console.log("========================================");
-
-      console.table(
-        uniqueJobs.map((job) => ({
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          type: job.type,
-          mode: job.mode,
-          source: job.source,
-          provider: job.provider,
-          external: job.isExternal,
-          match: job.match,
-        }))
-      );
-
-    } catch (error) {
+      if (uniqueJobs.length === 0) {
+        setError(
+          "No jobs found for the selected filters. Try another role or location."
+        );
+      }
+    } catch (err) {
       console.error(
         "Job Search Error:",
-        error
+        err
       );
 
       setJobs([]);
-      setSearched(true);
 
-      alert(
-        error.message ||
-        "Unable to search jobs."
-      );
+      if (
+        err.message === "Failed to fetch" ||
+        err.message.includes("NetworkError")
+      ) {
+        setError(
+          "Backend server is not running. Please start your Career-AI backend on port 5000."
+        );
+      } else {
+        setError(
+          err.message ||
+            "Unable to search jobs."
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
-  // =====================================================
-  // RESUME SEARCH
-  //
-  // NOTE:
-  // Actual resume AI recommendation requires
-  // a resume upload + backend resume analysis API.
-  // This function currently loads all available jobs.
-  // =====================================================
 
-  const handleResumeSearch =
-    async () => {
-      setLoading(true);
-      setSearched(false);
-      setResumeMode(true);
+  // ======================================================
+  // FIRST LOAD
+  // ======================================================
 
-      try {
-        const response =
-          await fetch(
-            `${API_BASE_URL}/jobs/search`
-          );
+  useEffect(() => {
+    handleSearch();
+  }, []);
 
-        const data =
-          await response.json();
-
-        if (
-          !response.ok ||
-          !data.success
-        ) {
-          throw new Error(
-            data.message ||
-            "Failed to load jobs."
-          );
-        }
-
-        let apiJobs =
-          Array.isArray(data.jobs)
-            ? data.jobs.map(
-              normalizeJob
-            )
-            : [];
-
-        apiJobs.sort(
-          (a, b) =>
-            (b.match || 0) -
-            (a.match || 0)
-        );
-
-        setJobs(apiJobs);
-        setSearched(true);
-      } catch (error) {
-        console.error(
-          "Resume Job Search Error:",
-          error
-        );
-
-        setJobs([]);
-        setSearched(true);
-
-        alert(
-          error.message ||
-          "Unable to load jobs."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-  // =====================================================
-  // CLEAR
-  // =====================================================
-
-  const handleClear = () => {
-    setRole("");
-    setLocation("");
-    setExperience("Fresher");
-    setJobType("Full Time");
-    setWorkMode("Any");
-
-    setJobs([]);
-    setSearched(false);
-    setResumeMode(false);
-  };
-
-  // =====================================================
+  // ======================================================
   // VIEW JOB
-  // =====================================================
+  // ======================================================
 
-  const handleViewJob = (
-    job
-  ) => {
+  const handleViewJob = (job) => {
     setSelectedJob(job);
     setShowJobModal(true);
+    setApplicationMessage("");
   };
 
-  // =====================================================
-  // APPLY
-  // =====================================================
+  // ======================================================
+  // CLOSE JOB MODAL
+  // ======================================================
 
-  const handleApply = (
-    job
-  ) => {
-    setSelectedJob(job);
-    setApplicationSuccess(false);
-    setApplying(false);
+  const closeJobModal = () => {
     setShowJobModal(false);
+    setSelectedJob(null);
+    setApplicationMessage("");
+  };
 
-    // ---------------------------------------------------
-    // EXTERNAL JOB
-    // ---------------------------------------------------
+  // ======================================================
+  // OPEN APPLY MODAL
+  // ======================================================
 
-    if (
-      job?.isExternal ||
-      job?.source === "external"
-    ) {
-      if (
-        job.applyUrl &&
-        job.applyUrl !== "#"
-      ) {
-        const shouldContinue =
-          window.confirm(
-            `You are being redirected to ${job.company}'s application page. Continue?`
-          );
+  const handleApply = (job) => {
+    setSelectedJob(job);
+    setApplicationMessage("");
+    setApplicationSuccess(false);
 
-        if (shouldContinue) {
-          window.open(
-            job.applyUrl,
-            "_blank",
-            "noopener,noreferrer"
-          );
-        }
-      } else {
-        alert(
-          "This external job does not have a valid application link."
-        );
-      }
-
-      return;
-    }
-
-    // ---------------------------------------------------
-    // MONGODB JOB
-    // ---------------------------------------------------
-
+    setShowJobModal(false);
     setShowApplyModal(true);
   };
 
-  // =====================================================
+  // ======================================================
   // CLOSE APPLY MODAL
-  // =====================================================
+  // ======================================================
 
   const closeApplyModal = () => {
-    if (applying) {
-      return;
-    }
+    if (applicationLoading) return;
 
     setShowApplyModal(false);
     setSelectedJob(null);
+    setApplicationMessage("");
     setApplicationSuccess(false);
   };
 
-  // =====================================================
-  // RESUME CHANGE
-  // =====================================================
+  // ======================================================
+  // APPLICATION INPUT
+  // ======================================================
 
-  const handleResumeChange = (
-    e
+  const handleApplicationChange = (
+    event
   ) => {
+    const { name, value } =
+      event.target;
+
+    setApplicationForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  // ======================================================
+  // RESUME CHANGE
+  // ======================================================
+
+  const handleResumeChange = (event) => {
     const file =
-      e.target.files?.[0];
+      event.target.files?.[0];
 
     if (!file) {
-      setResumeFile(null);
+      setResume(null);
       return;
     }
 
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
-
-    const allowedExtensions = [
-      "pdf",
-      "doc",
-      "docx",
-    ];
-
-    const extension =
-      file.name
-        .toLowerCase()
-        .split(".")
-        .pop();
-
     if (
-      !allowedTypes.includes(
-        file.type
-      ) &&
-      !allowedExtensions.includes(
-        extension
-      )
+      file.type !==
+      "application/pdf"
     ) {
       alert(
-        "Please upload your resume in PDF, DOC or DOCX format."
+        "Only PDF resume is allowed."
       );
 
-      e.target.value = "";
-      setResumeFile(null);
-
+      event.target.value = "";
+      setResume(null);
       return;
     }
 
@@ -1032,293 +427,234 @@ const JobSearch = () => {
       5 * 1024 * 1024
     ) {
       alert(
-        "Resume size must be less than 5 MB."
+        "Resume size must be less than 5MB."
       );
 
-      e.target.value = "";
-      setResumeFile(null);
+      event.target.value = "";
+      setResume(null);
+      return;
+    }
+
+    setResume(file);
+    setApplicationMessage("");
+  };
+
+  // ======================================================
+  // SUBMIT APPLICATION
+  // ======================================================
+
+  const handleSubmitApplication = async (
+    event
+  ) => {
+    event.preventDefault();
+
+    if (!selectedJob) {
+      return;
+    }
+
+    // ----------------------------------------------
+    // VALIDATION
+    // ----------------------------------------------
+
+    if (!applicationForm.applicantName.trim()) {
+      setApplicationMessage(
+        "Please enter your full name."
+      );
+      return;
+    }
+
+    if (!applicationForm.applicantEmail.trim()) {
+      setApplicationMessage(
+        "Please enter your email."
+      );
+      return;
+    }
+
+    if (!applicationForm.applicantPhone.trim()) {
+      setApplicationMessage(
+        "Please enter your mobile number."
+      );
+      return;
+    }
+
+    if (!resume) {
+      setApplicationMessage(
+        "Please upload your resume in PDF format."
+      );
+      return;
+    }
+
+    // ----------------------------------------------
+    // IMPORTANT
+    // ----------------------------------------------
+
+    /*
+      External Adzuna jobs normally do not have
+      a Career-AI MongoDB Job document.
+
+      Therefore we should NOT blindly send an
+      external job ID to the internal application
+      API unless backend supports external jobs.
+
+      For external jobs we show a clear message
+      instead of sending a wrong request.
+    */
+
+    if (selectedJob.isExternal) {
+      setApplicationMessage(
+        "This is an external job. Your application must be completed on the company's application website."
+      );
 
       return;
     }
 
-    setResumeFile(file);
-  };
+    setApplicationLoading(true);
+    setApplicationMessage("");
 
-  // =====================================================
-  // APPLICATION SUBMIT
-  // =====================================================
+    try {
+      const formData =
+        new FormData();
 
-  const handleApplicationSubmit =
-    async (e) => {
-      e.preventDefault();
+      formData.append(
+        "jobId",
+        selectedJob.id ||
+          selectedJob._id
+      );
 
-      if (!selectedJob) {
-        alert(
-          "Please select a job first."
-        );
-        return;
-      }
+      formData.append(
+        "applicantName",
+        applicationForm.applicantName
+      );
 
-      if (
-        !applicantName.trim() ||
-        !applicantEmail.trim() ||
-        !applicantPhone.trim()
-      ) {
-        alert(
-          "Please fill in your name, email and phone number."
-        );
-        return;
-      }
+      formData.append(
+        "applicantEmail",
+        applicationForm.applicantEmail
+      );
 
-      if (!resumeFile) {
-        alert(
-          "Please upload your resume before applying."
-        );
-        return;
-      }
+      formData.append(
+        "applicantPhone",
+        applicationForm.applicantPhone
+      );
 
-      // External job should never reach this form.
-      if (
-        selectedJob.isExternal ||
-        selectedJob.source ===
-        "external"
-      ) {
-        alert(
-          "External jobs must be applied for through the company's application page."
-        );
-        return;
-      }
+      formData.append(
+        "coverLetter",
+        applicationForm.coverLetter
+      );
 
-      const jobId =
-        selectedJob._id ||
-        selectedJob.id;
+      formData.append(
+        "matchScore",
+        selectedJob.match || 0
+      );
 
-      if (!jobId) {
-        alert(
-          "This job does not have a valid Job ID."
-        );
-        return;
-      }
+      formData.append(
+        "resume",
+        resume
+      );
 
-      setApplying(true);
-
-      try {
-        const formData =
-          new FormData();
-
-        formData.append(
-          "jobId",
-          String(jobId)
-        );
-
-        formData.append(
-          "applicantName",
-          applicantName.trim()
-        );
-
-        formData.append(
-          "applicantEmail",
-          applicantEmail.trim()
-        );
-
-        formData.append(
-          "applicantPhone",
-          applicantPhone.trim()
-        );
-
-        formData.append(
-          "coverLetter",
-          coverLetter.trim()
-        );
-
-        formData.append(
-          "matchScore",
-          String(
-            selectedJob.match || 0
-          )
-        );
-
-        formData.append(
-          "jobTitle",
-          selectedJob.title || ""
-        );
-
-        formData.append(
-          "company",
-          selectedJob.company || ""
-        );
-
-        formData.append(
-          "resume",
-          resumeFile
-        );
-
-        console.log(
-          "Submitting MongoDB job application:",
+      const response =
+        await fetch(
+          `${API_BASE}/apply`,
           {
-            jobId,
-            jobTitle:
-              selectedJob.title,
-            company:
-              selectedJob.company,
-            applicantName,
-            applicantEmail,
-            applicantPhone,
-            resume:
-              resumeFile.name,
+            method: "POST",
+            body: formData,
           }
         );
 
-        // IMPORTANT:
-        // Backend route is /api/jobs/apply
-        const response =
-          await fetch(
-            `${API_BASE_URL}/jobs/apply`,
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
+      const data =
+        await response.json();
 
-        const data =
-          await response.json();
+      console.log(
+        "Application Response:",
+        data
+      );
 
-        console.log(
-          "Application API Response:",
-          data
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+        throw new Error(
+          data.message ||
+            "Application failed"
         );
-
-        if (
-          !response.ok ||
-          !data.success
-        ) {
-          throw new Error(
-            data.message ||
-            "Application submit nahi ho paya."
-          );
-        }
-
-        // -------------------------------------------------
-        // LOCAL APPLICATION HISTORY
-        // -------------------------------------------------
-
-        try {
-          const application = {
-            id:
-              data.application?.id ||
-              data.application?._id ||
-              `${Date.now()}`,
-
-            jobId: String(jobId),
-
-            jobTitle:
-              selectedJob.title,
-
-            company:
-              selectedJob.company,
-
-            jobLocation:
-              selectedJob.location,
-
-            applicantName:
-              applicantName.trim(),
-
-            applicantEmail:
-              applicantEmail.trim(),
-
-            applicantPhone:
-              applicantPhone.trim(),
-
-            resumeName:
-              resumeFile.name,
-
-            coverLetter:
-              coverLetter.trim(),
-
-            status:
-              data.application
-                ?.status ||
-              "Applied",
-
-            recruiterEmailSent:
-              data.application
-                ?.recruiterEmailSent ||
-              false,
-
-            candidateEmailSent:
-              data.application
-                ?.candidateEmailSent ||
-              false,
-
-            appliedAt:
-              data.application
-                ?.createdAt ||
-              new Date().toISOString(),
-          };
-
-          const existing =
-            JSON.parse(
-              localStorage.getItem(
-                "careerAIApplications"
-              ) || "[]"
-            );
-
-          localStorage.setItem(
-            "careerAIApplications",
-            JSON.stringify([
-              ...existing,
-              application,
-            ])
-          );
-        } catch (localError) {
-          console.warn(
-            "Local history save failed:",
-            localError
-          );
-        }
-
-        setApplicationSuccess(
-          true
-        );
-      } catch (error) {
-        console.error(
-          "Application Error:",
-          error
-        );
-
-        alert(
-          error.message ||
-          "Application submit nahi ho paya. Please try again."
-        );
-      } finally {
-        setApplying(false);
       }
-    };
 
-  // =====================================================
-  // RESET APPLICATION
-  // =====================================================
+      // --------------------------------------------
+      // SUCCESS
+      // --------------------------------------------
 
-  const resetApplicationForm =
-    () => {
-      setApplicantName("");
-      setApplicantEmail("");
-      setApplicantPhone("");
-      setCoverLetter("");
-      setResumeFile(null);
-      setApplicationSuccess(false);
-    };
+      setApplicationSuccess(
+        true
+      );
 
-  // =====================================================
-  // UI
-  // =====================================================
+      setApplicationMessage(
+        ""
+      );
+
+      setApplicationForm({
+        applicantName: "",
+        applicantEmail: "",
+        applicantPhone: "",
+        coverLetter: "",
+      });
+
+      setResume(null);
+
+      const resumeInput =
+        document.getElementById(
+          "resume"
+        );
+
+      if (resumeInput) {
+        resumeInput.value = "";
+      }
+    } catch (err) {
+      console.error(
+        "Application Error:",
+        err
+      );
+
+      setApplicationMessage(
+        err.message ||
+          "Application failed. Please try again."
+      );
+    } finally {
+      setApplicationLoading(
+        false
+      );
+    }
+  };
+
+  // ======================================================
+  // RESET FILTERS
+  // ======================================================
+
+  const resetFilters = () => {
+    setFilters({
+      role: "All IT Jobs",
+      location: "All India",
+      experience: "Fresher",
+      jobType: "Full Time",
+      workMode: "Any",
+    });
+
+    setError("");
+  };
+
+  // ======================================================
+  // RENDER
+  // ======================================================
 
   return (
     <div className="job-page">
+
       <div className="job-container">
 
-        {/* HEADER */}
+        {/* ==================================================
+            HEADER
+        ================================================== */}
+
         <div className="page-header">
+
           <div className="header-icon">
             💼
           </div>
@@ -1329,229 +665,213 @@ const JobSearch = () => {
             </h1>
 
             <p>
-              Find IT jobs from your
-              database and live external
-              job sources.
+              Find real IT jobs matching
+              your skills, experience and
+              location.
             </p>
           </div>
+
         </div>
 
-        {/* SEARCH CARD */}
+        {/* ==================================================
+            SEARCH CARD
+        ================================================== */}
+
         <div className="search-card">
 
           <div className="section-heading">
+
             <div className="heading-icon">
-              🔍
+              🔎
             </div>
 
             <div>
               <h2>
-                Find Your Perfect IT Job
+                Find Your Next Job
               </h2>
 
               <p>
-                Search MongoDB jobs and
-                live external jobs together.
+                Select your preferences
+                and discover matching IT
+                opportunities.
               </p>
             </div>
+
           </div>
 
-          <form onSubmit={handleSearch}>
+          <form
+            onSubmit={handleSearch}
+          >
 
             <div className="search-grid">
 
               {/* ROLE */}
+
               <div className="form-group">
-                <label>
+
+                <label htmlFor="role">
                   Job Role
                 </label>
 
                 <select
-                  value={role}
-                  onChange={(e) =>
-                    setRole(
-                      e.target.value
-                    )
+                  id="role"
+                  name="role"
+                  value={
+                    filters.role
+                  }
+                  onChange={
+                    handleFilterChange
                   }
                 >
-                  <option value="">
-                    All IT Jobs
-                  </option>
-
-                  {jobCategories.map(
-                    (category) => (
-                      <optgroup
-                        key={
-                          category.name
-                        }
-                        label={
-                          category.name
-                        }
+                  {roles.map(
+                    (role) => (
+                      <option
+                        key={role}
+                        value={role}
                       >
-                        {category.roles.map(
-                          (jobRole) => (
-                            <option
-                              key={
-                                jobRole
-                              }
-                              value={
-                                jobRole
-                              }
-                            >
-                              {jobRole}
-                            </option>
-                          )
-                        )}
-                      </optgroup>
+                        {role}
+                      </option>
                     )
                   )}
                 </select>
+
               </div>
 
               {/* LOCATION */}
+
               <div className="form-group">
-                <label>
+
+                <label htmlFor="location">
                   Location
                 </label>
 
                 <select
-                  value={location}
-                  onChange={(e) =>
-                    setLocation(
-                      e.target.value
-                    )
+                  id="location"
+                  name="location"
+                  value={
+                    filters.location
+                  }
+                  onChange={
+                    handleFilterChange
                   }
                 >
-                  <option value="">
-                    All India
-                  </option>
-
                   {locations.map(
-                    (item) => (
-                      <optgroup
-                        key={
-                          item.state
-                        }
-                        label={
-                          item.state
-                        }
+                    (location) => (
+                      <option
+                        key={location}
+                        value={location}
                       >
-                        {item.cities.map(
-                          (city) => (
-                            <option
-                              key={city}
-                              value={city}
-                            >
-                              {city}
-                            </option>
-                          )
-                        )}
-                      </optgroup>
+                        {location}
+                      </option>
                     )
                   )}
                 </select>
+
               </div>
 
               {/* EXPERIENCE */}
+
               <div className="form-group">
-                <label>
+
+                <label htmlFor="experience">
                   Experience
                 </label>
 
                 <select
-                  value={experience}
-                  onChange={(e) =>
-                    setExperience(
-                      e.target.value
-                    )
+                  id="experience"
+                  name="experience"
+                  value={
+                    filters.experience
+                  }
+                  onChange={
+                    handleFilterChange
                   }
                 >
-                  <option value="Fresher">
-                    Fresher
-                  </option>
-
-                  <option value="0-1 Years">
-                    0-1 Years
-                  </option>
-
-                  <option value="1-2 Years">
-                    1-2 Years
-                  </option>
-
-                  <option value="2-3 Years">
-                    2-3 Years
-                  </option>
-
-                  <option value="3+ Years">
-                    3+ Years
-                  </option>
+                  {experiences.map(
+                    (experience) => (
+                      <option
+                        key={
+                          experience
+                        }
+                        value={
+                          experience
+                        }
+                      >
+                        {experience}
+                      </option>
+                    )
+                  )}
                 </select>
+
               </div>
 
               {/* JOB TYPE */}
+
               <div className="form-group">
-                <label>
+
+                <label htmlFor="jobType">
                   Job Type
                 </label>
 
                 <select
-                  value={jobType}
-                  onChange={(e) =>
-                    setJobType(
-                      e.target.value
-                    )
+                  id="jobType"
+                  name="jobType"
+                  value={
+                    filters.jobType
+                  }
+                  onChange={
+                    handleFilterChange
                   }
                 >
-                  <option value="Full Time">
-                    Full Time
-                  </option>
-
-                  <option value="Part Time">
-                    Part Time
-                  </option>
-
-                  <option value="Internship">
-                    Internship
-                  </option>
-
-                  <option value="Remote">
-                    Remote
-                  </option>
+                  {jobTypes.map(
+                    (type) => (
+                      <option
+                        key={type}
+                        value={type}
+                      >
+                        {type}
+                      </option>
+                    )
+                  )}
                 </select>
+
               </div>
 
               {/* WORK MODE */}
+
               <div className="form-group">
-                <label>
+
+                <label htmlFor="workMode">
                   Work Mode
                 </label>
 
                 <select
-                  value={workMode}
-                  onChange={(e) =>
-                    setWorkMode(
-                      e.target.value
-                    )
+                  id="workMode"
+                  name="workMode"
+                  value={
+                    filters.workMode
+                  }
+                  onChange={
+                    handleFilterChange
                   }
                 >
-                  <option value="Any">
-                    Any
-                  </option>
-
-                  <option value="Remote">
-                    Remote
-                  </option>
-
-                  <option value="Hybrid">
-                    Hybrid
-                  </option>
-
-                  <option value="On-site">
-                    On-site
-                  </option>
+                  {workModes.map(
+                    (mode) => (
+                      <option
+                        key={mode}
+                        value={mode}
+                      >
+                        {mode}
+                      </option>
+                    )
+                  )}
                 </select>
+
               </div>
+
             </div>
+
+            {/* BUTTONS */}
 
             <div className="search-buttons">
 
@@ -1562,57 +882,67 @@ const JobSearch = () => {
               >
                 {loading
                   ? "Searching..."
-                  : "🔍 Search IT Jobs"}
+                  : "🔍 Search Jobs"}
               </button>
 
               <button
                 type="button"
                 className="clear-button"
                 onClick={
-                  handleClear
+                  resetFilters
                 }
                 disabled={loading}
               >
-                Clear
+                Clear Filters
               </button>
 
             </div>
+
           </form>
+
         </div>
 
-        {/* RESUME CARD */}
+        {/* ==================================================
+            RESUME CARD
+        ================================================== */}
+
         <div className="resume-card">
 
           <div className="resume-left">
 
             <div className="resume-icon">
-              🤖
+              📄
             </div>
 
             <div>
+
               <h2>
-                Find Jobs Using My Resume
+                Find Jobs From My Resume
               </h2>
 
               <p>
-                Resume-based AI matching
-                will be connected to your
-                resume analyzer backend.
+                Upload your resume and use
+                your skills and experience to
+                discover relevant job
+                opportunities.
               </p>
 
               <div className="resume-points">
+
                 <span>
-                  ✓ Skills Matching
+                  ✓ Skill Matching
                 </span>
 
                 <span>
-                  ✓ AI Match Score
+                  ✓ Experience Matching
                 </span>
 
                 <span>
-                  ✓ Skill Gap
+                  ✓ AI Job Matching
                 </span>
+
               </div>
+
             </div>
 
           </div>
@@ -1620,346 +950,452 @@ const JobSearch = () => {
           <button
             type="button"
             className="resume-button"
-            onClick={
-              handleResumeSearch
-            }
-            disabled={loading}
+            onClick={() => {
+              alert(
+                "Resume-based job matching will be connected with Resume Analyzer."
+              );
+            }}
           >
-            {loading &&
-              resumeMode
-              ? "Loading..."
-              : "🤖 Find Jobs From My Resume"}
+            📄 Use My Resume
           </button>
 
         </div>
 
-        {/* RESULTS */}
-        {searched && (
-          <div className="results-section">
-
-            <div className="results-header">
-
-              <div>
-                <h2>
-                  {resumeMode
-                    ? "AI Recommended Jobs"
-                    : "Job Search Results"}
-                </h2>
-
-                <p>
-                  {resumeMode
-                    ? "Available jobs from your connected job sources."
-                    : "MongoDB and external jobs matching your search."}
-                </p>
-              </div>
-
-              <div className="job-count">
-                {jobs.length} Jobs Found
-              </div>
-
-            </div>
-
-            {jobs.length === 0 ? (
-
-              <div className="no-jobs">
-
-                <div className="no-job-icon">
-                  🔎
-                </div>
-
-                <h3>
-                  No matching jobs found
-                </h3>
-
-                <p>
-                  Try another role,
-                  location or experience
-                  filter.
-                </p>
-
-                <button
-                  type="button"
-                  className="try-button"
-                  onClick={
-                    handleClear
-                  }
-                >
-                  Try All Jobs
-                </button>
-
-              </div>
-
-            ) : (
-
-              <div className="jobs-grid">
-
-                {jobs.map((job) => (
-
-                  <div
-                    className="job-card"
-                    key={
-                      job._id ||
-                      job.id
-                    }
-                  >
-
-                    {/* TOP */}
-                    <div className="job-top">
-
-                      <div className="company-logo">
-                        {job.company
-                          ?.charAt(0)
-                          ?.toUpperCase() ||
-                          "C"}
-                      </div>
-
-                      <div className="job-title">
-
-                        <h3>
-                          {job.title}
-                        </h3>
-
-                        <p>
-                          {job.company}
-                        </p>
-
-                      </div>
-
-                      <div className="match">
-
-                        <strong>
-                          {job.match || 0}%
-                        </strong>
-
-                        <small>
-                          Match
-                        </small>
-
-                      </div>
-
-                    </div>
-
-                    {/* SOURCE */}
-                    <div className="job-source">
-
-                      {job.source ===
-                        "external" ? (
-                        <span>
-                          🌐 Live External Job
-                        </span>
-                      ) : (
-                        <span>
-                          🗄️ Career AI Job
-                        </span>
-                      )}
-
-                      {job.provider && (
-                        <small>
-                          {job.provider}
-                        </small>
-                      )}
-
-                    </div>
-
-                    {/* INFO */}
-                    <div className="job-info">
-
-                      <span>
-                        📍 {job.location}
-                      </span>
-
-                      <span>
-                        💼 {job.type}
-                      </span>
-
-                      {job.mode && (
-                        <span>
-                          🏠 {job.mode}
-                        </span>
-                      )}
-
-                      <span>
-                        🎓 {job.experience}
-                      </span>
-
-                      <span>
-                        💰 {job.salary}
-                      </span>
-
-                    </div>
-
-                    {/* MATCH */}
-                    <div className="ai-match">
-
-                      <div className="ai-match-title">
-                        🎯 Job Match
-                      </div>
-
-                      <div className="progress">
-
-                        <div
-                          className="progress-bar"
-                          style={{
-                            width:
-                              `${Math.min(
-                                Math.max(
-                                  Number(
-                                    job.match
-                                  ) || 0,
-                                  0
-                                ),
-                                100
-                              )}%`,
-                          }}
-                        />
-
-                      </div>
-
-                      <p>
-                        Current match:
-                        {" "}
-                        <strong>
-                          {job.match || 0}%
-                        </strong>
-                      </p>
-
-                    </div>
-
-                    {/* SKILLS */}
-                    <div className="skills-box">
-
-                      <h4>
-                        Required Skills
-                      </h4>
-
-                      <div className="skills">
-
-                        {(
-                          job.skills ||
-                          []
-                        ).map(
-                          (skill) => (
-                            <span
-                              key={
-                                skill
-                              }
-                            >
-                              {skill}
-                            </span>
-                          )
-                        )}
-
-                      </div>
-
-                    </div>
-
-                    {/* MATCHING SKILLS */}
-                    {job.matchingSkills
-                      ?.length >
-                      0 && (
-                        <div className="matching-skills">
-
-                          <h4>
-                            ✓ Matching Skills
-                          </h4>
-
-                          <div className="skills">
-
-                            {job.matchingSkills.map(
-                              (skill) => (
-                                <span
-                                  key={
-                                    skill
-                                  }
-                                >
-                                  {skill}
-                                </span>
-                              )
-                            )}
-
-                          </div>
-
-                        </div>
-                      )}
-
-                    {/* ACTIONS */}
-                    <div className="job-actions">
-
-                      <button
-                        type="button"
-                        className="view-job"
-                        onClick={() =>
-                          handleViewJob(
-                            job
-                          )
-                        }
-                      >
-                        View Job
-                      </button>
-
-                      <button
-                        type="button"
-                        className="apply-job"
-                        onClick={() =>
-                          handleApply(
-                            job
-                          )
-                        }
-                      >
-                        {job.isExternal ||
-                          job.source ===
-                          "external"
-                          ? "Apply on Company Site →"
-                          : "Apply Now →"}
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                ))}
-
-              </div>
-
-            )}
+        {/* ==================================================
+            ERROR
+        ================================================== */}
+
+        {error && !loading && (
+          <div className="ai-reason">
+
+            <strong>
+              ⚠️ Job Search Message
+            </strong>
+
+            <p>
+              {error}
+            </p>
 
           </div>
         )}
 
+        {/* ==================================================
+            LOADING
+        ================================================== */}
+
+        {loading && (
+          <div className="no-jobs">
+
+            <div className="no-job-icon">
+              🔄
+            </div>
+
+            <h3>
+              Searching Jobs...
+            </h3>
+
+            <p>
+              Connecting to job providers
+              and finding matching
+              opportunities.
+            </p>
+
+          </div>
+        )}
+
+        {/* ==================================================
+            RESULTS
+        ================================================== */}
+
+        {!loading &&
+          hasSearched && (
+            <div className="results-section">
+
+              <div className="results-header">
+
+                <div>
+                  <h2>
+                    Recommended Jobs
+                  </h2>
+
+                  <p>
+                    Jobs matching your
+                    selected preferences.
+                  </p>
+                </div>
+
+                <div className="job-count">
+                  {jobs.length}{" "}
+                  {jobs.length === 1
+                    ? "Job"
+                    : "Jobs"}{" "}
+                  Found
+                </div>
+
+              </div>
+
+              {/* ==================================================
+                  JOB GRID
+              ================================================== */}
+
+              {jobs.length > 0 ? (
+                <div className="jobs-grid">
+
+                  {jobs.map(
+                    (job, index) => {
+
+                      const matchScore =
+                        Number(
+                          job.match
+                        ) || 0;
+
+                      const matchClass =
+                        getMatchClass(
+                          matchScore
+                        );
+
+                      const description =
+                        cleanDescription(
+                          job.description
+                        );
+
+                      return (
+                        <div
+                          className="job-card"
+                          key={
+                            job.id ||
+                            job._id ||
+                            `${job.title}-${job.company}-${job.location}-${index}`
+                          }
+                        >
+
+                          {/* TOP */}
+
+                          <div className="job-top">
+
+                            <div className="company-logo">
+                              {getInitials(
+                                job.company
+                              )}
+                            </div>
+
+                            <div className="job-title">
+
+                              <h3>
+                                {job.title ||
+                                  "Software Developer"}
+                              </h3>
+
+                              <p>
+                                {job.company ||
+                                  "Company Not Specified"}
+                              </p>
+
+                            </div>
+
+                            <div
+                              className={`match ${matchClass}`}
+                            >
+                              <strong>
+                                {matchScore}%
+                              </strong>
+
+                              <small>
+                                Match
+                              </small>
+                            </div>
+
+                          </div>
+
+                          {/* JOB INFO */}
+
+                          <div className="job-info">
+
+                            <span>
+                              📍{" "}
+                              {job.location ||
+                                "India"}
+                            </span>
+
+                            <span>
+                              💼{" "}
+                              {job.type ||
+                                "Full Time"}
+                            </span>
+
+                            <span>
+                              🎯{" "}
+                              {job.experience ||
+                                filters.experience ||
+                                "Not Specified"}
+                            </span>
+
+                            <span>
+                              🏠{" "}
+                              {job.workMode &&
+                              job.workMode !==
+                                "Not Specified"
+                                ? job.workMode
+                                : "Any"}
+                            </span>
+
+                            <span>
+                              💰{" "}
+                              {job.salary ||
+                                "Salary Not Disclosed"}
+                            </span>
+
+                          </div>
+
+                          {/* AI MATCH */}
+
+                          <div className="ai-match">
+
+                            <div className="ai-match-title">
+                              🤖 AI Job Match
+                            </div>
+
+                            <div className="progress">
+
+                              <div
+                                className="progress-bar"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                      0,
+                                      matchScore
+                                    )
+                                  )}%`,
+                                }}
+                              />
+
+                            </div>
+
+                            <p>
+                              Your profile has a{" "}
+                              {matchScore}% match
+                              with this job.
+                            </p>
+
+                          </div>
+
+                          {/* SKILLS */}
+
+                          {Array.isArray(
+                            job.skills
+                          ) &&
+                            job.skills.length >
+                              0 && (
+                              <div className="skills-box">
+
+                                <h4>
+                                  Required Skills
+                                </h4>
+
+                                <div className="skills">
+
+                                  {job.skills
+                                    .slice(
+                                      0,
+                                      6
+                                    )
+                                    .map(
+                                      (
+                                        skill,
+                                        skillIndex
+                                      ) => (
+                                        <span
+                                          key={`${skill}-${skillIndex}`}
+                                        >
+                                          {skill}
+                                        </span>
+                                      )
+                                    )}
+
+                                </div>
+
+                              </div>
+                            )}
+
+                          {/* MATCHING SKILLS */}
+
+                          {Array.isArray(
+                            job.matchingSkills
+                          ) &&
+                            job.matchingSkills
+                              .length >
+                              0 && (
+                              <div className="matching-skills">
+
+                                <h4>
+                                  ✓ Matching Skills
+                                </h4>
+
+                                <div className="skills">
+
+                                  {job.matchingSkills
+                                    .slice(
+                                      0,
+                                      5
+                                    )
+                                    .map(
+                                      (
+                                        skill,
+                                        skillIndex
+                                      ) => (
+                                        <span
+                                          key={`${skill}-${skillIndex}`}
+                                        >
+                                          {skill}
+                                        </span>
+                                      )
+                                    )}
+
+                                </div>
+
+                              </div>
+                            )}
+
+                          {/* AI REASON */}
+
+                          <div className="ai-reason">
+
+                            <strong>
+                              🤖 Why this job?
+                            </strong>
+
+                            <p>
+                              {job.matchReason ||
+                                job.reason ||
+                                "This job matches your selected role, experience and location preferences."}
+                            </p>
+
+                          </div>
+
+                          {/* SOURCE */}
+
+                          <div className="job-info">
+
+                            <span>
+                              {job.isExternal
+                                ? "🌐 External Job"
+                                : "🏢 Career-AI Job"}
+                            </span>
+
+                            <span>
+                              Source:{" "}
+                              {job.provider ||
+                                "Career-AI"}
+                            </span>
+
+                            {job.created && (
+                              <span>
+                                📅{" "}
+                                {formatDate(
+                                  job.created
+                                )}
+                              </span>
+                            )}
+
+                          </div>
+
+                          {/* ACTIONS */}
+
+                          <div className="job-actions">
+
+                            <button
+                              type="button"
+                              className="view-job"
+                              onClick={() =>
+                                handleViewJob(
+                                  job
+                                )
+                              }
+                            >
+                              👁 View Job
+                            </button>
+
+                            <button
+                              type="button"
+                              className="apply-job"
+                              onClick={() =>
+                                handleApply(
+                                  job
+                                )
+                              }
+                            >
+                              Apply Now →
+                            </button>
+
+                          </div>
+
+                        </div>
+                      );
+                    }
+                  )}
+
+                </div>
+              ) : (
+                <div className="no-jobs">
+
+                  <div className="no-job-icon">
+                    🔎
+                  </div>
+
+                  <h3>
+                    No Jobs Found
+                  </h3>
+
+                  <p>
+                    Try changing your role,
+                    location or experience.
+                  </p>
+
+                  <button
+                    type="button"
+                    className="try-button"
+                    onClick={
+                      resetFilters
+                    }
+                  >
+                    Reset Filters
+                  </button>
+
+                </div>
+              )}
+
+            </div>
+          )}
+
       </div>
 
-      {/* =====================================================
-          VIEW JOB MODAL
-      ===================================================== */}
+      {/* ======================================================
+          JOB DETAILS MODAL
+      ====================================================== */}
 
       {showJobModal &&
         selectedJob && (
-
           <div
             className="modal-overlay"
-            onClick={() =>
-              setShowJobModal(
-                false
-              )
-            }
+            onClick={(event) => {
+              if (
+                event.target ===
+                event.currentTarget
+              ) {
+                closeJobModal();
+              }
+            }}
           >
 
-            <div
-              className="job-modal"
-              onClick={(e) =>
-                e.stopPropagation()
-              }
-            >
+            <div className="job-modal">
 
               <button
                 type="button"
                 className="modal-close"
-                onClick={() =>
-                  setShowJobModal(
-                    false
-                  )
+                onClick={
+                  closeJobModal
                 }
-                aria-label="Close"
               >
                 ×
               </button>
@@ -1967,24 +1403,21 @@ const JobSearch = () => {
               <div className="modal-job-header">
 
                 <div className="modal-company-logo">
-                  {selectedJob.company
-                    ?.charAt(0)
-                    ?.toUpperCase() ||
-                    "C"}
+                  {getInitials(
+                    selectedJob.company
+                  )}
                 </div>
 
                 <div>
 
                   <h2>
-                    {
-                      selectedJob.title
-                    }
+                    {selectedJob.title ||
+                      "Software Developer"}
                   </h2>
 
                   <p>
-                    {
-                      selectedJob.company
-                    }
+                    {selectedJob.company ||
+                      "Company Not Specified"}
                   </p>
 
                 </div>
@@ -1995,157 +1428,137 @@ const JobSearch = () => {
 
                 <span>
                   📍{" "}
-                  {
-                    selectedJob.location
-                  }
+                  {selectedJob.location ||
+                    "India"}
                 </span>
 
                 <span>
                   💼{" "}
-                  {
-                    selectedJob.type
-                  }
+                  {selectedJob.type ||
+                    "Full Time"}
                 </span>
 
-                {selectedJob.mode && (
-                  <span>
-                    🏠{" "}
-                    {
-                      selectedJob.mode
-                    }
-                  </span>
-                )}
+                <span>
+                  🎯{" "}
+                  {selectedJob.experience ||
+                    "Not Specified"}
+                </span>
 
                 <span>
-                  🎓{" "}
-                  {
-                    selectedJob.experience
-                  }
+                  🏠{" "}
+                  {selectedJob.workMode ||
+                    "Any"}
                 </span>
 
                 <span>
                   💰{" "}
-                  {
-                    selectedJob.salary
-                  }
+                  {selectedJob.salary ||
+                    "Not Disclosed"}
                 </span>
 
-              </div>
-
-              {/* SOURCE */}
-              <div className="selected-search-info">
-
-                <strong>
-                  Job Source:
-                </strong>
-
                 <span>
-                  {selectedJob.source ===
-                    "external"
-                    ? `Live External Job${selectedJob.provider
-                      ? ` (${selectedJob.provider})`
-                      : ""
-                    }`
-                    : "Career AI MongoDB"}
+                  🤖{" "}
+                  {selectedJob.match ||
+                    0}
+                  % Match
                 </span>
 
               </div>
 
               {/* DESCRIPTION */}
-              {selectedJob.description && (
 
-                <div className="modal-section">
-
-                  <h3>
-                    Job Description
-                  </h3>
-
-                  <p className="job-description">
-                    {
-                      selectedJob.description
-                    }
-                  </p>
-
-                </div>
-
-              )}
-
-              {/* SKILLS */}
               <div className="modal-section">
 
                 <h3>
-                  Required Skills
+                  Job Description
                 </h3>
 
-                <div className="skills">
-
-                  {(
-                    selectedJob.skills ||
-                    []
-                  ).map(
-                    (skill) => (
-                      <span
-                        key={
-                          skill
-                        }
-                      >
-                        {skill}
-                      </span>
-                    )
-                  )}
-
-                </div>
+                <p className="job-description">
+                  {cleanDescription(
+                    selectedJob.description
+                  ) ||
+                    "Job description not available."}
+                </p>
 
               </div>
 
-              {/* SEARCH INFO */}
+              {/* SKILLS */}
+
+              {Array.isArray(
+                selectedJob.skills
+              ) &&
+                selectedJob.skills.length >
+                  0 && (
+                  <div className="modal-section">
+
+                    <h3>
+                      Required Skills
+                    </h3>
+
+                    <div className="skills">
+
+                      {selectedJob.skills.map(
+                        (
+                          skill,
+                          index
+                        ) => (
+                          <span
+                            key={`${skill}-${index}`}
+                          >
+                            {skill}
+                          </span>
+                        )
+                      )}
+
+                    </div>
+
+                  </div>
+                )}
+
+              {/* SELECTED SEARCH */}
+
               <div className="selected-search-info">
 
                 <strong>
-                  Your Search:
+                  Your Search
                 </strong>
 
                 <span>
                   Role:{" "}
-                  {role ||
-                    "All IT Jobs"}
+                  {filters.role}
                 </span>
 
                 <span>
                   Location:{" "}
-                  {location ||
-                    "All India"}
+                  {filters.location}
+                </span>
+
+                <span>
+                  Experience:{" "}
+                  {filters.experience}
                 </span>
 
               </div>
 
-              {/* EXTERNAL SOURCE LINK */}
-              {selectedJob.source ===
-                "external" &&
-                selectedJob.applyUrl &&
-                selectedJob.applyUrl !==
-                "#" && (
-                  <a
-                    href={
-                      selectedJob.applyUrl
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="modal-apply-button"
-                    style={{
-                      display:
-                        "block",
-                      textAlign:
-                        "center",
-                      textDecoration:
-                        "none",
-                    }}
-                  >
-                    Open Original Job →
-                  </a>
-                )}
+              {/* SOURCE */}
+
+              <div className="job-id-info">
+
+                {selectedJob.isExternal
+                  ? `External Provider: ${
+                      selectedJob.provider ||
+                      "Adzuna"
+                    }`
+                  : `Career-AI Job ID: ${
+                      selectedJob.id ||
+                      selectedJob._id ||
+                      "Not available"
+                    }`}
+
+              </div>
 
               {/* APPLY */}
+
               <button
                 type="button"
                 className="modal-apply-button"
@@ -2155,10 +1568,7 @@ const JobSearch = () => {
                   )
                 }
               >
-                {selectedJob.source ===
-                  "external"
-                  ? "Apply on Company Site →"
-                  : "Apply With My Resume →"}
+                🚀 Apply Now
               </button>
 
             </div>
@@ -2166,26 +1576,25 @@ const JobSearch = () => {
           </div>
         )}
 
-      {/* =====================================================
-          APPLY MODAL - ONLY MONGODB JOBS
-      ===================================================== */}
+      {/* ======================================================
+          APPLICATION MODAL
+      ====================================================== */}
 
       {showApplyModal &&
         selectedJob && (
-
           <div
             className="modal-overlay"
-            onClick={
-              closeApplyModal
-            }
+            onClick={(event) => {
+              if (
+                event.target ===
+                event.currentTarget
+              ) {
+                closeApplyModal();
+              }
+            }}
           >
 
-            <div
-              className="apply-modal"
-              onClick={(e) =>
-                e.stopPropagation()
-              }
-            >
+            <div className="apply-modal">
 
               <button
                 type="button"
@@ -2193,14 +1602,17 @@ const JobSearch = () => {
                 onClick={
                   closeApplyModal
                 }
-                aria-label="Close"
+                disabled={
+                  applicationLoading
+                }
               >
                 ×
               </button>
 
               {!applicationSuccess ? (
-
                 <>
+                  {/* HEADER */}
+
                   <div className="apply-modal-header">
 
                     <div className="apply-icon">
@@ -2210,59 +1622,90 @@ const JobSearch = () => {
                     <div>
 
                       <h2>
-                        Apply for{" "}
-                        {
-                          selectedJob.title
-                        }
+                        Apply for Job
                       </h2>
 
                       <p>
-                        {
-                          selectedJob.company
-                        }{" "}
-                        •{" "}
-                        {
-                          selectedJob.location
-                        }
+                        Submit your application
+                        through Career-AI.
                       </p>
 
                     </div>
 
                   </div>
 
-                  <div className="application-job-summary">
+                  {/* SELECTED JOB */}
+
+                  <div className="application-selected">
 
                     <span>
-                      🎯{" "}
-                      {
-                        selectedJob.match ||
-                        0
-                      }% Match
+                      <strong>
+                        Position:
+                      </strong>{" "}
+                      {selectedJob.title}
                     </span>
 
                     <span>
-                      📍{" "}
-                      {
-                        selectedJob.location
-                      }
+                      <strong>
+                        Company:
+                      </strong>{" "}
+                      {selectedJob.company}
                     </span>
 
                     <span>
-                      💼{" "}
-                      {
-                        selectedJob.type
-                      }
+                      <strong>
+                        Location:
+                      </strong>{" "}
+                      {selectedJob.location}
                     </span>
+
+                    {selectedJob.isExternal && (
+                      <span>
+                        <strong>
+                          Source:
+                        </strong>{" "}
+                        {selectedJob.provider ||
+                          "External Provider"}
+                      </span>
+                    )}
 
                   </div>
 
+                  {/* EXTERNAL INFO */}
+
+                  {selectedJob.isExternal && (
+                    <div className="selected-search-info">
+
+                      <strong>
+                        🌐 External Job
+                      </strong>
+
+                      <span>
+                        This job is provided by an
+                        external job provider.
+                      </span>
+
+                      <span>
+                        You can submit your
+                        application on the
+                        company's application
+                        website.
+                      </span>
+
+                    </div>
+                  )}
+
+                  {/* FORM */}
+
                   <form
                     onSubmit={
-                      handleApplicationSubmit
+                      handleSubmitApplication
                     }
                   >
 
                     <div className="application-grid">
+
+                      {/* NAME */}
 
                       <div className="application-field">
 
@@ -2272,13 +1715,12 @@ const JobSearch = () => {
 
                         <input
                           type="text"
+                          name="applicantName"
                           value={
-                            applicantName
+                            applicationForm.applicantName
                           }
-                          onChange={(e) =>
-                            setApplicantName(
-                              e.target.value
-                            )
+                          onChange={
+                            handleApplicationChange
                           }
                           placeholder="Enter your full name"
                           required
@@ -2286,159 +1728,147 @@ const JobSearch = () => {
 
                       </div>
 
+                      {/* EMAIL */}
+
                       <div className="application-field">
 
                         <label>
-                          Email *
+                          Email Address *
                         </label>
 
                         <input
                           type="email"
+                          name="applicantEmail"
                           value={
-                            applicantEmail
+                            applicationForm.applicantEmail
                           }
-                          onChange={(e) =>
-                            setApplicantEmail(
-                              e.target.value
-                            )
+                          onChange={
+                            handleApplicationChange
                           }
-                          placeholder="you@example.com"
+                          placeholder="example@gmail.com"
                           required
                         />
 
                       </div>
 
+                      {/* PHONE */}
+
                       <div className="application-field">
 
                         <label>
-                          Phone Number *
+                          Mobile Number *
                         </label>
 
                         <input
                           type="tel"
+                          name="applicantPhone"
                           value={
-                            applicantPhone
+                            applicationForm.applicantPhone
                           }
-                          onChange={(e) =>
-                            setApplicantPhone(
-                              e.target.value
-                            )
+                          onChange={
+                            handleApplicationChange
                           }
-                          placeholder="Enter phone number"
+                          placeholder="Enter mobile number"
                           required
                         />
 
                       </div>
 
+                      {/* RESUME */}
+
                       <div className="application-field">
 
                         <label>
-                          Selected Role
+                          Resume PDF *
                         </label>
 
-                        <input
-                          type="text"
-                          value={
-                            selectedJob.title
-                          }
-                          readOnly
-                        />
+                        <label
+                          htmlFor="resume"
+                          className="resume-upload-box"
+                        >
+
+                          <input
+                            id="resume"
+                            type="file"
+                            accept=".pdf,application/pdf"
+                            onChange={
+                              handleResumeChange
+                            }
+                          />
+
+                          <span className="upload-icon">
+                            📤
+                          </span>
+
+                          {resume ? (
+                            <>
+                              <strong>
+                                {resume.name}
+                              </strong>
+
+                              <small>
+                                Resume selected
+                              </small>
+                            </>
+                          ) : (
+                            <>
+                              <strong>
+                                Click to upload
+                                resume
+                              </strong>
+
+                              <small>
+                                PDF only • Maximum
+                                5MB
+                              </small>
+                            </>
+                          )}
+
+                        </label>
 
                       </div>
 
                     </div>
 
-                    {/* RESUME */}
-                    <div className="application-field">
-
-                      <label>
-                        Resume * (PDF, DOC,
-                        DOCX — max 5 MB)
-                      </label>
-
-                      <label className="resume-upload-box">
-
-                        <input
-                          type="file"
-                          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                          onChange={
-                            handleResumeChange
-                          }
-                        />
-
-                        <span className="upload-icon">
-                          📎
-                        </span>
-
-                        <strong>
-                          {resumeFile
-                            ? resumeFile.name
-                            : "Click to upload your resume"}
-                        </strong>
-
-                        <small>
-                          {resumeFile
-                            ? "Resume ready for submission."
-                            : "PDF, DOC or DOCX — maximum 5 MB."}
-                        </small>
-
-                      </label>
-
-                    </div>
-
                     {/* COVER LETTER */}
+
                     <div className="application-field">
 
                       <label>
-                        Cover Letter / Message
-                        (Optional)
+                        Cover Letter
                       </label>
 
                       <textarea
+                        name="coverLetter"
                         value={
-                          coverLetter
+                          applicationForm.coverLetter
                         }
-                        onChange={(e) =>
-                          setCoverLetter(
-                            e.target.value
-                          )
+                        onChange={
+                          handleApplicationChange
                         }
-                        placeholder="Tell the recruiter why you are a good fit..."
-                        rows="5"
+                        placeholder="Write a short cover letter..."
+                        rows="6"
                       />
 
                     </div>
 
-                    <div className="application-selected">
+                    {/* ERROR / MESSAGE */}
 
-                      <span>
-                        💼 Applying for:{" "}
+                    {applicationMessage && (
+                      <div className="ai-reason">
+
                         <strong>
-                          {
-                            selectedJob.title
-                          }
+                          ⚠️ Application Message
                         </strong>
-                      </span>
 
-                      <span>
-                        🏢 Company:{" "}
-                        <strong>
-                          {
-                            selectedJob.company
-                          }
-                        </strong>
-                      </span>
+                        <p>
+                          {applicationMessage}
+                        </p>
 
-                      <span>
-                        📍 Location:{" "}
-                        <strong>
-                          {
-                            selectedJob.location
-                          }
-                        </strong>
-                      </span>
+                      </div>
+                    )}
 
-                    </div>
+                    {/* BUTTONS */}
 
                     <div className="application-actions">
 
@@ -2449,7 +1879,7 @@ const JobSearch = () => {
                           closeApplyModal
                         }
                         disabled={
-                          applying
+                          applicationLoading
                         }
                       >
                         Cancel
@@ -2459,11 +1889,11 @@ const JobSearch = () => {
                         type="submit"
                         className="submit-application"
                         disabled={
-                          applying
+                          applicationLoading
                         }
                       >
-                        {applying
-                          ? "Submitting Application..."
+                        {applicationLoading
+                          ? "Submitting..."
                           : "🚀 Submit Application"}
                       </button>
 
@@ -2471,8 +1901,10 @@ const JobSearch = () => {
 
                   </form>
                 </>
-
               ) : (
+                /* ==================================================
+                   SUCCESS SCREEN
+                ================================================== */
 
                 <div className="application-success">
 
@@ -2485,80 +1917,56 @@ const JobSearch = () => {
                   </h2>
 
                   <p>
-                    Your application for{" "}
-                    <strong>
-                      {
-                        selectedJob.title
-                      }
-                    </strong>{" "}
-                    at{" "}
-                    <strong>
-                      {
-                        selectedJob.company
-                      }
-                    </strong>{" "}
-                    has been submitted
-                    successfully.
+                    Your application has been
+                    successfully submitted through
+                    Career-AI.
                   </p>
 
                   <div className="success-details">
 
                     <div>
                       <span>
-                        📄 Resume
+                        Position
                       </span>
 
                       <strong>
-                        {
-                          resumeFile?.name
-                        }
+                        {selectedJob.title}
                       </strong>
                     </div>
 
                     <div>
                       <span>
-                        📍 Location
+                        Company
                       </span>
 
                       <strong>
-                        {
-                          selectedJob.location
-                        }
+                        {selectedJob.company}
                       </strong>
                     </div>
 
                     <div>
                       <span>
-                        🎯 Match
+                        Applicant
                       </span>
 
                       <strong>
-                        {
-                          selectedJob.match ||
-                          0
-                        }%
+                        {applicationForm.applicantName ||
+                          "Applicant"}
                       </strong>
                     </div>
 
                   </div>
 
-                  <p className="success-note">
-                    Your application has
-                    been submitted to the
-                    Career AI backend.
-                  </p>
+                  <div className="success-note">
+
+                    📧 Your application has been
+                    sent to the recruiter when
+                    recruiter email configuration
+                    is available.
+
+                  </div>
 
                   <div className="success-actions">
-
-                    <button
-                      type="button"
-                      className="new-application"
-                      onClick={
-                        resetApplicationForm
-                      }
-                    >
-                      Apply to Another Job
-                    </button>
 
                     <button
                       type="button"
@@ -2585,4 +1993,3 @@ const JobSearch = () => {
 };
 
 export default JobSearch;
-
