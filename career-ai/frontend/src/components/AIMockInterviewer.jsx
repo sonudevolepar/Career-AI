@@ -1,68 +1,52 @@
 import React, { useState } from "react";
 import VideoInterview from "./VideoInterview";
+import "./AIMockInterviewer.css";
 
-const AIMockInterviewer = () => {
-  // =====================================================
-  // BASIC STATE
-  // =====================================================
+const JOB_ROLES = [
+  "MERN Stack Developer",
+  "Java Developer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Full Stack Developer",
+  "Python Developer",
+  "Data Analyst",
+  "Data Scientist",
+  "AI/ML Engineer",
+  "Software Engineer",
+  "DevOps Engineer",
+  "Cloud Engineer",
+  "QA Engineer",
+  "Cyber Security Engineer",
+  "Android Developer",
+];
 
-  const [role, setRole] = useState("");
-  const [started, setStarted] = useState(false);
+const DIFFICULTIES = ["Easy", "Medium", "Hard", "Mixed"];
+const QUESTION_COUNTS = [5, 10, 15];
+
+function AIMockInterviewer() {
+  const [role, setRole] = useState("MERN Stack Developer");
+  const [difficulty, setDifficulty] = useState("Medium");
+  const [questionCount, setQuestionCount] = useState(5);
+  const [interviewMode, setInterviewMode] = useState("text");
 
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
-
-  const [isGeneratingQuestions, setIsGeneratingQuestions] =
-    useState(false);
-
-  const [isLoadingFeedback, setIsLoadingFeedback] =
-    useState(false);
-
-  const [feedbackResult, setFeedbackResult] =
-    useState(null);
-
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState(null);
   const [error, setError] = useState("");
 
-  // =====================================================
-  // VIDEO INTERVIEW STATE
-  // =====================================================
-
-  const [showVideoInterview, setShowVideoInterview] =
-    useState(false);
-
-  // =====================================================
-  // ANSWER CHANGE
-  // =====================================================
-
-  const handleAnswerChange = (index, value) => {
-    setAnswers((previous) => ({
-      ...previous,
-      [index]: value,
-    }));
-  };
-
-  // =====================================================
-  // START INTERVIEW
-  // =====================================================
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [interviewStarted, setInterviewStarted] = useState(false);
 
   const handleStartInterview = async () => {
-    if (!role.trim()) {
-      alert("Please enter your target role.");
-      return;
-    }
-
-    setIsGeneratingQuestions(true);
+    setLoading(true);
     setError("");
-    setFeedbackResult(null);
+    setQuestions([]);
     setAnswers({});
-    setShowVideoInterview(false);
+    setFeedback(null);
+    setCurrentQuestion(0);
 
     try {
-      console.log(
-        "Generating questions for role:",
-        role
-      );
-
       const response = await fetch(
         "http://localhost:5000/api/interview/questions",
         {
@@ -71,138 +55,69 @@ const AIMockInterviewer = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            role: role.trim(),
+            role,
+            difficulty,
+            questionCount,
           }),
         }
       );
 
       const data = await response.json();
 
-      console.log(
-        "Questions API Response:",
-        data
-      );
-
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         throw new Error(
-          data.error ||
-            data.message ||
-            "Failed to generate interview questions."
+          data.message || "Failed to generate interview questions."
         );
       }
 
-      if (
-        !Array.isArray(data.questions) ||
-        data.questions.length === 0
-      ) {
-        throw new Error(
-          "No interview questions were generated."
-        );
+      if (!data.questions || !Array.isArray(data.questions)) {
+        throw new Error("Invalid questions received from server.");
       }
 
-      // Make sure every question is a string
-      const cleanQuestions = data.questions
-        .map((item) => {
-          if (typeof item === "string") {
-            return item;
-          }
-
-          if (item?.question) {
-            return item.question;
-          }
-
-          return String(item);
-        })
-        .filter(Boolean);
-
-      setQuestions(cleanQuestions);
-      setStarted(true);
-
-      console.log(
-        "Generated Questions:",
-        cleanQuestions
-      );
-    } catch (error) {
-      console.error(
-        "Question Generation Error:",
-        error
-      );
-
-      setError(error.message);
-
-      alert(
-        error.message ||
-          "Failed to generate interview questions."
-      );
+      setQuestions(data.questions);
+      setInterviewStarted(true);
+    } catch (err) {
+      console.error("Question Generation Error:", err);
+      setError(err.message || "Something went wrong.");
     } finally {
-      setIsGeneratingQuestions(false);
+      setLoading(false);
     }
   };
 
-  // =====================================================
-  // OPEN VIDEO INTERVIEW
-  // =====================================================
+  const handleAnswerChange = (index, value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [index]: value,
+    }));
+  };
 
-  const handleStartVideoInterview = () => {
-    if (!questions.length) {
-      alert(
-        "Please generate interview questions first."
-      );
-      return;
+  const handleNext = () => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion((prev) => prev + 1);
     }
-
-    setShowVideoInterview(true);
   };
 
-  // =====================================================
-  // END VIDEO INTERVIEW
-  // =====================================================
-
-  const handleEndVideoInterview = () => {
-    setShowVideoInterview(false);
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion((prev) => prev - 1);
+    }
   };
-
-  // =====================================================
-  // RESET INTERVIEW
-  // =====================================================
 
   const handleReset = () => {
-    setRole("");
-    setStarted(false);
     setQuestions([]);
     setAnswers({});
-    setFeedbackResult(null);
+    setFeedback(null);
     setError("");
-    setShowVideoInterview(false);
+    setCurrentQuestion(0);
+    setInterviewStarted(false);
+    setInterviewMode("text");
   };
 
-  // =====================================================
-  // GET AI FEEDBACK
-  // =====================================================
-
   const handleGetFeedback = async () => {
-    const answeredQuestions = questions.filter(
-      (_, index) =>
-        answers[index]?.trim()
-    );
-
-    if (answeredQuestions.length === 0) {
-      alert(
-        "Please answer at least one question."
-      );
-      return;
-    }
-
-    setIsLoadingFeedback(true);
-    setFeedbackResult(null);
+    setLoading(true);
     setError("");
 
     try {
-      console.log(
-        "Sending interview answers:",
-        answers
-      );
-
       const response = await fetch(
         "http://localhost:5000/api/interview/feedback",
         {
@@ -211,7 +126,8 @@ const AIMockInterviewer = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            role: role.trim(),
+            role,
+            difficulty,
             questions,
             answers,
           }),
@@ -220,455 +136,460 @@ const AIMockInterviewer = () => {
 
       const data = await response.json();
 
-      console.log(
-        "FULL INTERVIEW API RESPONSE:",
-        data
-      );
-
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.error ||
-            data.message ||
-            "Feedback generation failed."
-        );
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to generate feedback.");
       }
 
-      setFeedbackResult(
-        data.feedback || {
-          overallScore: 0,
-          overallFeedback:
-            "No feedback received.",
-          strengths: [],
-          weaknesses: [],
-          questionFeedback: [],
-          recommendations: [],
-        }
-      );
-    } catch (error) {
-      console.error(
-        "Interview Feedback Error:",
-        error
-      );
-
-      setError(error.message);
-
-      setFeedbackResult({
-        overallScore: 0,
-        overallFeedback: error.message,
-        strengths: [],
-        weaknesses: [],
-        questionFeedback: [],
-        recommendations: [],
-      });
+      setFeedback(data);
+    } catch (err) {
+      console.error("Feedback Error:", err);
+      setError(err.message || "Failed to generate AI feedback.");
     } finally {
-      setIsLoadingFeedback(false);
+      setLoading(false);
     }
   };
 
-  // =====================================================
   // VIDEO INTERVIEW SCREEN
-  // =====================================================
-
-  if (showVideoInterview) {
+  if (
+    interviewStarted &&
+    interviewMode === "video" &&
+    questions.length > 0
+  ) {
     return (
-      <VideoInterview
-        role={role}
-        questions={questions}
-        onEndInterview={
-          handleEndVideoInterview
-        }
-      />
+      <div className="mock-interview-page">
+        <div className="video-mode-header">
+          <div>
+            <h2>🎥 AI Video Interview</h2>
+            <p>
+              {role} • {difficulty} Level
+            </p>
+          </div>
+
+          <button className="reset-btn" onClick={handleReset}>
+            ← Back
+          </button>
+        </div>
+
+        <VideoInterview
+          role={role}
+          difficulty={difficulty}
+          questions={questions}
+          onComplete={(result) => {
+            setFeedback(result);
+          }}
+        />
+      </div>
     );
   }
 
-  // =====================================================
-  // MAIN UI
-  // =====================================================
-
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="mock-interview-page">
+      <div className="mock-interview-container">
 
-        {/* =================================================
-            HEADER
-        ================================================= */}
+        {/* HEADER */}
+        <div className="page-header">
+          <div className="header-icon">🤖</div>
 
-        <div className="text-center mb-10">
+          <div>
+            <h1>AI Mock Interviewer</h1>
+            <p>
+              Practice real interview questions with an AI interviewer.
+            </p>
+          </div>
 
-          <h1 className="text-4xl font-bold text-blue-600 mb-2">
-            AI Mock Interviewer
-          </h1>
-
-          <p className="text-slate-600">
-            Practice AI-powered technical interviews
-            based on your target role.
-          </p>
-
-        </div>
-
-        {/* =================================================
-            ROLE SECTION
-        ================================================= */}
-
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Target Role
-          </label>
-
-          <input
-            type="text"
-            placeholder="MERN Stack Developer, Data Scientist, AI/ML Engineer..."
-            value={role}
-            onChange={(e) =>
-              setRole(e.target.value)
-            }
-            disabled={
-              started ||
-              isGeneratingQuestions
-            }
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-blue-500"
-          />
-
-          {/* START BUTTON */}
-
-          {!started && (
-            <button
-              onClick={
-                handleStartInterview
-              }
-              disabled={
-                isGeneratingQuestions
-              }
-              className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 disabled:bg-blue-400 transition font-semibold"
-            >
-              {isGeneratingQuestions
-                ? "Generating Questions..."
-                : "Start Interview"}
+          {(questions.length > 0 || interviewStarted) && (
+            <button className="reset-btn" onClick={handleReset}>
+              Reset
             </button>
           )}
-
-          {/* STARTED */}
-
-          {started && (
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-
-              <div className="text-green-600 font-semibold">
-                Interview started for:{" "}
-                {role}
-              </div>
-
-              <button
-                onClick={handleReset}
-                className="bg-slate-600 text-white px-5 py-2 rounded-lg hover:bg-slate-700"
-              >
-                Reset
-              </button>
-
-            </div>
-          )}
-
         </div>
 
-        {/* =================================================
-            ERROR
-        ================================================= */}
-
+        {/* ERROR */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6">
-            {error}
+          <div className="error-box">
+            <span>⚠️</span>
+            <div>
+              <strong>Something went wrong</strong>
+              <p>{error}</p>
+            </div>
           </div>
         )}
 
-        {/* =================================================
-            QUESTIONS
-        ================================================= */}
+        {/* SETUP */}
+        {questions.length === 0 && !loading && (
+          <div className="setup-card">
 
-        {started &&
-          questions.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-
-              <h2 className="text-2xl font-bold mb-2">
-                Interview Questions
-              </h2>
-
-              <p className="text-slate-500 mb-6">
-                Questions generated specifically
-                for{" "}
-                <strong>{role}</strong>
+            <div className="setup-title">
+              <h2>Start Your AI Interview</h2>
+              <p>
+                Select your job role, difficulty and interview mode.
               </p>
+            </div>
 
-              {/* =================================================
-                  VIDEO INTERVIEW BUTTON
-              ================================================= */}
+            {/* ROLE */}
+            <div className="form-group">
+              <label>💼 Target Job Role</label>
 
-              <div className="mb-8 p-5 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                {JOB_ROLES.map((jobRole) => (
+                  <option key={jobRole} value={jobRole}>
+                    {jobRole}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                <div className="flex items-center justify-between gap-5 flex-wrap">
+            {/* DIFFICULTY */}
+            <div className="form-group">
+              <label>🎯 Interview Difficulty</label>
+
+              <div className="option-grid">
+                {DIFFICULTIES.map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    className={`option-card ${
+                      difficulty === level ? "selected" : ""
+                    }`}
+                    onClick={() => setDifficulty(level)}
+                  >
+                    <span>
+                      {level === "Easy" && "🟢"}
+                      {level === "Medium" && "🟡"}
+                      {level === "Hard" && "🔴"}
+                      {level === "Mixed" && "🎲"}
+                    </span>
+
+                    <strong>{level}</strong>
+
+                    <small>
+                      {level === "Easy" && "Basic concepts"}
+                      {level === "Medium" && "Interview level"}
+                      {level === "Hard" && "Advanced concepts"}
+                      {level === "Mixed" && "Easy + Medium + Hard"}
+                    </small>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* QUESTION COUNT */}
+            <div className="form-group">
+              <label>📝 Number of Questions</label>
+
+              <div className="count-options">
+                {QUESTION_COUNTS.map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    className={`count-btn ${
+                      questionCount === count ? "selected" : ""
+                    }`}
+                    onClick={() => setQuestionCount(count)}
+                  >
+                    {count} Questions
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* INTERVIEW MODE */}
+            <div className="form-group">
+              <label>🎤 Interview Mode</label>
+
+              <div className="mode-grid">
+
+                <button
+                  type="button"
+                  className={`mode-card ${
+                    interviewMode === "text" ? "selected" : ""
+                  }`}
+                  onClick={() => setInterviewMode("text")}
+                >
+                  <div className="mode-icon">💬</div>
 
                   <div>
-
-                    <h3 className="text-xl font-bold text-blue-800 mb-2">
-                      🎥 Ready for a Real Interview?
-                    </h3>
-
-                    <p className="text-sm text-slate-600">
-                      Start a video interview with
-                      camera, microphone, AI voice
-                      questions and speech recognition.
+                    <strong>Text Interview</strong>
+                    <p>
+                      Answer questions by typing your answers.
                     </p>
-
                   </div>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={
-                      handleStartVideoInterview
-                    }
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-md transition"
-                  >
-                    🎥 Start Video Interview
-                  </button>
+                <button
+                  type="button"
+                  className={`mode-card ${
+                    interviewMode === "video" ? "selected" : ""
+                  }`}
+                  onClick={() => setInterviewMode("video")}
+                >
+                  <div className="mode-icon">🎥</div>
 
-                </div>
+                  <div>
+                    <strong>Video Interview</strong>
+                    <p>
+                      Camera, microphone and AI voice interview.
+                    </p>
+                  </div>
+                </button>
 
               </div>
+            </div>
 
-              {/* =================================================
-                  NORMAL TEXT QUESTIONS
-              ================================================= */}
+            {/* SELECTED SUMMARY */}
+            <div className="selection-summary">
+              <div>
+                <span>Role</span>
+                <strong>{role}</strong>
+              </div>
 
-              <div className="space-y-6">
+              <div>
+                <span>Difficulty</span>
+                <strong>{difficulty}</strong>
+              </div>
 
-                {questions.map(
-                  (question, index) => (
-                    <div
-                      key={index}
-                      className="border border-slate-200 rounded-xl p-5"
-                    >
+              <div>
+                <span>Questions</span>
+                <strong>{questionCount}</strong>
+              </div>
 
-                      <h3 className="font-semibold text-lg mb-3">
-                        Q{index + 1}.{" "}
-                        {question}
-                      </h3>
+              <div>
+                <span>Mode</span>
+                <strong>
+                  {interviewMode === "video"
+                    ? "🎥 Video"
+                    : "💬 Text"}
+                </strong>
+              </div>
+            </div>
 
-                      <textarea
-                        placeholder="Write your answer..."
-                        value={
-                          answers[index] || ""
-                        }
-                        onChange={(e) =>
-                          handleAnswerChange(
-                            index,
-                            e.target.value
-                          )
-                        }
-                        className="w-full border border-slate-300 rounded-lg p-3 h-32 outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+            {/* START */}
+            <button
+              className="start-interview-btn"
+              onClick={handleStartInterview}
+            >
+              🚀 Start Interview
+            </button>
 
-                    </div>
+          </div>
+        )}
+
+        {/* LOADING */}
+        {loading && (
+          <div className="loading-card">
+            <div className="loader"></div>
+
+            <h2>🤖 AI is preparing your interview...</h2>
+
+            <p>
+              Generating {difficulty.toLowerCase()} level questions
+              for {role}.
+            </p>
+          </div>
+        )}
+
+        {/* QUESTIONS */}
+        {questions.length > 0 && interviewMode === "text" && (
+          <div className="questions-section">
+
+            <div className="interview-topbar">
+              <div>
+                <span className="small-label">Target Role</span>
+                <h2>{role}</h2>
+              </div>
+
+              <div className="interview-info">
+                <span>{difficulty}</span>
+                <span>{questions.length} Questions</span>
+              </div>
+            </div>
+
+            <div className="progress-container">
+              <div className="progress-info">
+                <span>
+                  Question {currentQuestion + 1} of {questions.length}
+                </span>
+
+                <span>
+                  {Math.round(
+                    ((currentQuestion + 1) / questions.length) * 100
+                  )}
+                  %
+                </span>
+              </div>
+
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{
+                    width: `${
+                      ((currentQuestion + 1) / questions.length) * 100
+                    }%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+
+            {/* CURRENT QUESTION */}
+            <div className="question-card">
+
+              <div className="question-number">
+                Q{currentQuestion + 1}
+              </div>
+
+              <h3>
+                {typeof questions[currentQuestion] === "string"
+                  ? questions[currentQuestion]
+                  : questions[currentQuestion]?.question}
+              </h3>
+
+              <textarea
+                value={answers[currentQuestion] || ""}
+                onChange={(e) =>
+                  handleAnswerChange(
+                    currentQuestion,
+                    e.target.value
                   )
-                )}
+                }
+                placeholder="Type your answer here..."
+              />
 
+              <div className="answer-count">
+                {(answers[currentQuestion] || "").length} characters
               </div>
+            </div>
 
-              {/* =================================================
-                  FEEDBACK BUTTON
-              ================================================= */}
+            {/* NAVIGATION */}
+            <div className="question-navigation">
 
               <button
-                onClick={
-                  handleGetFeedback
-                }
-                disabled={
-                  isLoadingFeedback
-                }
-                className="mt-8 bg-green-600 text-white px-7 py-3 rounded-xl hover:bg-green-700 disabled:bg-green-400 transition font-semibold"
+                className="nav-btn"
+                onClick={handlePrevious}
+                disabled={currentQuestion === 0}
               >
-                {isLoadingFeedback
-                  ? "Processing Feedback..."
-                  : "Get AI Feedback"}
+                ← Previous
               </button>
 
-              {/* =================================================
-                  FEEDBACK RESULT
-              ================================================= */}
-
-              {feedbackResult && (
-                <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-
-                  <h3 className="text-2xl font-bold text-blue-800 mb-6">
-                    AI Interview Feedback
-                  </h3>
-
-                  {/* SCORE */}
-
-                  <div className="bg-white rounded-xl p-5 mb-5">
-
-                    <p className="text-sm text-slate-500">
-                      Overall Score
-                    </p>
-
-                    <p className="text-4xl font-bold text-blue-600">
-                      {
-                        feedbackResult.overallScore
-                      }
-                      /100
-                    </p>
-
-                  </div>
-
-                  {/* OVERALL */}
-
-                  <div className="mb-6">
-
-                    <h4 className="text-lg font-bold mb-2">
-                      Overall Feedback
-                    </h4>
-
-                    <p className="text-slate-700">
-                      {
-                        feedbackResult.overallFeedback
-                      }
-                    </p>
-
-                  </div>
-
-                  {/* STRENGTHS */}
-
-                  {feedbackResult
-                    .strengths?.length >
-                    0 && (
-                    <div className="mb-6">
-
-                      <h4 className="text-lg font-bold text-green-700 mb-2">
-                        Strengths
-                      </h4>
-
-                      <ul className="list-disc pl-6 space-y-1">
-
-                        {feedbackResult.strengths.map(
-                          (item, index) => (
-                            <li key={index}>
-                              {item}
-                            </li>
-                          )
-                        )}
-
-                      </ul>
-
-                    </div>
-                  )}
-
-                  {/* WEAKNESSES */}
-
-                  {feedbackResult
-                    .weaknesses?.length >
-                    0 && (
-                    <div className="mb-6">
-
-                      <h4 className="text-lg font-bold text-red-700 mb-2">
-                        Weaknesses
-                      </h4>
-
-                      <ul className="list-disc pl-6 space-y-1">
-
-                        {feedbackResult.weaknesses.map(
-                          (item, index) => (
-                            <li key={index}>
-                              {item}
-                            </li>
-                          )
-                        )}
-
-                      </ul>
-
-                    </div>
-                  )}
-
-                  {/* QUESTION FEEDBACK */}
-
-                  {feedbackResult
-                    .questionFeedback
-                    ?.length > 0 && (
-                    <div className="mb-6">
-
-                      <h4 className="text-lg font-bold mb-4">
-                        Question-wise Feedback
-                      </h4>
-
-                      <div className="space-y-4">
-
-                        {feedbackResult.questionFeedback.map(
-                          (
-                            item,
-                            index
-                          ) => (
-                            <div
-                              key={index}
-                              className="bg-white rounded-xl p-4 border"
-                            >
-
-                              <p className="font-semibold mb-2">
-                                Q{index + 1}.{" "}
-                                {
-                                  item.question
-                                }
-                              </p>
-
-                              <p className="text-slate-600">
-                                {
-                                  item.feedback
-                                }
-                              </p>
-
-                            </div>
-                          )
-                        )}
-
-                      </div>
-
-                    </div>
-                  )}
-
-                  {/* RECOMMENDATIONS */}
-
-                  {feedbackResult
-                    .recommendations
-                    ?.length > 0 && (
-                    <div>
-
-                      <h4 className="text-lg font-bold text-purple-700 mb-2">
-                        Recommendations
-                      </h4>
-
-                      <ul className="list-disc pl-6 space-y-1">
-
-                        {feedbackResult.recommendations.map(
-                          (
-                            item,
-                            index
-                          ) => (
-                            <li key={index}>
-                              {item}
-                            </li>
-                          )
-                        )}
-
-                      </ul>
-
-                    </div>
-                  )}
-
-                </div>
+              {currentQuestion < questions.length - 1 ? (
+                <button
+                  className="nav-btn primary"
+                  onClick={handleNext}
+                >
+                  Next →
+                </button>
+              ) : (
+                <button
+                  className="feedback-btn"
+                  onClick={handleGetFeedback}
+                >
+                  ✨ Get AI Feedback
+                </button>
               )}
 
             </div>
-          )}
+
+            {/* QUESTION LIST */}
+            <div className="all-questions">
+              <h3>Interview Questions</h3>
+
+              <div className="question-list">
+                {questions.map((question, index) => (
+                  <button
+                    key={index}
+                    className={`question-list-item ${
+                      currentQuestion === index ? "active" : ""
+                    } ${
+                      answers[index] ? "answered" : ""
+                    }`}
+                    onClick={() => setCurrentQuestion(index)}
+                  >
+                    <span>Q{index + 1}</span>
+
+                    <p>
+                      {typeof question === "string"
+                        ? question
+                        : question?.question}
+                    </p>
+
+                    {answers[index] && <b>✓</b>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* FEEDBACK */}
+        {feedback && (
+          <div className="feedback-section">
+
+            <div className="feedback-header">
+              <span>🎯</span>
+              <div>
+                <h2>AI Interview Feedback</h2>
+                <p>Your interview has been evaluated.</p>
+              </div>
+            </div>
+
+            <div className="feedback-content">
+              {typeof feedback === "string" ? (
+                <p>{feedback}</p>
+              ) : (
+                <>
+                  {feedback.score && (
+                    <div className="score-card">
+                      <span>Overall Score</span>
+                      <strong>{feedback.score}/100</strong>
+                    </div>
+                  )}
+
+                  {feedback.feedback && (
+                    <div className="feedback-text">
+                      <h3>AI Feedback</h3>
+                      <p>{feedback.feedback}</p>
+                    </div>
+                  )}
+
+                  {feedback.strengths && (
+                    <div className="feedback-list">
+                      <h3>💪 Strengths</h3>
+
+                      {feedback.strengths.map((item, index) => (
+                        <div key={index}>✓ {item}</div>
+                      ))}
+                    </div>
+                  )}
+
+                  {feedback.improvements && (
+                    <div className="feedback-list">
+                      <h3>📈 Areas to Improve</h3>
+
+                      {feedback.improvements.map((item, index) => (
+                        <div key={index}>• {item}</div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <button
+              className="start-again-btn"
+              onClick={handleReset}
+            >
+              🔄 Start New Interview
+            </button>
+
+          </div>
+        )}
 
       </div>
     </div>
   );
-};
+}
 
 export default AIMockInterviewer;
