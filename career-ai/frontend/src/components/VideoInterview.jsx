@@ -109,9 +109,11 @@ const VideoInterview = ({
       }
     } catch (error) {
       console.error("Camera error:", error);
+
       setCameraError(
         "Camera/Microphone permission denied. Please allow camera and microphone access."
       );
+
       setCameraOn(false);
       setMicOn(false);
     }
@@ -200,6 +202,7 @@ const VideoInterview = ({
     utterance.onstart = () => {
       setIsSpeaking(true);
       setAiStatus("Speaking");
+      setIsThinking(false);
     };
 
     utterance.onend = () => {
@@ -594,18 +597,26 @@ const VideoInterview = ({
     <div className="video-interview-page">
       <div className="video-interview-container">
 
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
+
         <header className="video-header">
+
           <div className="header-left">
 
             <div className="ai-header-icon">
-              AI
+              <span>AI</span>
             </div>
 
             <div>
-              <h1 className="video-title">
-                AI Video Interview
-              </h1>
+              <div className="title-row">
+                <h1 className="video-title">
+                  AI Video Interview
+                </h1>
+
+                <span className="secure-badge">
+                  🔒 Secure
+                </span>
+              </div>
 
               <p className="video-role">
                 {role}
@@ -618,7 +629,11 @@ const VideoInterview = ({
 
             <div className="interview-timer">
               <span className="timer-icon">◷</span>
-              {formatTime(interviewTime)}
+
+              <div>
+                <small>Duration</small>
+                <strong>{formatTime(interviewTime)}</strong>
+              </div>
             </div>
 
             <div className="live-status">
@@ -627,133 +642,227 @@ const VideoInterview = ({
             </div>
 
           </div>
+
         </header>
 
-        {/* CAMERA ERROR */}
+        {/* ================= CAMERA ERROR ================= */}
+
         {cameraError && (
           <div className="camera-error">
-            <strong>Camera access required</strong>
-            <span>{cameraError}</span>
+
+            <div className="error-icon">!</div>
+
+            <div className="error-content">
+              <strong>Camera access required</strong>
+              <span>{cameraError}</span>
+            </div>
 
             <button onClick={startCamera}>
               Try Again
             </button>
+
           </div>
         )}
 
-        {/* VIDEO GRID */}
+        {/* ================= VIDEO GRID ================= */}
+
         <div className="video-grid">
 
-          {/* AI VIDEO */}
-          <div className="video-box ai-box">
+          {/* ================= AI INTERVIEWER ================= */}
 
-            <div className="video-label">
+          <div
+            className={`video-box ai-box ${
+              isSpeaking ? "ai-is-speaking" : ""
+            } ${isThinking ? "ai-is-thinking" : ""}`}
+          >
+
+            <div className="video-label ai-label">
               <span className="online-dot"></span>
-              AI Interviewer
+              <span>AI Interviewer</span>
             </div>
 
-            <div
-              className={`human-avatar ${
-                isSpeaking ? "avatar-speaking" : ""
-              } ${isThinking ? "avatar-thinking" : ""}`}
-            >
+            {/* AI STATUS TOP RIGHT */}
+
+            <div className="ai-live-pill">
+              <span className="pulse-dot"></span>
+              {isSpeaking
+                ? "Speaking"
+                : isThinking
+                ? "Thinking"
+                : "Listening"}
+            </div>
+
+            {/* HUMAN-LIKE VIRTUAL INTERVIEWER */}
+
+            <div className="virtual-interviewer">
+
+              {/* BACK GLOW */}
+
+              <div className="interviewer-glow"></div>
 
               {/* HEAD */}
-              <div className="avatar-head">
 
-                {/* HAIR */}
-                <div className="avatar-hair"></div>
+              <div className="virtual-head">
 
-                {/* FACE */}
-                <div className="avatar-face">
+                <div className="hair-back"></div>
 
-                  {/* EYEBROWS */}
-                  <div className="eyebrow eyebrow-left"></div>
-                  <div className="eyebrow eyebrow-right"></div>
+                <div className="face">
 
-                  {/* EYES */}
-                  <div className="eye eye-left">
+                  <div className="hair-front"></div>
+
+                  <div className="eyebrows">
+                    <span></span>
                     <span></span>
                   </div>
 
-                  <div className="eye eye-right">
+                  <div className="eyes">
+                    <span className="eye">
+                      <i></i>
+                    </span>
+
+                    <span className="eye">
+                      <i></i>
+                    </span>
+                  </div>
+
+                  <div className="nose"></div>
+
+                  <div
+                    className={`mouth ${
+                      isSpeaking ? "mouth-speaking" : ""
+                    }`}
+                  >
                     <span></span>
                   </div>
 
-                  {/* NOSE */}
-                  <div className="avatar-nose"></div>
-
-                  {/* MOUTH */}
-                  <div className="avatar-mouth">
-                    <span></span>
-                  </div>
+                  <div className="cheek cheek-left"></div>
+                  <div className="cheek cheek-right"></div>
 
                 </div>
 
               </div>
 
+              {/* NECK */}
+
+              <div className="virtual-neck"></div>
+
               {/* BODY */}
-              <div className="avatar-body">
 
-                <div className="avatar-neck"></div>
+              <div className="virtual-body">
 
-                <div className="avatar-shirt"></div>
+                <div className="shirt">
+
+                  <div className="shirt-collar left"></div>
+                  <div className="shirt-collar right"></div>
+
+                  <div className="shirt-line"></div>
+
+                </div>
 
                 {/* LEFT ARM */}
-                <div className="avatar-arm arm-left"></div>
+
+                <div
+                  className={`virtual-arm left-arm ${
+                    isSpeaking ? "gesture-left" : ""
+                  }`}
+                >
+                  <div className="arm-sleeve"></div>
+                  <div className="virtual-hand">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
 
                 {/* RIGHT ARM */}
-                <div className="avatar-arm arm-right"></div>
 
-                {/* HANDS */}
-                <div className="avatar-hand hand-left">
-                  👋
+                <div
+                  className={`virtual-arm right-arm ${
+                    isSpeaking ? "gesture-right" : ""
+                  }`}
+                >
+                  <div className="arm-sleeve"></div>
+                  <div className="virtual-hand">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
                 </div>
 
-                <div className="avatar-hand hand-right">
-                  ✋
-                </div>
+              </div>
 
+              {/* SPEAKING WAVE */}
+
+              <div
+                className={`ai-audio-wave ${
+                  isSpeaking ? "wave-active" : ""
+                }`}
+              >
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
 
             </div>
 
-            {/* AI NAME */}
+            {/* AI NAME CARD */}
+
             <div className="ai-name-card">
-              <div>
-                <strong>AI Interviewer</strong>
-                <span>Senior {role}</span>
+
+              <div className="ai-person-info">
+
+                <div className="ai-avatar-small">
+                  AI
+                </div>
+
+                <div>
+                  <strong>AI Interviewer</strong>
+
+                  <span>
+                    Senior {role}
+                  </span>
+                </div>
+
               </div>
 
               <div className="ai-speaking-status">
-                <span className="status-dot"></span>
-                {aiStatus}
-              </div>
-            </div>
 
-            {/* VOICE WAVE */}
-            <div
-              className={`voice-wave ${
-                isSpeaking ? "voice-active" : ""
-              }`}
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
+                <span
+                  className={`status-dot ${
+                    isSpeaking
+                      ? "status-speaking"
+                      : isListening
+                      ? "status-listening"
+                      : ""
+                  }`}
+                ></span>
+
+                <span>{aiStatus}</span>
+
+              </div>
+
             </div>
 
           </div>
 
-          {/* CANDIDATE VIDEO */}
+          {/* ================= CANDIDATE VIDEO ================= */}
+
           <div className="video-box candidate-box">
 
             <div className="video-label candidate-video-label">
               <span className="candidate-dot"></span>
-              You
+              <span>You</span>
+            </div>
+
+            <div className="candidate-live-indicator">
+              <span></span>
+              Camera
             </div>
 
             {cameraOn ? (
@@ -766,22 +875,32 @@ const VideoInterview = ({
               />
             ) : (
               <div className="camera-off-screen">
-                <div className="camera-off-icon">
-                  📷
+
+                <div className="camera-off-avatar">
+                  <span>👤</span>
                 </div>
 
-                <span>Camera Off</span>
+                <strong>Camera Off</strong>
+
+                <small>
+                  Turn on your camera to continue
+                </small>
+
               </div>
             )}
 
             <div className="candidate-bottom-bar">
 
               <span>
-                {micOn ? "🎙️ Mic On" : "🔇 Mic Off"}
+                <i className={micOn ? "active-status" : "muted-status"}></i>
+
+                {micOn ? "Mic On" : "Mic Off"}
               </span>
 
               <span>
-                {cameraOn ? "📹 Camera On" : "📷 Camera Off"}
+                <i className={cameraOn ? "active-status" : "muted-status"}></i>
+
+                {cameraOn ? "Camera On" : "Camera Off"}
               </span>
 
             </div>
@@ -790,14 +909,23 @@ const VideoInterview = ({
 
         </div>
 
-        {/* QUESTION */}
+        {/* ================= QUESTION CARD ================= */}
+
         <div className="question-card">
 
           <div className="question-top">
 
-            <div className="question-number">
-              Question {currentQuestion + 1} of{" "}
-              {questionList.length}
+            <div className="question-heading">
+
+              <span className="question-small-label">
+                INTERVIEW QUESTION
+              </span>
+
+              <div className="question-number">
+                Question {currentQuestion + 1}{" "}
+                <span>of {questionList.length}</span>
+              </div>
+
             </div>
 
             <div className="question-type">
@@ -809,6 +937,7 @@ const VideoInterview = ({
           </div>
 
           <div className="question-progress">
+
             <div
               className="question-progress-fill"
               style={{
@@ -819,12 +948,13 @@ const VideoInterview = ({
                 }%`,
               }}
             ></div>
+
           </div>
 
           <div className="question-content">
 
-            <div className="quote-icon">
-              “
+            <div className="question-quote">
+              "
             </div>
 
             <h2>
@@ -839,8 +969,13 @@ const VideoInterview = ({
                   speakQuestion(getCurrentQuestion())
                 }
               >
-                🔊 Repeat Question
+                <span>🔊</span>
+                Repeat Question
               </button>
+
+              <span className="question-hint">
+                Listen carefully before answering
+              </span>
 
             </div>
 
@@ -848,7 +983,8 @@ const VideoInterview = ({
 
         </div>
 
-        {/* LISTENING AREA */}
+        {/* ================= LISTENING AREA ================= */}
+
         <div
           className={`listening-area ${
             isListening ? "listening-active" : ""
@@ -856,49 +992,74 @@ const VideoInterview = ({
         >
 
           <div className="listening-icon">
-            {isListening ? "🎙️" : "🎤"}
+
+            <div className="mic-circle">
+              {isListening ? "🎙️" : "🎤"}
+            </div>
+
           </div>
 
           <div className="listening-content">
 
-            <strong>
-              {isListening
-                ? "I'm listening..."
-                : "Your answer"}
-            </strong>
+            <div className="listening-title-row">
+
+              <strong>
+                {isListening
+                  ? "I'm listening..."
+                  : "Ready for your answer"}
+              </strong>
+
+              {isListening && (
+                <span className="recording-badge">
+                  ● Recording
+                </span>
+              )}
+
+            </div>
 
             <span>
               {isListening
-                ? "Speak clearly. Your answer is being transcribed."
-                : "Click Start Answer and speak your answer."}
+                ? "Speak naturally. Your answer is being transcribed in real time."
+                : "Click Start Answer and speak clearly."}
             </span>
 
           </div>
 
           {isListening && (
             <div className="mic-animation">
+
               <i></i>
               <i></i>
               <i></i>
               <i></i>
               <i></i>
+              <i></i>
+              <i></i>
+
             </div>
           )}
 
         </div>
 
-        {/* ANSWER PREVIEW */}
+        {/* ================= ANSWER PREVIEW ================= */}
+
         {transcript && (
           <div className="answer-preview">
 
             <div className="answer-header">
-              <span>📝 Your Answer</span>
+
+              <div>
+                <span className="answer-icon">📝</span>
+
+                <strong>Your Answer</strong>
+              </div>
 
               <button
                 onClick={() => setTranscript("")}
               >
                 Clear
               </button>
+
             </div>
 
             <p>{transcript}</p>
@@ -906,10 +1067,12 @@ const VideoInterview = ({
           </div>
         )}
 
-        {/* CONTROLS */}
+        {/* ================= CONTROLS ================= */}
+
         <div className="interview-controls">
 
           {/* MIC */}
+
           <button
             className={`control-button ${
               !micOn ? "control-danger" : ""
@@ -922,11 +1085,12 @@ const VideoInterview = ({
             </span>
 
             <small>
-              {micOn ? "Mic" : "Muted"}
+              {micOn ? "Microphone" : "Muted"}
             </small>
           </button>
 
           {/* CAMERA */}
+
           <button
             className={`control-button ${
               !cameraOn ? "control-danger" : ""
@@ -939,18 +1103,23 @@ const VideoInterview = ({
             </span>
 
             <small>
-              {cameraOn ? "Camera" : "Off"}
+              {cameraOn ? "Camera" : "Camera Off"}
             </small>
           </button>
 
           {/* START / STOP */}
+
           {!isListening ? (
             <button
               className="start-speaking-button"
               onClick={startListening}
             >
               <span>🎤</span>
-              Start Answer
+
+              <div>
+                <strong>Start Answer</strong>
+                <small>Begin speaking</small>
+              </div>
             </button>
           ) : (
             <button
@@ -958,30 +1127,44 @@ const VideoInterview = ({
               onClick={stopListening}
             >
               <span>⏹</span>
-              Stop Answer
+
+              <div>
+                <strong>Stop Answer</strong>
+                <small>Save response</small>
+              </div>
             </button>
           )}
 
           {/* PREVIOUS */}
+
           <button
             className="previous-question-button"
             onClick={previousQuestion}
             disabled={currentQuestion === 0}
           >
-            ← Previous
+            ←
+            <span>Previous</span>
           </button>
 
           {/* NEXT */}
+
           <button
             className="next-question-button"
             onClick={nextQuestion}
           >
-            {currentQuestion === questionList.length - 1
-              ? "Finish Interview"
-              : "Next Question →"}
+            <span>
+              {currentQuestion === questionList.length - 1
+                ? "Finish Interview"
+                : "Next Question"}
+            </span>
+
+            {currentQuestion !== questionList.length - 1 && (
+              <strong>→</strong>
+            )}
           </button>
 
           {/* END */}
+
           <button
             className="end-interview-button"
             onClick={handleExit}
@@ -991,24 +1174,30 @@ const VideoInterview = ({
 
         </div>
 
-        {/* SPEECH WARNING */}
+        {/* ================= SPEECH WARNING ================= */}
+
         {!speechSupported && (
           <div className="speech-warning">
-            ⚠️ Speech recognition is not supported in this
-            browser. Please use Google Chrome for voice
-            answers.
+
+            <span>⚠️</span>
+
+            Speech recognition is not supported in this browser.
+            Please use Google Chrome for voice answers.
+
           </div>
         )}
 
-        {/* FOOTER */}
+        {/* ================= FOOTER ================= */}
+
         <footer className="interview-footer">
 
-          <div>
-            🔒 Your interview session is private
+          <div className="footer-security">
+            <span>🔒</span>
+            Your interview session is private
           </div>
 
           <div>
-            AI Voice • Live Camera • Speech Recognition
+            AI Voice&nbsp; • &nbsp;Live Camera&nbsp; • &nbsp;Speech Recognition
           </div>
 
         </footer>
