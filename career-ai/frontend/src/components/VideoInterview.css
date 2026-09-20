@@ -1,24 +1,27 @@
-* {
-  box-sizing: border-box;
-}
+/* =========================================================
+   GLOBAL VIDEO INTERVIEW PAGE
+========================================================= */
 
 .video-interview-page {
+  width: 100%;
   min-height: 100vh;
+
+  padding: 20px;
+
   background:
     radial-gradient(
       circle at top left,
       rgba(59, 130, 246, 0.12),
-      transparent 30%
+      transparent 35%
     ),
-    #07111f;
+    #0b1120;
 
   color: #ffffff;
 
-  padding: 24px;
+  box-sizing: border-box;
 
   font-family:
     Inter,
-    system-ui,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
@@ -26,165 +29,153 @@
 }
 
 
-/* =========================================
+/* =========================================================
    HEADER
-========================================= */
+========================================================= */
 
-.interview-header {
-  max-width: 1450px;
+.video-interview-header {
+  width: 100%;
 
-  margin: 0 auto 20px;
+  display: grid;
 
-  display: flex;
+  grid-template-columns: 1fr auto 1fr;
 
   align-items: center;
 
-  justify-content: space-between;
+  gap: 20px;
 
-  padding: 18px 22px;
+  margin-bottom: 18px;
 
-  background: rgba(15, 27, 45, 0.92);
+  padding: 16px 20px;
+
+  background: rgba(17, 24, 39, 0.9);
 
   border: 1px solid rgba(255, 255, 255, 0.08);
 
-  border-radius: 18px;
+  border-radius: 16px;
 
-  backdrop-filter: blur(18px);
+  box-sizing: border-box;
+
+  backdrop-filter: blur(14px);
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
-.header-left {
-  display: flex;
 
-  align-items: center;
-
-  gap: 14px;
-}
-
-.header-icon {
-  width: 48px;
-
-  height: 48px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  background: rgba(59, 130, 246, 0.15);
-
-  border: 1px solid rgba(59, 130, 246, 0.25);
-
-  border-radius: 14px;
-
-  font-size: 23px;
-}
+/* Header Left */
 
 .header-left h1 {
   margin: 0;
 
-  font-size: 21px;
+  font-size: 22px;
 
   font-weight: 700;
+
+  color: #ffffff;
 }
 
 .header-left p {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
 
   color: #94a3b8;
 
   font-size: 13px;
 }
 
-.header-right {
+
+/* Header Center */
+
+.header-center {
   display: flex;
 
-  align-items: center;
+  justify-content: center;
 
-  gap: 12px;
+  align-items: center;
 }
 
-.timer {
-  padding: 9px 14px;
+.interview-timer {
+  min-width: 85px;
+
+  padding: 8px 15px;
+
+  text-align: center;
+
+  background: #020617;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
 
   border-radius: 10px;
 
-  background: rgba(255, 255, 255, 0.05);
+  font-size: 18px;
 
-  color: #e2e8f0;
+  font-weight: 700;
 
   font-family: monospace;
 
-  font-size: 15px;
+  color: #e2e8f0;
 }
 
-.timer-dot {
-  display: inline-block;
 
-  width: 7px;
+/* Header Right */
 
-  height: 7px;
+.header-right {
+  display: flex;
 
-  border-radius: 50%;
-
-  background: #ef4444;
-
-  margin-right: 7px;
-
-  animation: timerPulse 1.5s infinite;
+  justify-content: flex-end;
 }
 
-.live-badge {
+.live-status {
   display: flex;
 
   align-items: center;
 
-  gap: 7px;
+  gap: 8px;
 
-  padding: 8px 12px;
+  padding: 7px 13px;
 
-  border-radius: 9px;
+  background: rgba(220, 38, 38, 0.14);
 
-  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 20px;
 
-  color: #fca5a5;
+  color: #f87171;
 
   font-size: 12px;
 
   font-weight: 700;
+
+  letter-spacing: 0.5px;
 }
 
-.live-badge span {
-  width: 7px;
+.live-status span {
+  width: 8px;
 
-  height: 7px;
+  height: 8px;
 
   border-radius: 50%;
 
   background: #ef4444;
 
-  animation: timerPulse 1.3s infinite;
+  animation: livePulse 1.2s infinite;
 }
 
 
-/* =========================================
-   ERROR
-========================================= */
+/* =========================================================
+   ERROR MESSAGE
+========================================================= */
 
-.error-message {
-  max-width: 1450px;
+.interview-error-message {
+  margin-bottom: 15px;
 
-  margin: 0 auto 15px;
+  padding: 12px 16px;
 
-  padding: 13px 16px;
+  border-radius: 10px;
 
-  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
 
-  background: rgba(239, 68, 68, 0.1);
-
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 
   color: #fca5a5;
 
@@ -192,800 +183,123 @@
 }
 
 
-/* =========================================
-   VIDEO GRID
-========================================= */
+/* =========================================================
+   MAIN INTERVIEW CONTENT
+========================================================= */
 
-.video-grid {
-  max-width: 1450px;
-
-  margin: auto;
+.video-interview-content {
+  width: 100%;
 
   display: grid;
 
-  grid-template-columns: 1.35fr 1fr;
+  grid-template-columns: 1fr 1fr;
 
   gap: 18px;
+
+  box-sizing: border-box;
 }
 
-.video-box {
-  position: relative;
 
-  min-height: 470px;
+/* =========================================================
+   PANELS
+========================================================= */
 
-  overflow: hidden;
+.interviewer-panel,
+.candidate-panel {
+  min-width: 0;
 
-  border-radius: 20px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #111d31,
-      #07101d
-    );
+  background: rgba(17, 24, 39, 0.9);
 
   border: 1px solid rgba(255, 255, 255, 0.08);
 
+  border-radius: 18px;
+
+  overflow: hidden;
+
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.25);
+    0 12px 35px rgba(0, 0, 0, 0.25);
+
+  backdrop-filter: blur(14px);
 }
 
-.video-label {
-  position: absolute;
 
-  z-index: 20;
+/* =========================================================
+   PANEL HEADER
+========================================================= */
 
-  top: 15px;
+.panel-header {
+  min-height: 72px;
 
-  left: 15px;
+  padding: 15px 17px;
 
   display: flex;
 
+  justify-content: space-between;
+
   align-items: center;
 
-  gap: 7px;
+  gap: 15px;
 
-  padding: 7px 11px;
+  box-sizing: border-box;
 
-  border-radius: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
 
-  background: rgba(3, 8, 18, 0.65);
+.panel-label {
+  display: block;
 
-  backdrop-filter: blur(10px);
+  margin-bottom: 4px;
 
-  font-size: 11px;
+  color: #60a5fa;
 
-  letter-spacing: 0.6px;
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+}
+
+.panel-header h2 {
+  margin: 0;
+
+  font-size: 17px;
 
   font-weight: 700;
 
-  color: #cbd5e1;
+  color: #f8fafc;
 }
 
-.label-dot {
-  width: 7px;
-
-  height: 7px;
-
-  border-radius: 50%;
-}
-
-.ai-dot {
-  background: #8b5cf6;
-
-  box-shadow: 0 0 10px #8b5cf6;
-}
-
-.candidate-dot {
-  background: #22c55e;
-
-  box-shadow: 0 0 10px #22c55e;
-}
-
-
-/* =========================================
-   VIRTUAL INTERVIEWER
-========================================= */
-
-.virtual-interviewer {
-  position: absolute;
-
-  inset: 0;
-
-  display: flex;
-
-  justify-content: center;
-
-  align-items: center;
-
-  overflow: hidden;
-
-  perspective: 1000px;
-
-  background:
-    radial-gradient(
-      circle at 50% 42%,
-      rgba(99, 102, 241, 0.18),
-      transparent 38%
-    );
-}
-
-.interviewer-glow {
-  position: absolute;
-
-  width: 280px;
-
-  height: 280px;
-
-  border-radius: 50%;
-
-  background: rgba(99, 102, 241, 0.13);
-
-  filter: blur(60px);
-
-  animation: glowMove 5s ease-in-out infinite;
-}
-
-
-/* =========================================
-   HEAD
-========================================= */
-
-.virtual-head {
-  position: absolute;
-
-  width: 215px;
-
-  height: 280px;
-
-  top: 55px;
-
-  z-index: 8;
-
-  animation: headFloat 4s ease-in-out infinite;
-}
-
-.face {
-  position: absolute;
-
-  width: 180px;
-
-  height: 215px;
-
-  left: 18px;
-
-  top: 30px;
-
-  border-radius:
-    48%
-    48%
-    45%
-    45%;
-
-  background:
-    linear-gradient(
-      135deg,
-      #f5c8a5,
-      #e9aa83
-    );
-
-  box-shadow:
-    inset -10px -15px 25px rgba(120, 60, 30, 0.1);
-
-  z-index: 3;
-}
-
-
-/* =========================================
-   HAIR
-========================================= */
-
-.hair-back {
-  position: absolute;
-
-  width: 190px;
-
-  height: 225px;
-
-  left: 12px;
-
-  top: 18px;
-
-  border-radius: 48% 48% 35% 35%;
-
-  background:
-    linear-gradient(
-      120deg,
-      #24150f,
-      #503024,
-      #1b110e
-    );
-
-  z-index: 1;
-}
-
-.hair-front {
-  position: absolute;
-
-  width: 188px;
-
-  height: 78px;
-
-  top: -7px;
-
-  left: -3px;
-
-  border-radius: 55% 50% 45% 25%;
-
-  background:
-    linear-gradient(
-      120deg,
-      #1b110e,
-      #503024
-    );
-
-  z-index: 10;
-}
-
-.hair-front::after {
-  content: "";
-
-  position: absolute;
-
-  width: 65px;
-
-  height: 80px;
-
-  right: 5px;
-
-  top: 28px;
-
-  border-radius: 50%;
-
-  background: #291914;
-
-  transform: rotate(20deg);
-}
-
-
-/* =========================================
-   EYEBROWS
-========================================= */
-
-.eyebrows {
-  position: absolute;
-
-  top: 77px;
-
-  left: 38px;
-
-  width: 105px;
-
-  display: flex;
-
-  justify-content: space-between;
-
-  z-index: 12;
-}
-
-.eyebrows span {
-  width: 39px;
-
-  height: 5px;
-
-  border-radius: 100px;
-
-  background: #43271c;
-
-  transform: rotate(-5deg);
-}
-
-.eyebrows span:last-child {
-  transform: rotate(5deg);
-}
-
-
-/* =========================================
-   EYES
-========================================= */
-
-.eyes {
-  position: absolute;
-
-  top: 91px;
-
-  left: 32px;
-
-  width: 116px;
-
-  display: flex;
-
-  justify-content: space-between;
-
-  z-index: 15;
-}
-
-.eye {
-  position: relative;
-
-  width: 42px;
-
-  height: 25px;
-
-  border-radius: 50%;
-
-  background: #ffffff;
-
-  overflow: hidden;
-
-  border: 1px solid rgba(80, 40, 20, 0.25);
-
-  animation: blink 5s infinite;
-}
-
-.eye::before {
-  content: "";
-
-  position: absolute;
-
-  width: 17px;
-
-  height: 17px;
-
-  border-radius: 50%;
-
-  background: #5b3828;
-
-  left: 13px;
-
-  top: 4px;
-}
-
-.pupil {
-  position: absolute;
-
-  width: 7px;
-
-  height: 7px;
-
-  border-radius: 50%;
-
-  background: #111827;
-
-  left: 18px;
-
-  top: 9px;
-
-  z-index: 2;
-
-  animation: eyeLook 4s ease-in-out infinite;
-}
-
-
-/* =========================================
-   NOSE
-========================================= */
-
-.nose {
-  position: absolute;
-
-  left: 85px;
-
-  top: 111px;
-
-  width: 12px;
-
-  height: 38px;
-
-  border-right: 2px solid rgba(130, 65, 40, 0.25);
-
-  border-radius: 50%;
-}
-
-
-/* =========================================
-   CHEEKS
-========================================= */
-
-.cheek {
-  position: absolute;
-
-  width: 25px;
-
-  height: 13px;
-
-  border-radius: 50%;
-
-  background: rgba(239, 110, 100, 0.16);
-
-  top: 137px;
-}
-
-.cheek-left {
-  left: 18px;
-}
-
-.cheek-right {
-  right: 18px;
-}
-
-
-/* =========================================
-   MOUTH
-========================================= */
-
-.mouth {
-  position: absolute;
-
-  left: 66px;
-
-  top: 163px;
-
-  width: 52px;
-
-  height: 20px;
-
-  border-bottom: 3px solid #8c4038;
-
-  border-radius: 0 0 50% 50%;
-
-  z-index: 15;
-
-  transition: all 0.15s ease;
-}
-
-.mouth span {
-  display: block;
-
-  width: 30px;
-
-  height: 3px;
-
-  margin: 8px auto;
-
-  background: rgba(255, 255, 255, 0.5);
-
-  border-radius: 50%;
-}
-
-.mouth-speaking {
-  animation: mouthTalk 0.18s infinite alternate;
-
-  background: rgba(70, 15, 20, 0.25);
-
-  border-radius: 0 0 50% 50%;
-}
-
-
-/* =========================================
-   NECK
-========================================= */
-
-.virtual-neck {
-  position: absolute;
-
-  width: 68px;
-
-  height: 70px;
-
-  left: 56px;
-
-  top: 208px;
-
-  background: #dfa07b;
-
-  z-index: 1;
-}
-
-
-/* =========================================
-   BODY
-========================================= */
-
-.virtual-body {
-  position: absolute;
-
-  bottom: -70px;
-
-  width: 400px;
-
-  height: 260px;
-
-  z-index: 5;
-}
-
-.shirt {
-  position: absolute;
-
-  width: 260px;
-
-  height: 250px;
-
-  left: 70px;
-
-  border-radius: 45% 45% 0 0;
-
-  background:
-    linear-gradient(
-      120deg,
-      #4f46e5,
-      #312e81
-    );
-
-  box-shadow:
-    inset 0 20px 35px rgba(255, 255, 255, 0.08);
-}
-
-.shirt-collar {
-  position: absolute;
-
-  top: 0;
-
-  left: 90px;
-
-  width: 80px;
-
-  height: 65px;
-
-  border-left: 28px solid transparent;
-
-  border-right: 28px solid transparent;
-
-  border-top: 50px solid #3730a3;
-}
-
-
-/* =========================================
-   ARMS
-========================================= */
-
-.virtual-arm {
-  position: absolute;
-
-  width: 125px;
-
-  height: 190px;
-
-  bottom: 20px;
-
-  z-index: 8;
-
-  transform-origin: top center;
-}
-
-.left-arm {
-  left: -5px;
-
-  transform: rotate(20deg);
-}
-
-.right-arm {
-  right: -5px;
-
-  transform: rotate(-20deg);
-}
-
-.arm-sleeve {
-  width: 65px;
-
-  height: 120px;
-
-  background: #4338ca;
-
-  border-radius: 35px;
-
-  position: absolute;
-
-  left: 30px;
-}
-
-.virtual-hand {
-  position: absolute;
-
-  width: 48px;
-
-  height: 70px;
-
-  border-radius: 45% 45% 40% 40%;
-
-  background: #e6aa84;
-
-  bottom: 0;
-
-  left: 37px;
-
-  transform: rotate(-10deg);
-}
-
-.virtual-hand span {
-  position: absolute;
-
-  width: 10px;
-
-  height: 30px;
-
-  border-radius: 10px;
-
-  background: #e6aa84;
-
-  top: -17px;
-}
-
-.virtual-hand span:nth-child(1) {
-  left: 3px;
-
-  transform: rotate(-20deg);
-}
-
-.virtual-hand span:nth-child(2) {
-  left: 14px;
-
-  top: -23px;
-}
-
-.virtual-hand span:nth-child(3) {
-  left: 25px;
-
-  top: -22px;
-}
-
-.virtual-hand span:nth-child(4) {
-  left: 36px;
-
-  top: -15px;
-
-  transform: rotate(20deg);
-}
-
-
-/* =========================================
-   HAND GESTURES
-========================================= */
-
-.gesture-left {
-  animation: handGestureLeft 1.8s ease-in-out infinite;
-}
-
-.gesture-right {
-  animation: handGestureRight 2.1s ease-in-out infinite;
-}
-
-
-/* =========================================
-   AUDIO WAVE
-========================================= */
-
-.ai-audio-wave {
-  position: absolute;
-
-  bottom: 25px;
-
-  left: 50%;
-
-  transform: translateX(-50%);
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 4px;
-
-  height: 30px;
-
-  z-index: 20;
-}
-
-.ai-audio-wave span {
-  width: 4px;
-
-  height: 7px;
-
-  border-radius: 10px;
-
-  background: #818cf8;
-
-  transition: 0.2s;
-}
-
-.wave-active span {
-  animation: wave 0.65s ease-in-out infinite alternate;
-}
-
-.wave-active span:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.wave-active span:nth-child(3) {
-  animation-delay: 0.2s;
-}
-
-.wave-active span:nth-child(4) {
-  animation-delay: 0.3s;
-}
-
-.wave-active span:nth-child(5) {
-  animation-delay: 0.4s;
-}
-
-
-/* =========================================
-   AI CARD
-========================================= */
-
-.ai-name-card {
-  position: absolute;
-
-  z-index: 30;
-
-  bottom: 15px;
-
-  left: 15px;
-
-  right: 15px;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 11px;
-
-  padding: 12px 14px;
-
-  background: rgba(5, 10, 20, 0.78);
-
-  border: 1px solid rgba(255, 255, 255, 0.08);
-
-  border-radius: 13px;
-
-  backdrop-filter: blur(15px);
-}
-
-.ai-avatar-small {
-  width: 40px;
-
-  height: 40px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  background: rgba(139, 92, 246, 0.16);
-
-  border-radius: 10px;
-
-  font-size: 22px;
-}
-
-.ai-name-card strong {
-  display: block;
-
-  font-size: 13px;
-}
-
-.ai-name-card small {
-  display: block;
-
-  margin-top: 3px;
+.panel-header p {
+  margin: 3px 0 0;
 
   color: #94a3b8;
 
-  font-size: 11px;
+  font-size: 12px;
 }
 
-.ai-status {
-  margin-left: auto;
 
+/* =========================================================
+   AI STATUS
+========================================================= */
+
+.ai-status {
   display: flex;
 
   align-items: center;
 
   gap: 6px;
 
-  color: #94a3b8;
+  padding: 6px 9px;
+
+  border-radius: 15px;
+
+  background: rgba(34, 197, 94, 0.1);
+
+  color: #86efac;
 
   font-size: 11px;
+
+  white-space: nowrap;
 }
 
 .ai-status span {
@@ -995,36 +309,233 @@
 
   border-radius: 50%;
 
-  background: #64748b;
-}
-
-.ai-status.speaking span {
-  background: #8b5cf6;
-
-  box-shadow: 0 0 10px #8b5cf6;
-
-  animation: timerPulse 1s infinite;
-}
-
-.ai-status.listening span {
   background: #22c55e;
 
-  box-shadow: 0 0 10px #22c55e;
-
-  animation: timerPulse 1s infinite;
+  box-shadow:
+    0 0 8px rgba(34, 197, 94, 0.8);
 }
 
 
-/* =========================================
+/* =========================================================
+   REAL AI INTERVIEWER
+========================================================= */
+
+.real-ai-interviewer {
+  position: relative;
+
+  width: 100%;
+
+  height: 430px;
+
+  overflow: hidden;
+
+  background: #111827;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+
+/* =========================================================
+   HUMAN IMAGE
+========================================================= */
+
+.ai-human-image {
+  width: 100%;
+
+  height: 100%;
+
+  object-fit: cover;
+
+  object-position: center top;
+
+  display: block;
+
+  transition:
+    transform 0.35s ease,
+    filter 0.35s ease;
+}
+
+
+/* AI speaking */
+
+.ai-human-image.ai-speaking {
+  transform: scale(1.018);
+
+  filter: brightness(1.06);
+}
+
+
+/* =========================================================
+   AI LIVE BADGE
+========================================================= */
+
+.ai-live-indicator {
+  position: absolute;
+
+  top: 15px;
+
+  right: 15px;
+
+  z-index: 5;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 7px 11px;
+
+  border-radius: 20px;
+
+  background: rgba(220, 38, 38, 0.92);
+
+  color: #ffffff;
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 0.5px;
+
+  box-shadow:
+    0 5px 18px rgba(0, 0, 0, 0.25);
+
+  backdrop-filter: blur(8px);
+}
+
+.ai-live-indicator span {
+  width: 7px;
+
+  height: 7px;
+
+  display: block;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  animation: livePulse 1.2s infinite;
+}
+
+
+/* =========================================================
+   AI SPEAKING BADGE
+========================================================= */
+
+.ai-speaking-badge {
+  position: absolute;
+
+  left: 50%;
+
+  bottom: 18px;
+
+  transform: translateX(-50%);
+
+  z-index: 5;
+
+  padding: 8px 14px;
+
+  border-radius: 20px;
+
+  background: rgba(15, 23, 42, 0.85);
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  color: #ffffff;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  backdrop-filter: blur(10px);
+
+  animation: speakingBadge 1.4s ease-in-out infinite;
+}
+
+
+/* =========================================================
+   AI QUESTION BOX
+========================================================= */
+
+.ai-question-box {
+  padding: 17px 18px 20px;
+
+  background: rgba(15, 23, 42, 0.95);
+
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.question-label {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  margin-bottom: 8px;
+
+  color: #60a5fa;
+
+  font-size: 11px;
+
+  font-weight: 700;
+}
+
+.question-label span:last-child {
+  padding: 4px 8px;
+
+  border-radius: 10px;
+
+  background: rgba(59, 130, 246, 0.12);
+
+  color: #93c5fd;
+
+  font-size: 10px;
+}
+
+.ai-question-box p {
+  margin: 0;
+
+  color: #e2e8f0;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
    CANDIDATE VIDEO
-========================================= */
+========================================================= */
+
+.candidate-video-container {
+  position: relative;
+
+  width: 100%;
+
+  height: 430px;
+
+  overflow: hidden;
+
+  background: #020617;
+}
+
+
+/* Video */
 
 .candidate-video {
   width: 100%;
 
   height: 100%;
 
-  min-height: 470px;
+  display: block;
 
   object-fit: cover;
 
@@ -1033,10 +544,75 @@
   background: #020617;
 }
 
-.camera-off {
+.candidate-video.video-hidden {
+  display: none;
+}
+
+
+/* =========================================================
+   CAMERA OFF
+========================================================= */
+
+.camera-off-screen {
+  width: 100%;
+
   height: 100%;
 
-  min-height: 470px;
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
+
+  align-items: center;
+
+  background:
+    radial-gradient(
+      circle,
+      #1e293b,
+      #020617
+    );
+}
+
+.camera-off-icon {
+  width: 65px;
+
+  height: 65px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  margin-bottom: 12px;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.08);
+
+  font-size: 28px;
+}
+
+.camera-off-screen p {
+  margin: 0;
+
+  color: #94a3b8;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   CAMERA LOADING
+========================================================= */
+
+.camera-loading {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 3;
 
   display: flex;
 
@@ -1047,417 +623,485 @@
   justify-content: center;
 
   background: #020617;
-
-  color: #64748b;
 }
 
-.camera-off-icon {
-  font-size: 48px;
-
-  opacity: 0.7;
+.camera-loading-icon {
+  font-size: 35px;
 
   margin-bottom: 10px;
+
+  animation: cameraLoading 1.2s infinite;
 }
 
-.camera-off p {
+.camera-loading p {
   margin: 0;
 
-  font-size: 14px;
+  color: #94a3b8;
+
+  font-size: 13px;
 }
 
-.candidate-status {
+
+/* =========================================================
+   CANDIDATE LIVE BADGE
+========================================================= */
+
+.candidate-live-badge {
   position: absolute;
 
-  right: 15px;
+  top: 15px;
 
-  bottom: 15px;
+  left: 15px;
+
+  z-index: 5;
 
   display: flex;
-
-  gap: 8px;
-
-  padding: 8px;
-
-  border-radius: 10px;
-
-  background: rgba(3, 8, 18, 0.7);
-
-  backdrop-filter: blur(10px);
-}
-
-.candidate-status span {
-  opacity: 0.35;
-
-  font-size: 15px;
-}
-
-.candidate-status span.active {
-  opacity: 1;
-}
-
-
-/* =========================================
-   QUESTION
-========================================= */
-
-.question-section {
-  max-width: 1450px;
-
-  margin: 18px auto 0;
-
-  padding: 22px 24px;
-
-  border-radius: 18px;
-
-  background: rgba(15, 27, 45, 0.9);
-
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.question-top {
-  display: flex;
-
-  justify-content: space-between;
 
   align-items: center;
 
-  margin-bottom: 13px;
-}
-
-.question-number {
-  color: #a5b4fc;
-
-  font-size: 13px;
-
-  font-weight: 700;
-}
-
-.question-type {
-  color: #94a3b8;
-
-  font-size: 12px;
+  gap: 6px;
 
   padding: 6px 10px;
 
-  border-radius: 7px;
+  border-radius: 18px;
 
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(15, 23, 42, 0.78);
+
+  color: #ffffff;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  backdrop-filter: blur(8px);
 }
 
-.question-section h2 {
-  margin: 0;
+.candidate-live-badge span {
+  width: 7px;
 
-  font-size: 22px;
-
-  line-height: 1.5;
-
-  font-weight: 600;
-
-  color: #f8fafc;
-}
-
-
-/* =========================================
-   LISTENING
-========================================= */
-
-.listening-section {
-  max-width: 1450px;
-
-  margin: 15px auto 0;
-
-  display: flex;
-
-  justify-content: center;
-
-  align-items: center;
-
-  gap: 13px;
-
-  padding: 15px;
-
-  border-radius: 15px;
-
-  background: rgba(15, 27, 45, 0.7);
-
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.listening-section strong {
-  display: block;
-
-  font-size: 13px;
-
-  color: #e2e8f0;
-}
-
-.listening-section small {
-  display: block;
-
-  margin-top: 4px;
-
-  font-size: 11px;
-
-  color: #64748b;
-}
-
-.mic-animation {
-  width: 40px;
-
-  height: 40px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  gap: 3px;
+  height: 7px;
 
   border-radius: 50%;
 
-  background: rgba(99, 102, 241, 0.12);
+  background: #22c55e;
+
+  box-shadow:
+    0 0 8px rgba(34, 197, 94, 0.8);
 }
 
-.mic-animation span {
-  width: 3px;
 
-  height: 10px;
+/* =========================================================
+   CAMERA STATUS
+========================================================= */
+
+.camera-status {
+  display: flex;
+
+  align-items: center;
+}
+
+.status-on {
+  padding: 5px 9px;
+
+  border-radius: 12px;
+
+  background: rgba(34, 197, 94, 0.1);
+
+  color: #86efac;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+.status-off {
+  padding: 5px 9px;
+
+  border-radius: 12px;
+
+  background: rgba(239, 68, 68, 0.1);
+
+  color: #fca5a5;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   ANSWER SECTION
+========================================================= */
+
+.answer-section {
+  padding: 14px 17px 17px;
+
+  background: rgba(15, 23, 42, 0.95);
+}
+
+.answer-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 8px;
+
+  color: #cbd5e1;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+.listening-indicator {
+  color: #f87171;
+
+  font-size: 11px;
+
+  animation: listeningBlink 1s infinite;
+}
+
+
+/* =========================================================
+   ANSWER BOX
+========================================================= */
+
+.answer-box {
+  min-height: 72px;
+
+  max-height: 130px;
+
+  overflow-y: auto;
+
+  padding: 11px 12px;
+
+  box-sizing: border-box;
 
   border-radius: 10px;
 
-  background: #6366f1;
+  background: #020617;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.listening-active .mic-animation span {
-  animation: wave 0.5s infinite alternate;
+.answer-box p {
+  margin: 0;
+
+  color: #e2e8f0;
+
+  font-size: 13px;
+
+  line-height: 1.5;
 }
 
-.listening-active .mic-animation span:nth-child(2) {
-  animation-delay: 0.15s;
+.answer-box .answer-placeholder {
+  color: #64748b;
 }
 
 
-/* =========================================
-   ANSWER PREVIEW
-========================================= */
+/* =========================================================
+   BOTTOM CONTROLS
+========================================================= */
 
-.answer-preview {
-  max-width: 1450px;
+.interview-controls {
+  width: 100%;
 
-  margin: 15px auto 0;
+  margin-top: 18px;
 
-  padding: 16px;
+  padding: 14px;
 
-  border-radius: 14px;
+  display: flex;
 
-  background: rgba(34, 197, 94, 0.05);
+  align-items: center;
 
-  border: 1px solid rgba(34, 197, 94, 0.12);
+  justify-content: center;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+
+  box-sizing: border-box;
+
+  background: rgba(17, 24, 39, 0.92);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 16px;
+
+  backdrop-filter: blur(14px);
 }
 
-.answer-title {
-  color: #86efac;
+
+/* Common button */
+
+.control-btn,
+.navigation-btn,
+.start-answer-btn,
+.stop-answer-btn,
+.end-btn,
+.restart-interview-btn,
+.end-interview-btn {
+  border: none;
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.control-btn:hover,
+.navigation-btn:hover,
+.start-answer-btn:hover,
+.stop-answer-btn:hover,
+.end-btn:hover,
+.restart-interview-btn:hover,
+.end-interview-btn:hover {
+  transform: translateY(-2px);
+}
+
+.control-btn:active,
+.navigation-btn:active,
+.start-answer-btn:active,
+.stop-answer-btn:active,
+.end-btn:active {
+  transform: translateY(0);
+}
+
+
+/* =========================================================
+   CONTROL BUTTON
+========================================================= */
+
+.control-btn {
+  min-width: 82px;
+
+  padding: 9px 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 6px;
+
+  border-radius: 10px;
+
+  color: #e2e8f0;
+
+  font-size: 11px;
+
+  font-weight: 600;
+}
+
+.control-btn.active {
+  background: #1e293b;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.control-btn.inactive {
+  background: rgba(239, 68, 68, 0.12);
+
+  border: 1px solid rgba(239, 68, 68, 0.3);
+
+  color: #fca5a5;
+}
+
+
+/* =========================================================
+   START ANSWER
+========================================================= */
+
+.start-answer-btn {
+  padding: 10px 18px;
+
+  border-radius: 10px;
+
+  background: #2563eb;
+
+  color: #ffffff;
 
   font-size: 12px;
 
   font-weight: 700;
 
-  margin-bottom: 8px;
-}
-
-.answer-preview p {
-  margin: 0;
-
-  color: #cbd5e1;
-
-  line-height: 1.6;
-
-  font-size: 13px;
-}
-
-
-/* =========================================
-   CONTROLS
-========================================= */
-
-.controls {
-  max-width: 1450px;
-
-  margin: 17px auto 0;
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 9px;
-
-  flex-wrap: wrap;
-}
-
-.control-btn,
-.start-answer-btn,
-.stop-answer-btn,
-.next-btn {
-  min-height: 44px;
-
-  padding: 0 15px;
-
-  border-radius: 11px;
-
-  border: 1px solid rgba(255, 255, 255, 0.08);
-
-  color: #e2e8f0;
-
-  background: rgba(15, 27, 45, 0.9);
-
-  cursor: pointer;
-
-  transition: 0.2s;
-
-  font-weight: 600;
-
-  font-size: 12px;
-}
-
-.control-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-
-  transform: translateY(-1px);
-}
-
-.control-btn span {
-  margin-right: 6px;
-}
-
-.control-btn:disabled {
-  opacity: 0.3;
-
-  cursor: not-allowed;
-}
-
-.control-off {
-  color: #fca5a5;
-
-  border-color: rgba(239, 68, 68, 0.2);
-}
-
-.start-answer-btn {
-  flex: 1;
-
-  min-width: 150px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #4f46e5,
-      #7c3aed
-    );
-
-  border: none;
-
   box-shadow:
-    0 8px 25px rgba(79, 70, 229, 0.25);
+    0 6px 18px rgba(37, 99, 235, 0.25);
 }
 
 .start-answer-btn:hover {
-  transform: translateY(-2px);
-
-  box-shadow:
-    0 12px 30px rgba(79, 70, 229, 0.35);
+  background: #1d4ed8;
 }
 
-.start-answer-btn:disabled {
-  opacity: 0.45;
 
-  cursor: not-allowed;
-}
+/* =========================================================
+   STOP ANSWER
+========================================================= */
 
 .stop-answer-btn {
-  flex: 1;
+  padding: 10px 18px;
 
-  min-width: 150px;
+  border-radius: 10px;
 
-  background: rgba(239, 68, 68, 0.15);
+  background: #dc2626;
 
-  border-color: rgba(239, 68, 68, 0.25);
+  color: #ffffff;
 
-  color: #fca5a5;
+  font-size: 12px;
+
+  font-weight: 700;
+
+  animation: recordingPulse 1.4s infinite;
 }
 
-.next-btn {
+
+/* =========================================================
+   NAVIGATION BUTTON
+========================================================= */
+
+.navigation-btn {
+  padding: 10px 15px;
+
+  border-radius: 10px;
+
+  background: #1e293b;
+
+  color: #cbd5e1;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.navigation-btn:disabled {
+  opacity: 0.35;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+.navigation-btn.next-btn {
   background: #2563eb;
 
-  border-color: #2563eb;
-}
+  color: #ffffff;
 
-.next-btn:hover {
-  background: #1d4ed8;
-
-  transform: translateY(-1px);
+  border-color: transparent;
 }
 
 
-/* =========================================
-   FOOTER
-========================================= */
+/* =========================================================
+   END BUTTON
+========================================================= */
 
-.interview-footer {
-  max-width: 1450px;
+.end-btn {
+  padding: 10px 15px;
 
-  margin: 17px auto 0;
+  border-radius: 10px;
 
+  background: rgba(239, 68, 68, 0.1);
+
+  border: 1px solid rgba(239, 68, 68, 0.25);
+
+  color: #fca5a5;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   QUESTION PROGRESS
+========================================================= */
+
+.question-progress {
+  width: 100%;
+
+  margin-top: 13px;
+
+  padding: 0 3px;
+
+  box-sizing: border-box;
+}
+
+.progress-info {
   display: flex;
 
   justify-content: space-between;
 
+  align-items: center;
+
+  margin-bottom: 6px;
+
   color: #64748b;
 
-  font-size: 11px;
+  font-size: 10px;
 }
 
-.interview-footer button {
-  background: transparent;
+.progress-bar {
+  width: 100%;
 
-  border: none;
+  height: 5px;
 
-  color: #ef4444;
+  overflow: hidden;
 
-  cursor: pointer;
+  border-radius: 10px;
 
-  font-size: 11px;
+  background: #1e293b;
+}
+
+.progress-fill {
+  height: 100%;
+
+  border-radius: 10px;
+
+  background: #3b82f6;
+
+  transition: width 0.3s ease;
 }
 
 
-/* =========================================
-   COMPLETED
-========================================= */
+/* =========================================================
+   INTERVIEW COMPLETE
+========================================================= */
 
-.completed-card {
-  max-width: 650px;
+.interview-complete-card {
+  width: min(850px, 100%);
 
-  margin: 10vh auto;
+  margin: 70px auto;
 
-  padding: 45px;
+  padding: 45px 30px;
+
+  box-sizing: border-box;
 
   text-align: center;
 
-  background: rgba(15, 27, 45, 0.95);
+  background: rgba(17, 24, 39, 0.95);
 
   border: 1px solid rgba(255, 255, 255, 0.08);
 
-  border-radius: 25px;
+  border-radius: 22px;
 
   box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.35);
+    0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
-.completed-icon {
+.complete-icon {
   width: 75px;
 
   height: 75px;
 
-  margin: 0 auto 20px;
+  margin: 0 auto 18px;
 
   display: flex;
 
@@ -1467,307 +1111,434 @@
 
   border-radius: 50%;
 
-  background: rgba(34, 197, 94, 0.13);
+  background: rgba(34, 197, 94, 0.12);
+
+  border: 1px solid rgba(34, 197, 94, 0.3);
 
   color: #4ade80;
 
-  font-size: 40px;
+  font-size: 35px;
+
+  font-weight: 700;
 }
 
-.completed-card h1 {
+.interview-complete-card h1 {
   margin: 0 0 10px;
 
   font-size: 28px;
 }
 
-.completed-card p {
+.interview-complete-card > p {
+  margin: 0 auto 30px;
+
+  max-width: 500px;
+
   color: #94a3b8;
 
-  margin-bottom: 30px;
+  line-height: 1.6;
+
+  font-size: 14px;
 }
 
-.completed-stats {
+
+/* =========================================================
+   INTERVIEW STATS
+========================================================= */
+
+.interview-stats {
   display: grid;
 
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns:
+    repeat(4, 1fr);
 
   gap: 12px;
 
   margin-bottom: 28px;
 }
 
-.completed-stats div {
-  padding: 16px;
+.stat-card {
+  padding: 17px 10px;
 
-  border-radius: 13px;
+  border-radius: 12px;
 
-  background: rgba(255, 255, 255, 0.04);
+  background: #0f172a;
+
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.completed-stats strong {
+.stat-card strong {
   display: block;
 
-  font-size: 19px;
+  margin-bottom: 5px;
 
-  color: #a5b4fc;
+  color: #60a5fa;
+
+  font-size: 24px;
 }
 
-.completed-stats span {
-  display: block;
-
-  margin-top: 5px;
-
+.stat-card span {
   color: #64748b;
 
   font-size: 11px;
 }
 
-.primary-btn {
-  padding: 12px 22px;
 
-  border: none;
+/* =========================================================
+   COMPLETE ACTIONS
+========================================================= */
+
+.complete-actions {
+  display: flex;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  flex-wrap: wrap;
+}
+
+.restart-interview-btn {
+  padding: 11px 20px;
 
   border-radius: 10px;
 
-  background: #4f46e5;
+  background: #2563eb;
 
   color: white;
 
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+.end-interview-btn {
+  padding: 11px 20px;
+
+  border-radius: 10px;
+
+  background: #1e293b;
+
+  color: #cbd5e1;
+
+  font-size: 12px;
+
   font-weight: 700;
 
-  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 
-/* =========================================
+/* =========================================================
+   NO QUESTIONS / ERROR SCREEN
+========================================================= */
+
+.interview-error-screen {
+  width: min(600px, 100%);
+
+  margin: 100px auto;
+
+  padding: 45px 25px;
+
+  text-align: center;
+
+  box-sizing: border-box;
+
+  background: rgba(17, 24, 39, 0.95);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 20px;
+}
+
+.error-icon {
+  font-size: 45px;
+
+  margin-bottom: 15px;
+}
+
+.interview-error-screen h2 {
+  margin: 0 0 10px;
+
+  font-size: 24px;
+}
+
+.interview-error-screen p {
+  margin: 0 0 25px;
+
+  color: #94a3b8;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================================================
    ANIMATIONS
-========================================= */
+========================================================= */
 
-@keyframes blink {
-  0%,
-  44%,
-  48%,
-  100% {
-    transform: scaleY(1);
-  }
-
-  46% {
-    transform: scaleY(0.08);
-  }
-}
-
-@keyframes eyeLook {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-
-  25% {
-    transform: translateX(5px);
-  }
-
-  50% {
-    transform: translateX(-4px);
-  }
-
-  75% {
-    transform: translateX(2px);
-  }
-}
-
-@keyframes mouthTalk {
-  0% {
-    transform: scaleY(0.65);
-
-    height: 14px;
-  }
-
-  100% {
-    transform: scaleY(1.25);
-
-    height: 24px;
-  }
-}
-
-@keyframes headFloat {
-  0%,
-  100% {
-    transform: translateY(0) rotateY(0deg);
-  }
-
-  50% {
-    transform: translateY(-5px) rotateY(-2deg);
-  }
-}
-
-@keyframes handGestureLeft {
-  0%,
-  100% {
-    transform: rotate(20deg);
-  }
-
-  50% {
-    transform: rotate(-5deg) translateY(-10px);
-  }
-}
-
-@keyframes handGestureRight {
-  0%,
-  100% {
-    transform: rotate(-20deg);
-  }
-
-  50% {
-    transform: rotate(-35deg) translateY(-14px);
-  }
-}
-
-@keyframes wave {
-  0% {
-    transform: scaleY(0.5);
-  }
-
-  100% {
-    transform: scaleY(1.8);
-  }
-}
-
-@keyframes timerPulse {
+@keyframes livePulse {
   0% {
     opacity: 1;
 
     transform: scale(1);
+
+    box-shadow:
+      0 0 0 rgba(239, 68, 68, 0);
+  }
+
+  50% {
+    opacity: 0.5;
+
+    transform: scale(1.35);
+
+    box-shadow:
+      0 0 10px rgba(239, 68, 68, 0.6);
+  }
+
+  100% {
+    opacity: 1;
+
+    transform: scale(1);
+
+    box-shadow:
+      0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+
+@keyframes speakingBadge {
+  0% {
+    transform:
+      translateX(-50%)
+      translateY(0);
+  }
+
+  50% {
+    transform:
+      translateX(-50%)
+      translateY(-3px);
+  }
+
+  100% {
+    transform:
+      translateX(-50%)
+      translateY(0);
+  }
+}
+
+
+@keyframes listeningBlink {
+  0% {
+    opacity: 1;
   }
 
   50% {
     opacity: 0.45;
-
-    transform: scale(0.75);
   }
 
   100% {
     opacity: 1;
-
-    transform: scale(1);
   }
 }
 
-@keyframes glowMove {
-  0%,
+
+@keyframes recordingPulse {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+
+  70% {
+    box-shadow:
+      0 0 0 8px rgba(220, 38, 38, 0);
+  }
+
   100% {
-    transform: translate(0, 0);
+    box-shadow:
+      0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+
+@keyframes cameraLoading {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
   }
 
   50% {
-    transform: translate(20px, -15px);
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
   }
 }
 
 
-/* =========================================
-   RESPONSIVE
-========================================= */
+/* =========================================================
+   TABLET
+========================================================= */
 
 @media (max-width: 1000px) {
-  .video-grid {
+
+  .video-interview-content {
     grid-template-columns: 1fr;
   }
 
-  .video-box {
-    min-height: 420px;
+  .real-ai-interviewer,
+  .candidate-video-container {
+    height: 400px;
   }
 
-  .candidate-video {
-    min-height: 420px;
-  }
-
-  .camera-off {
-    min-height: 420px;
-  }
 }
 
-@media (max-width: 650px) {
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
   .video-interview-page {
-    padding: 12px;
+    padding: 10px;
   }
 
-  .interview-header {
-    padding: 14px;
+  .video-interview-header {
+    grid-template-columns: 1fr auto;
 
-    border-radius: 14px;
+    padding: 13px;
+
+    gap: 10px;
+  }
+
+  .header-center {
+    grid-column: 2;
+
+    grid-row: 1;
+  }
+
+  .header-right {
+    grid-column: 1 / -1;
+
+    justify-content: flex-start;
   }
 
   .header-left h1 {
-    font-size: 17px;
+    font-size: 18px;
   }
 
   .header-left p {
     font-size: 11px;
   }
 
-  .header-right {
-    gap: 5px;
+  .interview-timer {
+    min-width: 70px;
+
+    font-size: 15px;
   }
 
-  .timer {
-    display: none;
+  .panel-header {
+    padding: 12px;
   }
 
-  .video-box {
-    min-height: 360px;
+  .real-ai-interviewer,
+  .candidate-video-container {
+    height: 330px;
   }
 
-  .candidate-video {
-    min-height: 360px;
+  .ai-question-box {
+    padding: 13px;
   }
 
-  .camera-off {
-    min-height: 360px;
+  .ai-question-box p {
+    font-size: 13px;
   }
 
-  .virtual-head {
-    transform: scale(0.85);
+  .interview-controls {
+    padding: 11px;
+
+    gap: 7px;
   }
 
-  .virtual-body {
-    transform: scale(0.8);
-  }
+  .control-btn {
+    min-width: 70px;
 
-  .question-section {
-    padding: 17px;
-  }
-
-  .question-section h2 {
-    font-size: 17px;
-  }
-
-  .controls {
-    display: grid;
-
-    grid-template-columns: 1fr 1fr;
+    padding: 8px;
   }
 
   .start-answer-btn,
-  .stop-answer-btn,
-  .next-btn {
-    grid-column: 1 / -1;
+  .stop-answer-btn {
+    width: 100%;
   }
 
-  .interview-footer {
-    flex-direction: column;
-
-    gap: 10px;
-
-    text-align: center;
+  .navigation-btn,
+  .end-btn {
+    flex: 1;
   }
 
-  .completed-card {
-    margin: 5vh 0;
-
-    padding: 30px 18px;
+  .interview-stats {
+    grid-template-columns:
+      repeat(2, 1fr);
   }
 
-  .completed-stats {
-    grid-template-columns: 1fr;
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 450px) {
+
+  .real-ai-interviewer,
+  .candidate-video-container {
+    height: 280px;
   }
+
+  .panel-header h2 {
+    font-size: 15px;
+  }
+
+  .ai-live-indicator {
+    top: 10px;
+
+    right: 10px;
+
+    padding: 6px 9px;
+
+    font-size: 9px;
+  }
+
+  .candidate-live-badge {
+    top: 10px;
+
+    left: 10px;
+  }
+
+  .question-label {
+    font-size: 10px;
+  }
+
+  .ai-question-box p {
+    font-size: 12px;
+  }
+
+  .interview-complete-card {
+    margin: 30px auto;
+
+    padding: 30px 15px;
+  }
+
+  .interview-complete-card h1 {
+    font-size: 23px;
+  }
+
+  .stat-card strong {
+    font-size: 20px;
+  }
+
 }
