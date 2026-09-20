@@ -3,21 +3,32 @@ const {
   generateInterviewFeedback,
 } = require("../services/aiService");
 
-// ======================================================
+// =====================================================
 // GENERATE INTERVIEW QUESTIONS
-// ======================================================
+// =====================================================
 
 const getInterviewQuestions = async (req, res) => {
+  // IMPORTANT:
+  // role ko try ke bahar rakha gaya hai
+  // taaki catch block me bhi available rahe.
+  const role = req.body?.role;
+  const difficulty = req.body?.difficulty || "Medium";
+  const questionCount = req.body?.questionCount || 5;
+
   try {
-    console.log("=================================");
-    console.log("Interview Questions Request Received");
-    console.log("=================================");
+    console.log("========================================");
+    console.log("🎯 INTERVIEW QUESTIONS REQUEST");
+    console.log("========================================");
 
-    const { role } = req.body;
+    console.log("Request Body:", req.body);
+    console.log("Role:", role);
+    console.log("Difficulty:", difficulty);
+    console.log("Question Count:", questionCount);
 
-    console.log("Target Role:", role);
-
+    // -----------------------------------------
     // VALIDATE ROLE
+    // -----------------------------------------
+
     if (
       !role ||
       typeof role !== "string" ||
@@ -25,60 +36,165 @@ const getInterviewQuestions = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        error: "Target role is required.",
+        message: "Interview role is required.",
       });
     }
 
-    // GENERATE QUESTIONS
-    const questions = await generateInterviewQuestions(
-      role.trim()
-    );
+    // -----------------------------------------
+    // VALIDATE DIFFICULTY
+    // -----------------------------------------
 
-    console.log("Interview Questions Generated Successfully");
-    console.log("Questions:", questions);
+    const allowedDifficulties = [
+      "Easy",
+      "Medium",
+      "Hard",
+      "Mixed",
+    ];
+
+    if (!allowedDifficulties.includes(difficulty)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Difficulty must be Easy, Medium, Hard or Mixed.",
+      });
+    }
+
+    // -----------------------------------------
+    // VALIDATE QUESTION COUNT
+    // -----------------------------------------
+
+    const count = Number(questionCount);
+
+    if (![5, 10, 15].includes(count)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Question count must be 5, 10 or 15.",
+      });
+    }
+
+    console.log("----------------------------------------");
+    console.log("🚀 Calling Gemini...");
+    console.log("Model: gemini-3.6-flash");
+    console.log("Role:", role.trim());
+    console.log("Difficulty:", difficulty);
+    console.log("Questions:", count);
+    console.log("----------------------------------------");
+
+    // -----------------------------------------
+    // CALL GEMINI
+    // -----------------------------------------
+
+    const questions =
+      await generateInterviewQuestions(
+        role.trim(),
+        difficulty,
+        count
+      );
+
+    // -----------------------------------------
+    // SUCCESS
+    // -----------------------------------------
+
+    console.log("----------------------------------------");
+    console.log("✅ QUESTIONS GENERATED SUCCESSFULLY");
+    console.log("Total Questions:", questions.length);
+    console.log("----------------------------------------");
 
     return res.status(200).json({
       success: true,
       role: role.trim(),
+      difficulty,
+      questionCount: count,
       questions,
     });
-
   } catch (error) {
-    console.error("=================================");
-    console.error("Interview Questions Controller Error:");
-    console.error(error);
-    console.error("=================================");
+    // -----------------------------------------
+    // ERROR LOG
+    // -----------------------------------------
+
+    console.error("========================================");
+    console.error("❌ INTERVIEW QUESTION ERROR");
+    console.error("========================================");
+
+    console.error("Message:", error.message);
+    console.error("Status:", error.status);
+
+    // -----------------------------------------
+    // GEMINI QUOTA ERROR
+    // -----------------------------------------
+
+    if (error.status === 429) {
+      console.error("⚠️ GEMINI QUOTA EXCEEDED");
+
+      return res.status(429).json({
+        success: false,
+
+        errorType:
+          "GEMINI_QUOTA_EXCEEDED",
+
+        message:
+          "Gemini API quota has been exceeded.",
+
+        details:
+          "gemini-3.6-flash returned HTTP 429 RESOURCE_EXHAUSTED.",
+
+        role:
+          typeof role === "string"
+            ? role.trim()
+            : role,
+
+        retryAfter:
+          "Please wait until the Gemini quota becomes available again.",
+      });
+    }
+
+    // -----------------------------------------
+    // OTHER GEMINI/API ERROR
+    // -----------------------------------------
 
     return res.status(500).json({
       success: false,
-      error: "Failed to generate interview questions.",
+
+      errorType:
+        "INTERVIEW_QUESTION_ERROR",
+
+      message:
+        "Failed to generate interview questions.",
+
       details: error.message,
+
+      role:
+        typeof role === "string"
+          ? role.trim()
+          : role,
     });
   }
 };
 
 
-// ======================================================
+// =====================================================
 // GENERATE INTERVIEW FEEDBACK
-// ======================================================
+// =====================================================
 
 const getInterviewFeedback = async (req, res) => {
-  try {
-    console.log("=================================");
-    console.log("Interview Feedback Request Received");
-    console.log("=================================");
+  const role = req.body?.role;
+  const questions = req.body?.questions;
+  const answers = req.body?.answers;
 
-    const {
-      role,
-      questions,
-      answers,
-    } = req.body;
+  try {
+    console.log("========================================");
+    console.log("🎯 INTERVIEW FEEDBACK REQUEST");
+    console.log("========================================");
 
     console.log("Role:", role);
     console.log("Questions:", questions);
     console.log("Answers:", answers);
 
+    // -----------------------------------------
     // VALIDATE ROLE
+    // -----------------------------------------
+
     if (
       !role ||
       typeof role !== "string" ||
@@ -86,33 +202,53 @@ const getInterviewFeedback = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        error: "Target role is required.",
+        message: "Interview role is required.",
       });
     }
 
-    // VALIDATE QUESTIONS
-    if (
-      !Array.isArray(questions) ||
-      questions.length === 0
-    ) {
+    // -----------------------------------------
+    // QUESTIONS VALIDATION
+    // -----------------------------------------
+
+    if (!Array.isArray(questions)) {
       return res.status(400).json({
         success: false,
-        error: "Interview questions are required.",
+        message:
+          "Questions must be an array.",
       });
     }
 
-    // VALIDATE ANSWERS
+    // -----------------------------------------
+    // ANSWERS
+    // -----------------------------------------
+    // Frontend currently stores answers as an
+    // object like:
+    //
+    // {
+    //   0: "answer...",
+    //   1: "answer..."
+    // }
+    //
+    // So we allow both object and array.
+
     if (
       !answers ||
-      typeof answers !== "object"
+      (
+        !Array.isArray(answers) &&
+        typeof answers !== "object"
+      )
     ) {
       return res.status(400).json({
         success: false,
-        error: "Interview answers are required.",
+        message:
+          "Answers must be an array or object.",
       });
     }
 
-    // GENERATE AI FEEDBACK
+    // -----------------------------------------
+    // CALL GEMINI
+    // -----------------------------------------
+
     const feedback =
       await generateInterviewFeedback(
         role.trim(),
@@ -120,29 +256,84 @@ const getInterviewFeedback = async (req, res) => {
         answers
       );
 
-    console.log(
-      "Interview Feedback Generated Successfully"
-    );
+    // -----------------------------------------
+    // SUCCESS
+    // -----------------------------------------
 
     return res.status(200).json({
       success: true,
-      feedback,
+      role: role.trim(),
+      ...feedback,
     });
-
   } catch (error) {
-    console.error("=================================");
-    console.error("Interview Controller Error:");
-    console.error(error);
-    console.error("=================================");
+    console.error(
+      "========================================"
+    );
+
+    console.error(
+      "❌ INTERVIEW FEEDBACK ERROR"
+    );
+
+    console.error(
+      "========================================"
+    );
+
+    console.error(
+      "Message:",
+      error.message
+    );
+
+    console.error(
+      "Status:",
+      error.status
+    );
+
+    // -----------------------------------------
+    // GEMINI QUOTA ERROR
+    // -----------------------------------------
+
+    if (error.status === 429) {
+      return res.status(429).json({
+        success: false,
+
+        errorType:
+          "GEMINI_QUOTA_EXCEEDED",
+
+        message:
+          "Gemini API quota has been exceeded.",
+
+        details:
+          "gemini-3.6-flash returned HTTP 429 RESOURCE_EXHAUSTED.",
+
+        role:
+          typeof role === "string"
+            ? role.trim()
+            : role,
+      });
+    }
+
+    // -----------------------------------------
+    // OTHER ERROR
+    // -----------------------------------------
 
     return res.status(500).json({
       success: false,
-      error: "Failed to generate interview feedback.",
+
+      errorType:
+        "INTERVIEW_FEEDBACK_ERROR",
+
+      message:
+        "Failed to generate interview feedback.",
+
       details: error.message,
     });
   }
 };
 
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = {
   getInterviewQuestions,

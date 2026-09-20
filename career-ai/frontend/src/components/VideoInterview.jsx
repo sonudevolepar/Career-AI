@@ -1,42 +1,129 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import "./VideoInterview.css";
 
-const DEFAULT_QUESTIONS = [
-  "Tell me about yourself and your experience.",
-  "Why do you want to work as a MERN Stack Developer?",
-  "What are your strongest technical skills?",
-  "Tell me about one of your projects and the challenges you faced.",
-  "How do you debug a problem when your application is not working?",
-];
-
-function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
+function VideoInterview({
+  role = "MERN Stack Developer",
+  difficulty = "Medium",
+  questions: receivedQuestions = [],
+  onEndInterview,
+}) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
   const speechTimerRef = useRef(null);
 
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [questions] = useState(DEFAULT_QUESTIONS);
+  // ============================================================
+  // QUESTIONS FROM AIMOCKINTERVIEWER
+  // ============================================================
+
+  const questions = Array.isArray(receivedQuestions)
+    ? receivedQuestions
+        .map((item) => {
+          if (typeof item === "string") {
+            return item.trim();
+          }
+
+          if (
+            item &&
+            typeof item.question === "string"
+          ) {
+            return item.question.trim();
+          }
+
+          return "";
+        })
+        .filter(Boolean)
+    : [];
+
+  // ============================================================
+  // STATE
+  // ============================================================
+
+  const [currentQuestion, setCurrentQuestion] =
+    useState(0);
 
   const [answers, setAnswers] = useState({});
-  const [transcript, setTranscript] = useState("");
 
-  const [cameraOn, setCameraOn] = useState(true);
-  const [micOn, setMicOn] = useState(true);
+  const [transcript, setTranscript] =
+    useState("");
 
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [cameraOn, setCameraOn] =
+    useState(true);
 
-  const [seconds, setSeconds] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
+  const [micOn, setMicOn] =
+    useState(true);
 
-  const [aiStatus, setAiStatus] = useState("Ready");
-  const [error, setError] = useState("");
+  const [isListening, setIsListening] =
+    useState(false);
 
-  // --------------------------------------------------
+  const [isSpeaking, setIsSpeaking] =
+    useState(false);
+
+  const [seconds, setSeconds] =
+    useState(0);
+
+  const [isFinished, setIsFinished] =
+    useState(false);
+
+  const [aiStatus, setAiStatus] =
+    useState("Ready");
+
+  const [error, setError] =
+    useState("");
+
+  // ============================================================
+  // CHECK QUESTIONS
+  // ============================================================
+
+  useEffect(() => {
+    console.log(
+      "===================================="
+    );
+
+    console.log(
+      "🎥 VIDEO INTERVIEW STARTED"
+    );
+
+    console.log(
+      "===================================="
+    );
+
+    console.log("Role:", role);
+    console.log(
+      "Difficulty:",
+      difficulty
+    );
+
+    console.log(
+      "Questions received:",
+      questions
+    );
+
+    console.log(
+      "Total questions:",
+      questions.length
+    );
+
+    if (questions.length === 0) {
+      setError(
+        "No AI-generated interview questions were received."
+      );
+
+      return;
+    }
+
+    setError("");
+  }, []);
+
+  // ============================================================
   // CAMERA + MICROPHONE
-  // --------------------------------------------------
+  // ============================================================
 
   useEffect(() => {
     startMedia();
@@ -53,21 +140,28 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
       window.speechSynthesis?.cancel();
 
       clearInterval(timerRef.current);
-      clearTimeout(speechTimerRef.current);
+
+      clearTimeout(
+        speechTimerRef.current
+      );
     };
   }, []);
 
   const startMedia = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+      const stream =
+        await navigator.mediaDevices.getUserMedia(
+          {
+            video: true,
+            audio: true,
+          }
+        );
 
       streamRef.current = stream;
 
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject =
+          stream;
       }
 
       setCameraOn(true);
@@ -75,7 +169,11 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
       startTimer();
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Camera/Microphone Error:",
+        err
+      );
+
       setError(
         "Camera or microphone permission denied. Please allow access from browser settings."
       );
@@ -84,106 +182,168 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
   const stopMedia = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current
+        .getTracks()
+        .forEach((track) => {
+          track.stop();
+        });
+
       streamRef.current = null;
     }
   };
 
-  // --------------------------------------------------
+  // ============================================================
   // TIMER
-  // --------------------------------------------------
+  // ============================================================
 
   const startTimer = () => {
-    clearInterval(timerRef.current);
+    clearInterval(
+      timerRef.current
+    );
 
-    timerRef.current = setInterval(() => {
-      setSeconds((prev) => prev + 1);
-    }, 1000);
+    timerRef.current =
+      setInterval(() => {
+        setSeconds(
+          (prev) => prev + 1
+        );
+      }, 1000);
   };
 
-  const formatTime = (totalSeconds) => {
-    const minutes = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
+  const formatTime = (
+    totalSeconds
+  ) => {
+    const minutes =
+      Math.floor(
+        totalSeconds / 60
+      );
 
-    return `${String(minutes).padStart(2, "0")}:${String(
+    const secs =
+      totalSeconds % 60;
+
+    return `${String(
+      minutes
+    ).padStart(2, "0")}:${String(
       secs
     ).padStart(2, "0")}`;
   };
 
-  // --------------------------------------------------
+  // ============================================================
   // CAMERA TOGGLE
-  // --------------------------------------------------
+  // ============================================================
 
   const toggleCamera = () => {
-    if (!streamRef.current) return;
+    if (!streamRef.current) {
+      return;
+    }
 
-    const videoTrack = streamRef.current.getVideoTracks()[0];
+    const videoTrack =
+      streamRef.current.getVideoTracks()[0];
 
-    if (!videoTrack) return;
+    if (!videoTrack) {
+      return;
+    }
 
-    videoTrack.enabled = !videoTrack.enabled;
+    videoTrack.enabled =
+      !videoTrack.enabled;
 
-    setCameraOn(videoTrack.enabled);
+    setCameraOn(
+      videoTrack.enabled
+    );
   };
 
-  // --------------------------------------------------
+  // ============================================================
   // MICROPHONE TOGGLE
-  // --------------------------------------------------
+  // ============================================================
 
   const toggleMic = () => {
-    if (!streamRef.current) return;
+    if (!streamRef.current) {
+      return;
+    }
 
-    const audioTrack = streamRef.current.getAudioTracks()[0];
+    const audioTrack =
+      streamRef.current.getAudioTracks()[0];
 
-    if (!audioTrack) return;
+    if (!audioTrack) {
+      return;
+    }
 
-    audioTrack.enabled = !audioTrack.enabled;
+    audioTrack.enabled =
+      !audioTrack.enabled;
 
-    setMicOn(audioTrack.enabled);
+    setMicOn(
+      audioTrack.enabled
+    );
 
-    if (!audioTrack.enabled && isListening) {
+    if (
+      !audioTrack.enabled &&
+      isListening
+    ) {
       stopListening();
     }
   };
 
-  // --------------------------------------------------
+  // ============================================================
   // AI SPEECH
-  // --------------------------------------------------
+  // ============================================================
 
-  const speakQuestion = (question) => {
-    if (!window.speechSynthesis) return;
+  const speakQuestion = (
+    question
+  ) => {
+    if (
+      !window.speechSynthesis ||
+      !question
+    ) {
+      return;
+    }
 
     window.speechSynthesis.cancel();
 
-    clearTimeout(speechTimerRef.current);
+    clearTimeout(
+      speechTimerRef.current
+    );
 
     setIsSpeaking(true);
     setAiStatus("Speaking");
 
-    const utterance = new SpeechSynthesisUtterance(question);
+    const utterance =
+      new SpeechSynthesisUtterance(
+        question
+      );
 
     utterance.lang = "en-IN";
     utterance.rate = 0.92;
     utterance.pitch = 1;
     utterance.volume = 1;
 
-    const voices = window.speechSynthesis.getVoices();
+    const voices =
+      window.speechSynthesis.getVoices();
 
     const preferredVoice =
       voices.find(
         (voice) =>
-          voice.lang?.toLowerCase().includes("en-in") &&
-          /female|google|natural|neural/i.test(voice.name)
+          voice.lang
+            ?.toLowerCase()
+            .includes("en-in") &&
+          /female|google|natural|neural/i.test(
+            voice.name
+          )
       ) ||
-      voices.find((voice) =>
-        voice.lang?.toLowerCase().includes("en-in")
+      voices.find(
+        (voice) =>
+          voice.lang
+            ?.toLowerCase()
+            .includes("en-in")
       ) ||
-      voices.find((voice) =>
-        voice.lang?.toLowerCase().startsWith("en")
+      voices.find(
+        (voice) =>
+          voice.lang
+            ?.toLowerCase()
+            .startsWith("en")
       );
 
     if (preferredVoice) {
-      utterance.voice = preferredVoice;
+      utterance.voice =
+        preferredVoice;
     }
 
     utterance.onstart = () => {
@@ -193,11 +353,16 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
     utterance.onend = () => {
       setIsSpeaking(false);
-      setAiStatus("Listening");
+      setAiStatus(
+        "Listening"
+      );
 
-      speechTimerRef.current = setTimeout(() => {
-        setAiStatus("Ready for your answer");
-      }, 500);
+      speechTimerRef.current =
+        setTimeout(() => {
+          setAiStatus(
+            "Ready for your answer"
+          );
+        }, 500);
     };
 
     utterance.onerror = () => {
@@ -205,44 +370,104 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
       setAiStatus("Ready");
     };
 
-    window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.speak(
+      utterance
+    );
   };
 
-  // Speak first question
+  // ============================================================
+  // SPEAK CURRENT GEMINI QUESTION
+  // ============================================================
+
   useEffect(() => {
-    if (!isFinished && questions[currentQuestion]) {
-      const timer = setTimeout(() => {
-        speakQuestion(questions[currentQuestion]);
+    if (
+      isFinished ||
+      questions.length === 0
+    ) {
+      return;
+    }
+
+    const question =
+      questions[currentQuestion];
+
+    if (!question) {
+      return;
+    }
+
+    console.log(
+      "===================================="
+    );
+
+    console.log(
+      "🎤 CURRENT AI QUESTION"
+    );
+
+    console.log(
+      "Role:",
+      role
+    );
+
+    console.log(
+      "Question:",
+      currentQuestion + 1
+    );
+
+    console.log(
+      question
+    );
+
+    console.log(
+      "===================================="
+    );
+
+    const timer =
+      setTimeout(() => {
+        speakQuestion(
+          question
+        );
       }, 800);
 
-      return () => clearTimeout(timer);
-    }
-  }, [currentQuestion, isFinished]);
+    return () => {
+      clearTimeout(timer);
 
-  // --------------------------------------------------
+      window.speechSynthesis?.cancel();
+    };
+  }, [
+    currentQuestion,
+    isFinished,
+    questions.length,
+  ]);
+
+  // ============================================================
   // SPEECH RECOGNITION
-  // --------------------------------------------------
+  // ============================================================
 
   const startListening = () => {
     if (!micOn) {
-      setError("Please turn on your microphone first.");
+      setError(
+        "Please turn on your microphone first."
+      );
+
       return;
     }
 
     setError("");
 
     const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       setError(
         "Speech recognition is not supported in this browser. Please use Google Chrome."
       );
+
       return;
     }
 
     if (isSpeaking) {
       window.speechSynthesis.cancel();
+
       setIsSpeaking(false);
     }
 
@@ -252,54 +477,94 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
       } catch (e) {}
     }
 
-    const recognition = new SpeechRecognition();
+    const recognition =
+      new SpeechRecognition();
 
     recognition.lang = "en-IN";
+
     recognition.continuous = true;
+
     recognition.interimResults = true;
 
     let finalText = "";
 
     recognition.onstart = () => {
       setIsListening(true);
-      setAiStatus("Listening to you...");
+
+      setAiStatus(
+        "Listening to you..."
+      );
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (
+      event
+    ) => {
       let interimText = "";
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
+      for (
+        let i = event.resultIndex;
+        i < event.results.length;
+        i++
+      ) {
+        const result =
+          event.results[i];
 
-        if (result.isFinal) {
-          finalText += result[0].transcript + " ";
+        if (
+          result.isFinal
+        ) {
+          finalText +=
+            result[0]
+              .transcript +
+            " ";
         } else {
-          interimText += result[0].transcript;
+          interimText +=
+            result[0]
+              .transcript;
         }
       }
 
-      setTranscript((prev) => {
-        const existingFinal = prev
-          .replace(/\s+/g, " ")
-          .trim();
+      setTranscript(
+        (prev) => {
+          const existingFinal =
+            prev
+              .replace(
+                /\s+/g,
+                " "
+              )
+              .trim();
 
-        const combined =
-          `${existingFinal} ${finalText} ${interimText}`
-            .replace(/\s+/g, " ")
-            .trim();
+          const combined =
+            `${existingFinal} ${finalText} ${interimText}`
+              .replace(
+                /\s+/g,
+                " "
+              )
+              .trim();
 
-        return combined;
-      });
+          return combined;
+        }
+      );
     };
 
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
+    recognition.onerror = (
+      event
+    ) => {
+      console.error(
+        "Speech recognition error:",
+        event.error
+      );
 
-      if (event.error === "not-allowed") {
-        setError("Microphone permission is blocked.");
+      if (
+        event.error ===
+        "not-allowed"
+      ) {
+        setError(
+          "Microphone permission is blocked."
+        );
       }
 
       setIsListening(false);
+
       setAiStatus("Ready");
     };
 
@@ -311,7 +576,8 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
       }
     };
 
-    recognitionRef.current = recognition;
+    recognitionRef.current =
+      recognition;
 
     try {
       recognition.start();
@@ -321,66 +587,94 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
   };
 
   const stopListening = () => {
-    if (recognitionRef.current) {
+    if (
+      recognitionRef.current
+    ) {
       try {
         recognitionRef.current.stop();
       } catch (e) {}
     }
 
     setIsListening(false);
-    setAiStatus("Answer captured");
+
+    setAiStatus(
+      "Answer captured"
+    );
   };
 
-  // --------------------------------------------------
+  // ============================================================
   // SAVE ANSWER
-  // --------------------------------------------------
+  // ============================================================
 
   const saveCurrentAnswer = () => {
-    const currentAnswer = transcript.trim();
+    const currentAnswer =
+      transcript.trim();
 
-    setAnswers((prev) => ({
-      ...prev,
-      [currentQuestion]: currentAnswer,
-    }));
+    setAnswers(
+      (prev) => ({
+        ...prev,
+
+        [currentQuestion]:
+          currentAnswer,
+      })
+    );
   };
 
-  // --------------------------------------------------
+  // ============================================================
   // NEXT QUESTION
-  // --------------------------------------------------
+  // ============================================================
 
   const nextQuestion = () => {
     saveCurrentAnswer();
 
     stopListening();
 
+    window.speechSynthesis?.cancel();
+
     setTranscript("");
 
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion((prev) => prev + 1);
+    if (
+      currentQuestion <
+      questions.length - 1
+    ) {
+      setCurrentQuestion(
+        (prev) => prev + 1
+      );
     } else {
       finishInterview();
     }
   };
 
-  // --------------------------------------------------
+  // ============================================================
   // PREVIOUS QUESTION
-  // --------------------------------------------------
+  // ============================================================
 
   const previousQuestion = () => {
     stopListening();
 
-    if (currentQuestion > 0) {
-      const previousIndex = currentQuestion - 1;
+    window.speechSynthesis?.cancel();
 
-      setCurrentQuestion(previousIndex);
+    if (
+      currentQuestion > 0
+    ) {
+      const previousIndex =
+        currentQuestion - 1;
 
-      setTranscript(answers[previousIndex] || "");
+      setCurrentQuestion(
+        previousIndex
+      );
+
+      setTranscript(
+        answers[
+          previousIndex
+        ] || ""
+      );
     }
   };
 
-  // --------------------------------------------------
+  // ============================================================
   // FINISH
-  // --------------------------------------------------
+  // ============================================================
 
   const finishInterview = () => {
     saveCurrentAnswer();
@@ -389,55 +683,121 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
     window.speechSynthesis?.cancel();
 
-    clearInterval(timerRef.current);
+    clearInterval(
+      timerRef.current
+    );
 
     setIsFinished(true);
+
     setIsSpeaking(false);
-    setAiStatus("Interview completed");
+
+    setAiStatus(
+      "Interview completed"
+    );
   };
 
   const handleExit = () => {
     finishInterview();
+
+    stopMedia();
 
     if (onEndInterview) {
       onEndInterview();
     }
   };
 
-  // --------------------------------------------------
+  // ============================================================
+  // NO QUESTIONS SCREEN
+  // ============================================================
+
+  if (questions.length === 0) {
+    return (
+      <div className="video-interview-page">
+        <div className="completed-card">
+          <div className="completed-icon">
+            ⚠️
+          </div>
+
+          <h1>
+            No Interview Questions
+          </h1>
+
+          <p>
+            AI-generated questions were
+            not received from the interview
+            service.
+          </p>
+
+          <button
+            className="primary-btn"
+            onClick={onEndInterview}
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
   // COMPLETED SCREEN
-  // --------------------------------------------------
+  // ============================================================
 
   if (isFinished) {
     return (
       <div className="video-interview-page">
         <div className="completed-card">
-          <div className="completed-icon">✓</div>
+          <div className="completed-icon">
+            ✓
+          </div>
 
-          <h1>Interview Completed</h1>
+          <h1>
+            Interview Completed
+          </h1>
 
           <p>
-            Great job! Your interview has been completed successfully.
+            Great job! Your interview has
+            been completed successfully.
           </p>
 
           <div className="completed-stats">
             <div>
-              <strong>{questions.length}</strong>
-              <span>Questions</span>
+              <strong>
+                {questions.length}
+              </strong>
+
+              <span>
+                Questions
+              </span>
             </div>
 
             <div>
-              <strong>{formatTime(seconds)}</strong>
-              <span>Duration</span>
+              <strong>
+                {formatTime(seconds)}
+              </strong>
+
+              <span>
+                Duration
+              </span>
             </div>
 
             <div>
-              <strong>{Object.keys(answers).length}</strong>
-              <span>Answers</span>
+              <strong>
+                {Object.keys(
+                  answers
+                ).length}
+              </strong>
+
+              <span>
+                Answers
+              </span>
             </div>
           </div>
 
-          <button className="primary-btn" onClick={handleExit}>
+          <button
+            className="primary-btn"
+            onClick={handleExit}
+          >
             Back to Dashboard
           </button>
         </div>
@@ -445,7 +805,16 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
     );
   }
 
-  const question = questions[currentQuestion];
+  // ============================================================
+  // CURRENT QUESTION
+  // ============================================================
+
+  const question =
+    questions[currentQuestion];
+
+  // ============================================================
+  // MAIN UI
+  // ============================================================
 
   return (
     <div className="video-interview-page">
@@ -457,22 +826,31 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
       <div className="interview-header">
 
         <div className="header-left">
+
           <div className="header-icon">
             🎥
           </div>
 
           <div>
-            <h1>AI Video Interview</h1>
+            <h1>
+              AI Video Interview
+            </h1>
 
-            <p>{role}</p>
+            <p>
+              {role}
+            </p>
           </div>
+
         </div>
 
         <div className="header-right">
 
           <div className="timer">
             <span className="timer-dot"></span>
-            {formatTime(seconds)}
+
+            {formatTime(
+              seconds
+            )}
           </div>
 
           <div className="live-badge">
@@ -481,6 +859,7 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
           </div>
 
         </div>
+
       </div>
 
 
@@ -526,14 +905,10 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
                 <div className="hair-front"></div>
 
-                {/* EYEBROWS */}
-
                 <div className="eyebrows">
                   <span></span>
                   <span></span>
                 </div>
-
-                {/* EYES */}
 
                 <div className="eyes">
 
@@ -547,20 +922,17 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
                 </div>
 
-                {/* NOSE */}
-
                 <div className="nose"></div>
 
-                {/* CHEEKS */}
-
                 <div className="cheek cheek-left"></div>
-                <div className="cheek cheek-right"></div>
 
-                {/* MOUTH */}
+                <div className="cheek cheek-right"></div>
 
                 <div
                   className={`mouth ${
-                    isSpeaking ? "mouth-speaking" : ""
+                    isSpeaking
+                      ? "mouth-speaking"
+                      : ""
                   }`}
                 >
                   <span></span>
@@ -581,12 +953,11 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
                 <div className="shirt-collar"></div>
               </div>
 
-
-              {/* LEFT ARM */}
-
               <div
                 className={`virtual-arm left-arm ${
-                  isSpeaking ? "gesture-left" : ""
+                  isSpeaking
+                    ? "gesture-left"
+                    : ""
                 }`}
               >
                 <div className="arm-sleeve"></div>
@@ -599,12 +970,11 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
                 </div>
               </div>
 
-
-              {/* RIGHT ARM */}
-
               <div
                 className={`virtual-arm right-arm ${
-                  isSpeaking ? "gesture-right" : ""
+                  isSpeaking
+                    ? "gesture-right"
+                    : ""
                 }`}
               >
                 <div className="arm-sleeve"></div>
@@ -624,7 +994,9 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
             <div
               className={`ai-audio-wave ${
-                isSpeaking ? "wave-active" : ""
+                isSpeaking
+                  ? "wave-active"
+                  : ""
               }`}
             >
               <span></span>
@@ -646,10 +1018,12 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
             </div>
 
             <div>
-              <strong>Sarah Sharma</strong>
+              <strong>
+                Sarah Sharma
+              </strong>
 
               <small>
-                Senior MERN Developer
+                {role}
               </small>
             </div>
 
@@ -663,6 +1037,7 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
               }`}
             >
               <span></span>
+
               {aiStatus}
             </div>
 
@@ -692,21 +1067,37 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
             />
           ) : (
             <div className="camera-off">
+
               <div className="camera-off-icon">
                 📹
               </div>
 
-              <p>Camera is off</p>
+              <p>
+                Camera is off
+              </p>
+
             </div>
           )}
 
           <div className="candidate-status">
 
-            <span className={micOn ? "active" : ""}>
+            <span
+              className={
+                micOn
+                  ? "active"
+                  : ""
+              }
+            >
               🎙
             </span>
 
-            <span className={cameraOn ? "active" : ""}>
+            <span
+              className={
+                cameraOn
+                  ? "active"
+                  : ""
+              }
+            >
               📹
             </span>
 
@@ -726,16 +1117,20 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
         <div className="question-top">
 
           <div className="question-number">
-            Question {currentQuestion + 1}/{questions.length}
+            Question{" "}
+            {currentQuestion + 1}/
+            {questions.length}
           </div>
 
           <div className="question-type">
-            Technical / Behavioral
+            {role} • {difficulty}
           </div>
 
         </div>
 
-        <h2>{question}</h2>
+        <h2>
+          {question}
+        </h2>
 
       </div>
 
@@ -746,7 +1141,9 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
       <div
         className={`listening-section ${
-          isListening ? "listening-active" : ""
+          isListening
+            ? "listening-active"
+            : ""
         }`}
       >
 
@@ -759,6 +1156,7 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
         </div>
 
         <div>
+
           <strong>
             {isListening
               ? "I'm listening..."
@@ -772,6 +1170,7 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
               ? "Speak naturally and clearly"
               : "Click Start Answer when you're ready"}
           </small>
+
         </div>
 
       </div>
@@ -789,7 +1188,9 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
             Your Answer
           </div>
 
-          <p>{transcript}</p>
+          <p>
+            {transcript}
+          </p>
 
         </div>
       )}
@@ -803,22 +1204,40 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
         <button
           className={`control-btn ${
-            !micOn ? "control-off" : ""
+            !micOn
+              ? "control-off"
+              : ""
           }`}
-          onClick={toggleMic}
+          onClick={
+            toggleMic
+          }
         >
-          <span>{micOn ? "🎙" : "🔇"}</span>
+          <span>
+            {micOn
+              ? "🎙"
+              : "🔇"}
+          </span>
+
           Mic
         </button>
 
 
         <button
           className={`control-btn ${
-            !cameraOn ? "control-off" : ""
+            !cameraOn
+              ? "control-off"
+              : ""
           }`}
-          onClick={toggleCamera}
+          onClick={
+            toggleCamera
+          }
         >
-          <span>{cameraOn ? "📹" : "🚫"}</span>
+          <span>
+            {cameraOn
+              ? "📹"
+              : "🚫"}
+          </span>
+
           Camera
         </button>
 
@@ -826,15 +1245,21 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
         {!isListening ? (
           <button
             className="start-answer-btn"
-            onClick={startListening}
-            disabled={isSpeaking}
+            onClick={
+              startListening
+            }
+            disabled={
+              isSpeaking
+            }
           >
             🎙 Start Answer
           </button>
         ) : (
           <button
             className="stop-answer-btn"
-            onClick={stopListening}
+            onClick={
+              stopListening
+            }
           >
             ⏹ Stop Answer
           </button>
@@ -843,8 +1268,12 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
         <button
           className="control-btn"
-          onClick={previousQuestion}
-          disabled={currentQuestion === 0}
+          onClick={
+            previousQuestion
+          }
+          disabled={
+            currentQuestion === 0
+          }
         >
           ← Previous
         </button>
@@ -852,9 +1281,12 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
 
         <button
           className="next-btn"
-          onClick={nextQuestion}
+          onClick={
+            nextQuestion
+          }
         >
-          {currentQuestion === questions.length - 1
+          {currentQuestion ===
+          questions.length - 1
             ? "Finish Interview"
             : "Next Question →"}
         </button>
@@ -872,7 +1304,11 @@ function VideoInterview({ role = "MERN Stack Developer", onEndInterview }) {
           🔒 Your interview is private and secure
         </span>
 
-        <button onClick={finishInterview}>
+        <button
+          onClick={
+            finishInterview
+          }
+        >
           End Interview
         </button>
 
