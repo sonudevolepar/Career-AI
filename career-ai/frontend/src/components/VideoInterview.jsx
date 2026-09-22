@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import * as did from "@d-id/client-sdk";
 import "./VideoInterview.css";
 
 function VideoInterview({
@@ -7,9 +8,9 @@ function VideoInterview({
   questions: receivedQuestions = [],
   onEndInterview,
 }) {
-  // ============================================================
-  // QUESTIONS
-  // ============================================================
+  // =========================================================
+  // GEMINI QUESTIONS
+  // =========================================================
 
   const questions = Array.isArray(receivedQuestions)
     ? receivedQuestions
@@ -18,7 +19,10 @@ function VideoInterview({
             return item.trim();
           }
 
-          if (item && typeof item.question === "string") {
+          if (
+            item &&
+            typeof item.question === "string"
+          ) {
             return item.question.trim();
           }
 
@@ -27,17 +31,28 @@ function VideoInterview({
         .filter(Boolean)
     : [];
 
-  // ============================================================
+  // =========================================================
+  // D-ID CONFIG
+  // =========================================================
+
+  const DID_AGENT_ID = import.meta.env.VITE_DID_AGENT_ID;
+  const DID_CLIENT_KEY = import.meta.env.VITE_DID_CLIENT_KEY;
+
+  // =========================================================
   // REFS
-  // ============================================================
+  // =========================================================
 
   const videoRef = useRef(null);
+  const candidateVideoRef = useRef(null);
+
   const streamRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // ============================================================
+  const didManagerRef = useRef(null);
+
+  // =========================================================
   // STATE
-  // ============================================================
+  // =========================================================
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
 
@@ -61,11 +76,28 @@ function VideoInterview({
 
   const [elapsedTime, setElapsedTime] = useState(0);
 
+  const [didReady, setDidReady] = useState(false);
+
+  const [didConnecting, setDidConnecting] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState("");
 
-  // ============================================================
+  // =========================================================
+  // FORMAT TIMER
+  // =========================================================
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(
+      secs
+    ).padStart(2, "0")}`;
+  };
+
+  // =========================================================
   // TIMER
-  // ============================================================
+  // =========================================================
 
   useEffect(() => {
     if (!interviewStarted || interviewFinished) {
@@ -79,198 +111,427 @@ function VideoInterview({
     return () => clearInterval(timer);
   }, [interviewStarted, interviewFinished]);
 
-  // ============================================================
-  // FORMAT TIMER
-  // ============================================================
-
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-
-    return `${String(minutes).padStart(2, "0")}:${String(
-      remainingSeconds
-    ).padStart(2, "0")}`;
-  };
-
-  // ============================================================
-  // CAMERA + MICROPHONE
-  // ============================================================
+  // =========================================================
+  // D-ID INITIALIZATION
+  // =========================================================
 
   useEffect(() => {
     let mounted = true;
 
-    const startCamera = async () => {
+    const initializeDID = async () => {
+      if (!DID_AGENT_ID || !DID_CLIENT_KEY) {
+        setErrorMessage(
+          "D-ID Agent ID or Client Key is missing. Please check frontend/.env"
+        );
+        return;
+      }
+
       try {
-        setErrorMessage("");
+        setDidConnecting(true);
 
-        if (!navigator.mediaDevices?.getUserMedia) {
-          setErrorMessage(
-            "Your browser does not support camera and microphone access."
+        const auth = {
+          type: "key",
+          clientKey: DID_CLIENT_KEY,
+        };
+
+        const callbacks = {
+          // -------------------------------------------------
+          // D-ID VIDEO STREAM
+          // -------------------------------------------------
+
+          onSrcObjectReady(value) {
+            console.log("D-ID stream received");
+
+            if (videoRef.current) {
+              videoRef.current.srcObject = value;
+
+              videoRef.current
+                .play()
+                .catch((error) => {
+                  console.log(
+                    "D-ID video autoplay:",
+                    error
+                  );
+                });
+            }
+
+            return value;
+          },
+
+          // -------------------------------------------------
+          // VIDEO STATE
+          // -------------------------------------------------
+
+          onVideoStateChange(state) {
+            console.log(
+              "D-ID video state:",
+              state
+            );
+
+            if (!mounted) {
+              return;
+            }
+
+            if (
+              state === "STOP" ||
+              state === "ENDED"
+            ) {
+              setIsSpeaking(false);
+            } else {
+              setIsSpeaking(true);
+            }
+          },
+
+          // -------------------------------------------------
+          // CONNECTION STATE
+          // -------------------------------------------------
+
+          onConnectionStateChange(state) {
+            console.log(
+              "D-ID connection state:",
+              state
+            );
+
+            if (!mounted) {
+              return;
+            }
+
+            if (state === "connected") {
+              setDidReady(true);
+              setDidConnecting(false);
+            }
+
+            if (
+              state === "disconnected" ||
+              state === "closed" ||
+              state === "fail"
+            ) {
+              setDidReady(false);
+              setDidConnecting(false);
+              setIsSpeaking(false);
+            }
+          },
+
+          // -------------------------------------------------
+          // ERROR
+          // -------------------------------------------------
+
+          onError(error, errorData) {
+            console.error(
+              "D-ID Error:",
+              error,
+              errorData
+            );
+
+            if (!mounted) {
+              return;
+            }
+
+            setDidConnecting(false);
+
+            setErrorMessage(
+              "D-ID connection error. Please check Agent ID, Client Key and Allowed Domain."
+            );
+          },
+
+          // -------------------------------------------------
+          // OPTIONAL MESSAGE CALLBACK
+          // -------------------------------------------------
+
+          onNewMessage(messages, type) {
+            console.log(
+              "D-ID message:",
+              type,
+              messages
+            );
+          },
+
+          onConnectivityStateChange(state) {
+            console.log(
+              "D-ID connectivity:",
+              state
+            );
+          },
+        };
+
+        // ---------------------------------------------------
+        // CREATE D-ID AGENT MANAGER
+        // ---------------------------------------------------
+
+        const manager =
+          await did.createAgentManager(
+            DID_AGENT_ID,
+            {
+              auth,
+              callbacks,
+
+              // Useful for V2/V3 presenters.
+              streamOptions: {
+                compatibilityMode: "auto",
+                streamWarmup: true,
+              },
+            }
           );
-          return;
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
 
         if (!mounted) {
-          stream.getTracks().forEach((track) => track.stop());
           return;
         }
 
-        streamRef.current = stream;
+        didManagerRef.current = manager;
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-
-          try {
-            await videoRef.current.play();
-          } catch (error) {
-            console.log("Video autoplay:", error);
-          }
-        }
-
-        setCameraReady(true);
-      } catch (error) {
-        console.error("Camera/Microphone Error:", error);
-
-        setCameraReady(false);
-
-        setErrorMessage(
-          "Camera or microphone permission is required. Please allow access from your browser."
+        console.log(
+          "D-ID Agent Manager initialized"
         );
+      } catch (error) {
+        console.error(
+          "D-ID initialization error:",
+          error
+        );
+
+        if (mounted) {
+          setDidConnecting(false);
+
+          setErrorMessage(
+            error?.message ||
+              "Unable to initialize D-ID Agent."
+          );
+        }
       }
     };
 
-    startCamera();
+    initializeDID();
 
     return () => {
       mounted = false;
 
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => {
-          track.stop();
+      try {
+        if (didManagerRef.current) {
+          didManagerRef.current.disconnect();
+        }
+      } catch (error) {
+        console.log(
+          "D-ID disconnect:",
+          error
+        );
+      }
+    };
+  }, [DID_AGENT_ID, DID_CLIENT_KEY]);
+
+  // =========================================================
+  // CAMERA
+  // =========================================================
+
+  const startCamera = async () => {
+    try {
+      setErrorMessage("");
+
+      const stream =
+        await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
         });
 
-        streamRef.current = null;
+      streamRef.current = stream;
+
+      if (candidateVideoRef.current) {
+        candidateVideoRef.current.srcObject =
+          stream;
+      }
+
+      setCameraReady(true);
+      setCameraOn(true);
+      setMicOn(true);
+
+      console.log("Candidate camera started");
+    } catch (error) {
+      console.error(
+        "Camera/Microphone error:",
+        error
+      );
+
+      setErrorMessage(
+        "Camera or microphone permission denied. Please allow access in browser."
+      );
+    }
+  };
+
+  // =========================================================
+  // START CAMERA ON COMPONENT LOAD
+  // =========================================================
+
+  useEffect(() => {
+    startCamera();
+
+    return () => {
+      if (streamRef.current) {
+        streamRef.current
+          .getTracks()
+          .forEach((track) => track.stop());
       }
     };
   }, []);
 
-  // ============================================================
-  // SPEECH SYNTHESIS
-  // ============================================================
+  // =========================================================
+  // START D-ID CONNECTION
+  // =========================================================
 
-  const speakQuestion = (question) => {
-    if (!question) {
-      return;
-    }
-
-    if (!window.speechSynthesis) {
-      console.log("Speech synthesis is not supported.");
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(question);
-
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-
-    // Prefer Indian English voice
-    const voices = window.speechSynthesis.getVoices();
-
-    const preferredVoice =
-      voices.find((voice) =>
-        voice.lang?.toLowerCase().includes("en-in")
-      ) ||
-      voices.find((voice) =>
-        voice.name?.toLowerCase().includes("india")
-      ) ||
-      voices.find((voice) =>
-        voice.lang?.toLowerCase().startsWith("en")
+  const connectDID = async () => {
+    if (!didManagerRef.current) {
+      throw new Error(
+        "D-ID Agent Manager is not initialized."
       );
-
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
     }
 
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-    };
+    if (didReady) {
+      return;
+    }
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-    };
+    setDidConnecting(true);
+    setErrorMessage("");
 
-    utterance.onerror = (error) => {
-      console.error("Speech synthesis error:", error);
-      setIsSpeaking(false);
-    };
+    await didManagerRef.current.connect();
 
-    window.speechSynthesis.speak(utterance);
+    setDidReady(true);
+    setDidConnecting(false);
   };
 
-  // ============================================================
-  // LOAD CURRENT QUESTION
-  // ============================================================
+  // =========================================================
+  // SPEAK GEMINI QUESTION USING D-ID
+  // =========================================================
 
-  useEffect(() => {
-    if (!interviewStarted) {
+  const speakGeminiQuestion = async (
+    question
+  ) => {
+    if (!question) {
       return;
     }
 
-    if (questions.length === 0) {
+    if (!didManagerRef.current) {
+      console.warn(
+        "D-ID Agent Manager not available"
+      );
       return;
     }
 
-    const question = questions[currentQuestion];
+    try {
+      setIsSpeaking(true);
+
+      console.log(
+        "D-ID speaking Gemini question:",
+        question
+      );
+
+      await didManagerRef.current.speak({
+        type: "text",
+        input: question,
+
+        // Expressive V4 can use sentiment.
+        sentiment: "professional",
+      });
+    } catch (error) {
+      console.error(
+        "D-ID speak error:",
+        error
+      );
+
+      setIsSpeaking(false);
+
+      setErrorMessage(
+        "AI interviewer could not speak the question."
+      );
+    }
+  };
+
+  // =========================================================
+  // START INTERVIEW
+  // =========================================================
+
+  const startInterview = async () => {
+    try {
+      setErrorMessage("");
+
+      // Start candidate camera if not ready
+      if (!cameraReady) {
+        await startCamera();
+      }
+
+      // Connect D-ID
+      await connectDID();
+
+      setInterviewStarted(true);
+      setInterviewFinished(false);
+      setElapsedTime(0);
+
+      // Browser user gesture allows media playback.
+      if (
+        questions.length > 0
+      ) {
+        setTimeout(() => {
+          speakGeminiQuestion(
+            questions[0]
+          );
+        }, 700);
+      }
+    } catch (error) {
+      console.error(
+        "Start interview error:",
+        error
+      );
+
+      setErrorMessage(
+        error?.message ||
+          "Unable to start interview."
+      );
+    }
+  };
+
+  // =========================================================
+  // SPEAK CURRENT QUESTION
+  // =========================================================
+
+  const speakCurrentQuestion = async () => {
+    if (!questions.length) {
+      return;
+    }
+
+    const question =
+      questions[currentQuestion];
 
     if (!question) {
       return;
     }
 
-    const timer = setTimeout(() => {
-      speakQuestion(question);
-    }, 500);
+    await speakGeminiQuestion(question);
+  };
 
-    return () => {
-      clearTimeout(timer);
+  // =========================================================
+  // SPEECH RECOGNITION
+  // =========================================================
 
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-
-      setIsSpeaking(false);
-    };
-  }, [currentQuestion, interviewStarted, questions]);
-
-  // ============================================================
-  // LOAD SPEECH RECOGNITION
-  // ============================================================
-
-  useEffect(() => {
+  const startListening = () => {
     const SpeechRecognition =
       window.SpeechRecognition ||
       window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      console.log(
-        "Speech Recognition is not supported in this browser."
+      setErrorMessage(
+        "Speech recognition is not supported in this browser. Please use Google Chrome."
       );
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    if (isListening) {
+      return;
+    }
+
+    const recognition =
+      new SpeechRecognition();
+
+    recognition.lang = "en-US";
 
     recognition.continuous = true;
-    recognition.interimResults = true;
 
-    recognition.lang = "en-IN";
+    recognition.interimResults = true;
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -288,43 +549,28 @@ function VideoInterview({
         const transcript =
           event.results[i][0].transcript;
 
-        if (event.results[i].isFinal) {
-          finalText += transcript + " ";
+        if (
+          event.results[i].isFinal
+        ) {
+          finalText += transcript;
         } else {
           interimText += transcript;
         }
       }
 
-      if (finalText) {
-        setCurrentAnswer((previous) => {
-          return `${previous} ${finalText}`.trim();
-        });
-      }
-
-      if (interimText) {
-        setCurrentAnswer((previous) => {
-          const base = previous.trim();
-
-          if (!base) {
-            return interimText;
-          }
-
-          return `${base} ${interimText}`;
-        });
-      }
+      setCurrentAnswer(
+        (previous) =>
+          previous +
+          finalText +
+          interimText
+      );
     };
 
     recognition.onerror = (event) => {
-      console.log("Speech Recognition Error:", event.error);
-
-      if (
-        event.error === "not-allowed" ||
-        event.error === "service-not-allowed"
-      ) {
-        setErrorMessage(
-          "Microphone permission is required for voice answers."
-        );
-      }
+      console.error(
+        "Speech recognition error:",
+        event.error
+      );
 
       setIsListening(false);
     };
@@ -333,217 +579,164 @@ function VideoInterview({
       setIsListening(false);
     };
 
-    recognitionRef.current = recognition;
+    recognitionRef.current =
+      recognition;
 
-    return () => {
-      try {
-        recognition.stop();
-      } catch (error) {
-        console.log("Recognition cleanup:", error);
-      }
-
-      recognitionRef.current = null;
-    };
-  }, []);
-
-  // ============================================================
-  // START INTERVIEW
-  // ============================================================
-
-  const startInterview = () => {
-    if (questions.length === 0) {
-      setErrorMessage(
-        "No interview questions were received."
-      );
-      return;
-    }
-
-    setInterviewStarted(true);
-    setInterviewFinished(false);
-    setCurrentQuestion(0);
-    setCurrentAnswer("");
-    setAnswers([]);
-    setElapsedTime(0);
-
-    setTimeout(() => {
-      speakQuestion(questions[0]);
-    }, 700);
+    recognition.start();
   };
 
-  // ============================================================
-  // START ANSWER
-  // ============================================================
+  // =========================================================
+  // STOP LISTENING
+  // =========================================================
 
-  const startAnswer = () => {
-    if (!recognitionRef.current) {
-      setErrorMessage(
-        "Speech recognition is not supported. Please use Google Chrome."
-      );
-      return;
-    }
-
-    if (!micOn) {
-      setErrorMessage(
-        "Please turn on the microphone first."
-      );
-      return;
-    }
-
-    setErrorMessage("");
-
-    try {
-      recognitionRef.current.start();
-    } catch (error) {
-      console.log("Recognition start:", error);
-    }
-  };
-
-  // ============================================================
-  // STOP ANSWER
-  // ============================================================
-
-  const stopAnswer = () => {
-    if (!recognitionRef.current) {
-      return;
-    }
-
-    try {
+  const stopListening = () => {
+    if (recognitionRef.current) {
       recognitionRef.current.stop();
-    } catch (error) {
-      console.log("Recognition stop:", error);
+      recognitionRef.current = null;
     }
 
     setIsListening(false);
   };
 
-  // ============================================================
-  // SAVE CURRENT ANSWER
-  // ============================================================
+  // =========================================================
+  // SAVE ANSWER
+  // =========================================================
 
   const saveCurrentAnswer = () => {
-    const answer = currentAnswer.trim();
-
     setAnswers((previous) => {
-      const updatedAnswers = [...previous];
+      const updated = [...previous];
 
-      updatedAnswers[currentQuestion] = answer;
+      updated[currentQuestion] =
+        currentAnswer;
 
-      return updatedAnswers;
+      return updated;
     });
-
-    return answer;
   };
 
-  // ============================================================
-  // NEXT QUESTION
-  // ============================================================
+  // =========================================================
+  // START / STOP ANSWER
+  // =========================================================
 
-  const nextQuestion = () => {
-    stopAnswer();
-
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+  const toggleAnswer = () => {
+    if (isListening) {
+      stopListening();
+      saveCurrentAnswer();
+    } else {
+      setCurrentAnswer("");
+      startListening();
     }
+  };
 
-    setIsSpeaking(false);
+  // =========================================================
+  // NEXT QUESTION
+  // =========================================================
+
+  const nextQuestion = async () => {
+    stopListening();
 
     saveCurrentAnswer();
 
-    if (currentQuestion < questions.length - 1) {
+    if (
+      currentQuestion <
+      questions.length - 1
+    ) {
+      const nextIndex =
+        currentQuestion + 1;
+
+      setCurrentQuestion(nextIndex);
+
       setCurrentAnswer(
-        answers[currentQuestion + 1] || ""
+        answers[nextIndex] || ""
       );
 
-      setCurrentQuestion((previous) => previous + 1);
+      // Give React time to update UI
+      setTimeout(() => {
+        speakGeminiQuestion(
+          questions[nextIndex]
+        );
+      }, 500);
     } else {
       finishInterview();
     }
   };
 
-  // ============================================================
+  // =========================================================
   // PREVIOUS QUESTION
-  // ============================================================
+  // =========================================================
 
   const previousQuestion = () => {
-    if (currentQuestion === 0) {
-      return;
-    }
-
-    stopAnswer();
-
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-
-    setIsSpeaking(false);
+    stopListening();
 
     saveCurrentAnswer();
 
-    const previousIndex = currentQuestion - 1;
+    if (currentQuestion > 0) {
+      const previousIndex =
+        currentQuestion - 1;
 
-    setCurrentQuestion(previousIndex);
+      setCurrentQuestion(
+        previousIndex
+      );
 
-    setCurrentAnswer(
-      answers[previousIndex] || ""
-    );
+      setCurrentAnswer(
+        answers[previousIndex] || ""
+      );
+
+      setTimeout(() => {
+        speakGeminiQuestion(
+          questions[previousIndex]
+        );
+      }, 500);
+    }
   };
 
-  // ============================================================
+  // =========================================================
   // FINISH INTERVIEW
-  // ============================================================
+  // =========================================================
 
   const finishInterview = () => {
-    stopAnswer();
+    stopListening();
 
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-
-    setIsSpeaking(false);
-
-    setAnswers((previous) => {
-      const updatedAnswers = [...previous];
-
-      updatedAnswers[currentQuestion] =
-        currentAnswer.trim();
-
-      return updatedAnswers;
-    });
+    saveCurrentAnswer();
 
     setInterviewFinished(true);
     setInterviewStarted(false);
+
+    setIsSpeaking(false);
   };
 
-  // ============================================================
+  // =========================================================
   // END INTERVIEW
-  // ============================================================
+  // =========================================================
 
-  const endInterview = () => {
-    stopAnswer();
+  const endInterview = async () => {
+    stopListening();
 
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+    try {
+      if (didManagerRef.current) {
+        await didManagerRef.current.disconnect();
+      }
+    } catch (error) {
+      console.log(
+        "D-ID disconnect error:",
+        error
+      );
     }
 
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => {
-        track.stop();
-      });
-
-      streamRef.current = null;
+      streamRef.current
+        .getTracks()
+        .forEach((track) => track.stop());
     }
 
-    setIsSpeaking(false);
     setInterviewStarted(false);
-
-    if (onEndInterview) {
-      onEndInterview();
-    }
+    setInterviewFinished(true);
+    setIsSpeaking(false);
+    setDidReady(false);
   };
 
-  // ============================================================
+  // =========================================================
   // CAMERA TOGGLE
-  // ============================================================
+  // =========================================================
 
   const toggleCamera = () => {
     if (!streamRef.current) {
@@ -554,17 +747,16 @@ function VideoInterview({
       streamRef.current.getVideoTracks();
 
     videoTracks.forEach((track) => {
-      track.enabled = !cameraOn;
+      track.enabled = !track.enabled;
+      setCameraOn(track.enabled);
     });
-
-    setCameraOn((previous) => !previous);
   };
 
-  // ============================================================
+  // =========================================================
   // MICROPHONE TOGGLE
-  // ============================================================
+  // =========================================================
 
-  const toggleMicrophone = () => {
+  const toggleMic = () => {
     if (!streamRef.current) {
       return;
     }
@@ -573,270 +765,175 @@ function VideoInterview({
       streamRef.current.getAudioTracks();
 
     audioTracks.forEach((track) => {
-      track.enabled = !micOn;
+      track.enabled = !track.enabled;
+      setMicOn(track.enabled);
     });
-
-    setMicOn((previous) => !previous);
-
-    if (micOn) {
-      stopAnswer();
-    }
   };
 
-  // ============================================================
-  // RESET INTERVIEW
-  // ============================================================
-
-  const restartInterview = () => {
-    setCurrentQuestion(0);
-    setCurrentAnswer("");
-    setAnswers([]);
-    setElapsedTime(0);
-    setInterviewFinished(false);
-    setInterviewStarted(false);
-    setErrorMessage("");
-
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-
-    setIsSpeaking(false);
-  };
-
-  // ============================================================
+  // =========================================================
   // NO QUESTIONS
-  // ============================================================
+  // =========================================================
 
-  if (questions.length === 0) {
+  if (!questions.length) {
     return (
       <div className="video-interview-page">
-
-        <div className="interview-error-screen">
-
-          <div className="error-icon">
-            ⚠️
-          </div>
-
-          <h2>No Interview Questions</h2>
+        <div className="error-screen">
+          <h2>No interview questions available</h2>
 
           <p>
-            Gemini did not return any interview
-            questions for this role.
+            Gemini did not provide interview
+            questions.
           </p>
 
           <button
-            className="end-interview-btn"
             onClick={onEndInterview}
           >
-            Go Back
+            Back
           </button>
-
         </div>
-
       </div>
     );
   }
 
-  // ============================================================
-  // INTERVIEW FINISHED
-  // ============================================================
+  // =========================================================
+  // COMPLETED SCREEN
+  // =========================================================
 
   if (interviewFinished) {
-    const answeredQuestions = answers.filter(
-      (answer) =>
-        typeof answer === "string" &&
-        answer.trim().length > 0
-    ).length;
-
-    const unansweredQuestions =
-      questions.length - answeredQuestions;
-
     return (
       <div className="video-interview-page">
-
-        <div className="interview-complete-card">
-
-          <div className="complete-icon">
+        <div className="completion-screen">
+          <div className="completion-icon">
             ✓
           </div>
 
           <h1>Interview Completed</h1>
 
           <p>
-            Your AI interview session has been
+            Your {role} interview has been
             completed successfully.
           </p>
 
-          <div className="interview-stats">
-
-            <div className="stat-card">
+          <div className="completion-stats">
+            <div>
               <strong>
                 {questions.length}
               </strong>
-
-              <span>
-                Total Questions
-              </span>
+              <span>Questions</span>
             </div>
 
-            <div className="stat-card">
-              <strong>
-                {answeredQuestions}
-              </strong>
-
-              <span>
-                Answered
-              </span>
-            </div>
-
-            <div className="stat-card">
-              <strong>
-                {unansweredQuestions}
-              </strong>
-
-              <span>
-                Unanswered
-              </span>
-            </div>
-
-            <div className="stat-card">
+            <div>
               <strong>
                 {formatTime(elapsedTime)}
               </strong>
-
-              <span>
-                Duration
-              </span>
+              <span>Duration</span>
             </div>
-
           </div>
 
-          <div className="complete-actions">
-
-            <button
-              className="restart-interview-btn"
-              onClick={restartInterview}
-            >
-              Restart Interview
-            </button>
-
-            <button
-              className="end-interview-btn"
-              onClick={endInterview}
-            >
-              Exit Interview
-            </button>
-
-          </div>
-
+          <button
+            className="finish-button"
+            onClick={onEndInterview}
+          >
+            Back to Interview
+          </button>
         </div>
-
       </div>
     );
   }
 
-  // ============================================================
+  // =========================================================
   // MAIN UI
-  // ============================================================
+  // =========================================================
 
   return (
     <div className="video-interview-page">
-
-      {/* ======================================================
+      {/* =================================================
           HEADER
-      ======================================================= */}
+      ================================================= */}
 
-      <div className="video-interview-header">
+      <header className="video-interview-header">
+        <div>
+          <h1>AI Video Interview</h1>
 
-        <div className="header-left">
-
-          <h1>
-            AI Video Interview
-          </h1>
-
-          <p>
-            {role}
-          </p>
-
+          <p>{role}</p>
         </div>
 
-        <div className="header-center">
-
-          <div className="interview-timer">
+        <div className="interview-header-right">
+          <div className="timer">
             {formatTime(elapsedTime)}
           </div>
 
-        </div>
-
-        <div className="header-right">
-
-          <div className="live-status">
+          <div
+            className={`live-status ${
+              interviewStarted
+                ? "active"
+                : ""
+            }`}
+          >
             <span></span>
-            LIVE
+
+            {interviewStarted
+              ? "LIVE"
+              : "READY"}
           </div>
-
         </div>
+      </header>
 
-      </div>
-
-      {/* ======================================================
+      {/* =================================================
           ERROR
-      ======================================================= */}
+      ================================================= */}
 
       {errorMessage && (
-        <div className="interview-error-message">
+        <div className="interview-error">
           ⚠️ {errorMessage}
         </div>
       )}
 
-      {/* ======================================================
-          MAIN INTERVIEW AREA
-      ======================================================= */}
+      {/* =================================================
+          MAIN GRID
+      ================================================= */}
 
-      <div className="video-interview-content">
+      <div className="interview-grid">
+        {/* =================================================
+            AI INTERVIEWER
+        ================================================= */}
 
-        {/* ====================================================
-            LEFT SIDE - AI INTERVIEWER
-        ===================================================== */}
+        <section className="interviewer-panel">
+          <div className="panel-title">
+            <span>REAL AI INTERVIEWER</span>
 
-        <div className="interviewer-panel">
-
-          <div className="panel-header">
-
-            <div>
-              <span className="panel-label">
-                REAL AI INTERVIEWER
-              </span>
-
-              <h2>
-                Sarah Sharma
-              </h2>
-
-              <p>
-                {role}
-              </p>
-            </div>
-
-            <div className="ai-status">
+            <span
+              className={`ai-status ${
+                didReady
+                  ? "online"
+                  : ""
+              }`}
+            >
               <span></span>
-              Online
-            </div>
 
+              {didReady
+                ? "Online"
+                : didConnecting
+                ? "Connecting..."
+                : "Offline"}
+            </span>
           </div>
 
-
-          {/* ==================================================
-              REAL HUMAN AI IMAGE
-          =================================================== */}
-
           <div className="real-ai-interviewer">
+            {/* IMPORTANT:
+                DO NOT use muted here.
+                D-ID avatar needs audio.
+            */}
 
-            <img
-              src="/ai-interviewer.jpg"
-              alt="AI Interviewer"
-              className={`ai-human-image ${
-                isSpeaking ? "ai-speaking" : ""
+            <video
+              ref={videoRef}
+              className={`ai-human-video ${
+                isSpeaking
+                  ? "ai-speaking"
+                  : ""
               }`}
+              autoPlay
+              playsInline
             />
 
             <div className="ai-live-indicator">
@@ -850,56 +947,54 @@ function VideoInterview({
               </div>
             )}
 
+            {!didReady &&
+              !didConnecting && (
+                <div className="ai-placeholder">
+                  <div className="ai-placeholder-icon">
+                    AI
+                  </div>
+
+                  <p>
+                    AI Interviewer
+                  </p>
+
+                  <small>
+                    Click Start Interview
+                  </small>
+                </div>
+              )}
           </div>
 
+          {/* AI INFORMATION */}
 
-          {/* ==================================================
-              AI QUESTION
-          =================================================== */}
-
-          <div className="ai-question-box">
-
-            <div className="question-label">
-
-              <span>
-                Question {currentQuestion + 1}
-              </span>
-
-              <span>
-                {difficulty}
-              </span>
-
+          <div className="ai-info-card">
+            <div className="ai-avatar-small">
+              AI
             </div>
-
-            <p>
-              {questions[currentQuestion]}
-            </p>
-
-          </div>
-
-        </div>
-
-
-        {/* ====================================================
-            RIGHT SIDE - CANDIDATE
-        ===================================================== */}
-
-        <div className="candidate-panel">
-
-          <div className="panel-header">
 
             <div>
-              <span className="panel-label">
-                YOUR WEBCAM
-              </span>
+              <h3>Sarah Sharma</h3>
 
-              <h2>
-                Candidate
-              </h2>
+              <p>
+                Senior {role}
+              </p>
+
+              <small>
+                Difficulty: {difficulty}
+              </small>
             </div>
+          </div>
+        </section>
 
-            <div className="camera-status">
+        {/* =================================================
+            CANDIDATE
+        ================================================= */}
 
+        <section className="candidate-panel">
+          <div className="panel-title">
+            <span>YOUR WEBCAM</span>
+
+            <div className="candidate-status">
               <span
                 className={
                   cameraOn
@@ -907,259 +1002,209 @@ function VideoInterview({
                     : "status-off"
                 }
               >
-                {cameraOn ? "Camera On" : "Camera Off"}
+                📹
               </span>
 
+              <span
+                className={
+                  micOn
+                    ? "status-on"
+                    : "status-off"
+                }
+              >
+                🎤
+              </span>
             </div>
-
           </div>
 
-
-          {/* ==================================================
-              CANDIDATE VIDEO
-          =================================================== */}
-
           <div className="candidate-video-container">
-
             <video
-              ref={videoRef}
+              ref={candidateVideoRef}
+              className="candidate-video"
               autoPlay
               playsInline
               muted
-              className={`candidate-video ${
-                !cameraOn
-                  ? "video-hidden"
-                  : ""
-              }`}
             />
 
             {!cameraOn && (
-              <div className="camera-off-screen">
-
-                <div className="camera-off-icon">
-                  📷
-                </div>
-
-                <p>
-                  Camera is turned off
-                </p>
-
+              <div className="camera-off-overlay">
+                📷
+                <p>Camera Off</p>
               </div>
             )}
-
-            {!cameraReady && (
-              <div className="camera-loading">
-
-                <div className="camera-loading-icon">
-                  📹
-                </div>
-
-                <p>
-                  Starting camera...
-                </p>
-
-              </div>
-            )}
-
-            {/* Candidate live badge */}
-
-            <div className="candidate-live-badge">
-              <span></span>
-              YOU
-            </div>
-
           </div>
 
+          {/* CAMERA CONTROLS */}
 
-          {/* ==================================================
-              ANSWER BOX
-          =================================================== */}
+          <div className="candidate-controls">
+            <button
+              className={
+                cameraOn
+                  ? "media-button active"
+                  : "media-button"
+              }
+              onClick={toggleCamera}
+            >
+              📹{" "}
+              {cameraOn
+                ? "Camera"
+                : "Camera Off"}
+            </button>
 
-          <div className="answer-section">
-
-            <div className="answer-header">
-
-              <span>
-                Your Answer
-              </span>
-
-              {isListening && (
-                <span className="listening-indicator">
-                  🔴 Listening...
-                </span>
-              )}
-
-            </div>
-
-            <div className="answer-box">
-
-              {currentAnswer ? (
-                <p>
-                  {currentAnswer}
-                </p>
-              ) : (
-                <p className="answer-placeholder">
-                  Click "Start Answer" and speak your
-                  answer...
-                </p>
-              )}
-
-            </div>
-
+            <button
+              className={
+                micOn
+                  ? "media-button active"
+                  : "media-button"
+              }
+              onClick={toggleMic}
+            >
+              🎤{" "}
+              {micOn
+                ? "Mic"
+                : "Mic Off"}
+            </button>
           </div>
-
-        </div>
-
+        </section>
       </div>
 
+      {/* =================================================
+          QUESTION
+      ================================================= */}
 
-      {/* ======================================================
-          BOTTOM CONTROLS
-      ======================================================= */}
-
-      <div className="interview-controls">
-
-        {/* Microphone */}
-
-        <button
-          className={`control-btn ${
-            micOn ? "active" : "inactive"
-          }`}
-          onClick={toggleMicrophone}
-          title={
-            micOn
-              ? "Turn microphone off"
-              : "Turn microphone on"
-          }
-        >
-          {micOn ? "🎤" : "🔇"}
-
+      <section className="question-section">
+        <div className="question-header">
           <span>
-            {micOn ? "Mic" : "Muted"}
-          </span>
-        </button>
-
-
-        {/* Camera */}
-
-        <button
-          className={`control-btn ${
-            cameraOn ? "active" : "inactive"
-          }`}
-          onClick={toggleCamera}
-          title={
-            cameraOn
-              ? "Turn camera off"
-              : "Turn camera on"
-          }
-        >
-          {cameraOn ? "📹" : "📷"}
-
-          <span>
-            {cameraOn ? "Camera" : "Camera Off"}
-          </span>
-        </button>
-
-
-        {/* Start / Stop Answer */}
-
-        {!isListening ? (
-
-          <button
-            className="start-answer-btn"
-            onClick={startAnswer}
-          >
-            🎙️ Start Answer
-          </button>
-
-        ) : (
-
-          <button
-            className="stop-answer-btn"
-            onClick={stopAnswer}
-          >
-            ⏹ Stop Answer
-          </button>
-
-        )}
-
-
-        {/* Previous */}
-
-        <button
-          className="navigation-btn"
-          onClick={previousQuestion}
-          disabled={currentQuestion === 0}
-        >
-          ← Previous
-        </button>
-
-
-        {/* Next / Finish */}
-
-        <button
-          className="navigation-btn next-btn"
-          onClick={nextQuestion}
-        >
-          {currentQuestion === questions.length - 1
-            ? "Finish Interview"
-            : "Next Question →"}
-        </button>
-
-
-        {/* End */}
-
-        <button
-          className="end-btn"
-          onClick={endInterview}
-        >
-          End Interview
-        </button>
-
-      </div>
-
-
-      {/* ======================================================
-          QUESTION PROGRESS
-      ======================================================= */}
-
-      <div className="question-progress">
-
-        <div className="progress-info">
-
-          <span>
-            Question {currentQuestion + 1} of{" "}
+            Question {currentQuestion + 1} /{" "}
             {questions.length}
           </span>
 
-          <span>
-            {Math.round(
-              ((currentQuestion + 1) /
-                questions.length) *
-                100
-            )}
-            %
+          <span className="question-type">
+            Technical / Behavioral
           </span>
-
         </div>
 
-        <div className="progress-bar">
+        <div className="question-box">
+          <p>
+            {questions[currentQuestion]}
+          </p>
 
-          <div
-            className="progress-fill"
-            style={{
-              width: `${
-                ((currentQuestion + 1) /
-                  questions.length) *
-                100
-              }%`,
-            }}
-          />
+          <button
+            className="repeat-question-button"
+            onClick={speakCurrentQuestion}
+            disabled={
+              !didReady || isSpeaking
+            }
+          >
+            🔊 Repeat Question
+          </button>
+        </div>
+      </section>
 
+      {/* =================================================
+          ANSWER
+      ================================================= */}
+
+      <section className="answer-section">
+        <div className="answer-header">
+          <h3>Your Answer</h3>
+
+          {isListening && (
+            <span className="listening">
+              🔴 Listening...
+            </span>
+          )}
         </div>
 
+        <textarea
+          value={currentAnswer}
+          onChange={(event) =>
+            setCurrentAnswer(
+              event.target.value
+            )
+          }
+          placeholder="Speak your answer or type here..."
+        />
+
+        <div className="answer-actions">
+          <button
+            className={
+              isListening
+                ? "answer-button stop"
+                : "answer-button"
+            }
+            onClick={toggleAnswer}
+          >
+            {isListening
+              ? "⏹ Stop Answer"
+              : "🎤 Start Answer"}
+          </button>
+        </div>
+      </section>
+
+      {/* =================================================
+          INTERVIEW CONTROLS
+      ================================================= */}
+
+      <div className="interview-controls">
+        {!interviewStarted ? (
+          <button
+            className="start-interview-button"
+            onClick={startInterview}
+            disabled={didConnecting}
+          >
+            {didConnecting
+              ? "Connecting AI..."
+              : "▶ Start Interview"}
+          </button>
+        ) : (
+          <>
+            <button
+              className="secondary-button"
+              onClick={previousQuestion}
+              disabled={
+                currentQuestion === 0
+              }
+            >
+              ← Previous
+            </button>
+
+            <button
+              className="secondary-button"
+              onClick={nextQuestion}
+            >
+              {currentQuestion ===
+              questions.length - 1
+                ? "Finish Interview"
+                : "Next Question →"}
+            </button>
+
+            <button
+              className="end-button"
+              onClick={endInterview}
+            >
+              End Interview
+            </button>
+          </>
+        )}
       </div>
 
+      {/* =================================================
+          PROGRESS
+      ================================================= */}
+
+      <div className="interview-progress">
+        <div
+          className="progress-bar"
+          style={{
+            width: `${
+              ((currentQuestion + 1) /
+                questions.length) *
+              100
+            }%`,
+          }}
+        ></div>
+      </div>
     </div>
   );
 }
