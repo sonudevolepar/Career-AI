@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import * as did from "@d-id/client-sdk";
 import "./VideoInterview.css";
+import DIdAgent from "../components/DIdAgent";
 
 function VideoInterview({
   role = "MERN Stack Developer",
@@ -14,21 +14,18 @@ function VideoInterview({
 
   const questions = Array.isArray(receivedQuestions)
     ? receivedQuestions
-        .map((item) => {
-          if (typeof item === "string") {
-            return item.trim();
-          }
+      .map((item) => {
+        if (typeof item === "string") {
+          return item.trim();
+        }
 
-          if (
-            item &&
-            typeof item.question === "string"
-          ) {
-            return item.question.trim();
-          }
+        if (item && typeof item.question === "string") {
+          return item.question.trim();
+        }
 
-          return "";
-        })
-        .filter(Boolean)
+        return "";
+      })
+      .filter(Boolean)
     : [];
 
   // =========================================================
@@ -47,7 +44,6 @@ function VideoInterview({
 
   const streamRef = useRef(null);
   const recognitionRef = useRef(null);
-
   const didManagerRef = useRef(null);
 
   // =========================================================
@@ -83,17 +79,26 @@ function VideoInterview({
   const [errorMessage, setErrorMessage] = useState("");
 
   // =========================================================
-  // FORMAT TIMER
+  // DEBUG ENV
   // =========================================================
 
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+  useEffect(() => {
+    console.log("=================================");
+    console.log("D-ID ENV CHECK");
+    console.log("=================================");
 
-    return `${String(minutes).padStart(2, "0")}:${String(
-      secs
-    ).padStart(2, "0")}`;
-  };
+    console.log(
+      "D-ID Agent ID:",
+      DID_AGENT_ID || "undefined"
+    );
+
+    console.log(
+      "D-ID Client Key:",
+      DID_CLIENT_KEY ? "Present" : "Missing"
+    );
+
+    console.log("=================================");
+  }, [DID_AGENT_ID, DID_CLIENT_KEY]);
 
   // =========================================================
   // TIMER
@@ -112,210 +117,305 @@ function VideoInterview({
   }, [interviewStarted, interviewFinished]);
 
   // =========================================================
+  // FORMAT TIME
+  // =========================================================
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(
+      secs
+    ).padStart(2, "0")}`;
+  };
+
+  // =========================================================
   // D-ID INITIALIZATION
   // =========================================================
 
-  useEffect(() => {
-    let mounted = true;
+  // const initializeDID = async () => {
+  //   console.log("=================================");
+  //   console.log("INITIALIZING D-ID");
+  //   console.log("=================================");
 
-    const initializeDID = async () => {
-      if (!DID_AGENT_ID || !DID_CLIENT_KEY) {
-        setErrorMessage(
-          "D-ID Agent ID or Client Key is missing. Please check frontend/.env"
-        );
-        return;
-      }
+  //   if (!DID_AGENT_ID) {
+  //     throw new Error(
+  //       "VITE_DID_AGENT_ID is missing. Check frontend/.env"
+  //     );
+  //   }
 
-      try {
-        setDidConnecting(true);
+  //   if (!DID_CLIENT_KEY) {
+  //     throw new Error(
+  //       "VITE_DID_CLIENT_KEY is missing. Check frontend/.env"
+  //     );
+  //   }
 
-        const auth = {
-          type: "key",
-          clientKey: DID_CLIENT_KEY,
-        };
+  //   console.log("Agent ID:", DID_AGENT_ID);
+  //   console.log("Client Key: Present");
 
-        const callbacks = {
-          // -------------------------------------------------
-          // D-ID VIDEO STREAM
-          // -------------------------------------------------
+  //   try {
+  //     setDidConnecting(true);
+  //     setErrorMessage("");
 
-          onSrcObjectReady(value) {
-            console.log("D-ID stream received");
+  //     const auth = {
+  //       type: "key",
+  //       clientKey: DID_CLIENT_KEY,
+  //     };
 
-            if (videoRef.current) {
-              videoRef.current.srcObject = value;
+  //     // =====================================================
+  //     // D-ID CALLBACKS
+  //     // =====================================================
 
-              videoRef.current
-                .play()
-                .catch((error) => {
-                  console.log(
-                    "D-ID video autoplay:",
-                    error
-                  );
-                });
-            }
+  //     const callbacks = {
+  //       // ---------------------------------------------------
+  //       // VIDEO STREAM
+  //       // ---------------------------------------------------
 
-            return value;
-          },
+  //       onSrcObjectReady(value) {
+  //         console.log("✅ D-ID VIDEO STREAM RECEIVED");
 
-          // -------------------------------------------------
-          // VIDEO STATE
-          // -------------------------------------------------
+  //         if (videoRef.current) {
+  //           videoRef.current.srcObject = value;
 
-          onVideoStateChange(state) {
-            console.log(
-              "D-ID video state:",
-              state
-            );
+  //           videoRef.current
+  //             .play()
+  //             .then(() => {
+  //               console.log("✅ D-ID VIDEO PLAYING");
+  //             })
+  //             .catch((error) => {
+  //               console.warn(
+  //                 "D-ID video play warning:",
+  //                 error
+  //               );
+  //             });
+  //         }
 
-            if (!mounted) {
-              return;
-            }
+  //         return value;
+  //       },
 
-            if (
-              state === "STOP" ||
-              state === "ENDED"
-            ) {
-              setIsSpeaking(false);
-            } else {
-              setIsSpeaking(true);
-            }
-          },
+  //       // ---------------------------------------------------
+  //       // CONNECTION
+  //       // ---------------------------------------------------
 
-          // -------------------------------------------------
-          // CONNECTION STATE
-          // -------------------------------------------------
+  //       onConnectionStateChange(state) {
+  //         console.log(
+  //           "🔵 D-ID CONNECTION STATE:",
+  //           state
+  //         );
 
-          onConnectionStateChange(state) {
-            console.log(
-              "D-ID connection state:",
-              state
-            );
+  //         if (
+  //           state === "connected" ||
+  //           state === "Connected"
+  //         ) {
+  //           setDidReady(true);
+  //           setDidConnecting(false);
+  //         }
 
-            if (!mounted) {
-              return;
-            }
+  //         if (
+  //           state === "disconnected" ||
+  //           state === "Disconnected" ||
+  //           state === "closed" ||
+  //           state === "fail"
+  //         ) {
+  //           setDidReady(false);
+  //           setDidConnecting(false);
+  //           setIsSpeaking(false);
+  //         }
+  //       },
 
-            if (state === "connected") {
-              setDidReady(true);
-              setDidConnecting(false);
-            }
+  //       // ---------------------------------------------------
+  //       // VIDEO STATE
+  //       // ---------------------------------------------------
 
-            if (
-              state === "disconnected" ||
-              state === "closed" ||
-              state === "fail"
-            ) {
-              setDidReady(false);
-              setDidConnecting(false);
-              setIsSpeaking(false);
-            }
-          },
+  //       onVideoStateChange(state) {
+  //         console.log(
+  //           "🎥 D-ID VIDEO STATE:",
+  //           state
+  //         );
 
-          // -------------------------------------------------
-          // ERROR
-          // -------------------------------------------------
+  //         if (
+  //           state === "STOP" ||
+  //           state === "ENDED" ||
+  //           state === "Stopped"
+  //         ) {
+  //           setIsSpeaking(false);
+  //         } else {
+  //           setIsSpeaking(true);
+  //         }
+  //       },
 
-          onError(error, errorData) {
-            console.error(
-              "D-ID Error:",
-              error,
-              errorData
-            );
+  //       // ---------------------------------------------------
+  //       // ERROR
+  //       // ---------------------------------------------------
 
-            if (!mounted) {
-              return;
-            }
+  //       onError(error, errorData) {
+  //         console.error(
+  //           "❌ D-ID ERROR:",
+  //           error
+  //         );
 
-            setDidConnecting(false);
+  //         console.error(
+  //           "❌ D-ID ERROR DATA:",
+  //           errorData
+  //         );
 
-            setErrorMessage(
-              "D-ID connection error. Please check Agent ID, Client Key and Allowed Domain."
-            );
-          },
+  //         setDidConnecting(false);
+  //         setDidReady(false);
 
-          // -------------------------------------------------
-          // OPTIONAL MESSAGE CALLBACK
-          // -------------------------------------------------
+  //         const message =
+  //           error?.message ||
+  //           errorData?.message ||
+  //           "D-ID connection error.";
 
-          onNewMessage(messages, type) {
-            console.log(
-              "D-ID message:",
-              type,
-              messages
-            );
-          },
+  //         setErrorMessage(
+  //           `D-ID Error: ${message}`
+  //         );
+  //       },
 
-          onConnectivityStateChange(state) {
-            console.log(
-              "D-ID connectivity:",
-              state
-            );
-          },
-        };
+  //       // ---------------------------------------------------
+  //       // MESSAGE
+  //       // ---------------------------------------------------
 
-        // ---------------------------------------------------
-        // CREATE D-ID AGENT MANAGER
-        // ---------------------------------------------------
+  //       onNewMessage(messages, type) {
+  //         console.log(
+  //           "💬 D-ID MESSAGE:",
+  //           type,
+  //           messages
+  //         );
+  //       },
 
-        const manager =
-          await did.createAgentManager(
-            DID_AGENT_ID,
-            {
-              auth,
-              callbacks,
+  //       // ---------------------------------------------------
+  //       // CONNECTIVITY
+  //       // ---------------------------------------------------
 
-              // Useful for V2/V3 presenters.
-              streamOptions: {
-                compatibilityMode: "auto",
-                streamWarmup: true,
-              },
-            }
-          );
+  //       onConnectivityStateChange(state) {
+  //         console.log(
+  //           "🌐 D-ID CONNECTIVITY:",
+  //           state
+  //         );
+  //       },
+  //     };
 
-        if (!mounted) {
-          return;
-        }
+  //     console.log(
+  //       "Creating D-ID Agent Manager..."
+  //     );
 
-        didManagerRef.current = manager;
+  //     const manager =
+  //       await did.createAgentManager(
+  //         DID_AGENT_ID,
+  //         {
+  //           auth,
+  //           callbacks,
 
-        console.log(
-          "D-ID Agent Manager initialized"
-        );
-      } catch (error) {
-        console.error(
-          "D-ID initialization error:",
-          error
-        );
+  //           streamOptions: {
+  //             compatibilityMode: "auto",
+  //             streamWarmup: true,
+  //           },
+  //         }
+  //       );
 
-        if (mounted) {
-          setDidConnecting(false);
+  //     if (!manager) {
+  //       throw new Error(
+  //         "D-ID Agent Manager could not be created."
+  //       );
+  //     }
 
-          setErrorMessage(
-            error?.message ||
-              "Unable to initialize D-ID Agent."
-          );
-        }
-      }
-    };
+  //     didManagerRef.current = manager;
 
-    initializeDID();
+  //     console.log(
+  //       "✅ D-ID AGENT MANAGER CREATED"
+  //     );
 
-    return () => {
-      mounted = false;
+  //     return manager;
+  //   } catch (error) {
+  //     console.error(
+  //       "❌ D-ID createAgentManager FAILED:",
+  //       error
+  //     );
 
-      try {
-        if (didManagerRef.current) {
-          didManagerRef.current.disconnect();
-        }
-      } catch (error) {
-        console.log(
-          "D-ID disconnect:",
-          error
-        );
-      }
-    };
-  }, [DID_AGENT_ID, DID_CLIENT_KEY]);
+  //     didManagerRef.current = null;
+
+  //     setDidReady(false);
+  //     setDidConnecting(false);
+
+  //     const message =
+  //       error?.message ||
+  //       "Unable to initialize D-ID Agent.";
+
+  //     setErrorMessage(
+  //       `D-ID initialization failed: ${message}`
+  //     );
+
+  //     throw error;
+  //   }
+  // };
+
+  // =========================================================
+  // CONNECT D-ID
+  // =========================================================
+
+  // const connectDID = async () => {
+  //   console.log(
+  //     "Connecting to D-ID Agent..."
+  //   );
+
+  //   setErrorMessage("");
+  //   setDidConnecting(true);
+
+  //   try {
+  //     let manager = didManagerRef.current;
+
+  //     // Manager doesn't exist → create it
+  //     if (!manager) {
+  //       console.log(
+  //         "D-ID manager not found. Creating..."
+  //       );
+
+  //       manager = await initializeDID();
+  //     }
+
+  //     if (!manager) {
+  //       throw new Error(
+  //         "D-ID Agent Manager could not be created."
+  //       );
+  //     }
+
+  //     console.log(
+  //       "Calling manager.connect()..."
+  //     );
+
+  //     await manager.connect();
+
+  //     didManagerRef.current = manager;
+
+  //     console.log(
+  //       "✅ D-ID AGENT CONNECTED"
+  //     );
+
+  //     setDidReady(true);
+  //     setDidConnecting(false);
+
+  //     return manager;
+  //   } catch (error) {
+  //     console.error(
+  //       "❌ D-ID CONNECT FAILED:",
+  //       error
+  //     );
+
+  //     setDidReady(false);
+  //     setDidConnecting(false);
+
+  //     const message =
+  //       error?.message ||
+  //       "D-ID Agent connection failed.";
+
+  //     setErrorMessage(
+  //       `D-ID connection failed: ${message}`
+  //     );
+
+  //     throw error;
+  //   }
+  // };
 
   // =========================================================
   // CAMERA
@@ -342,7 +442,9 @@ function VideoInterview({
       setCameraOn(true);
       setMicOn(true);
 
-      console.log("Candidate camera started");
+      console.log(
+        "✅ Candidate camera started"
+      );
     } catch (error) {
       console.error(
         "Camera/Microphone error:",
@@ -350,13 +452,13 @@ function VideoInterview({
       );
 
       setErrorMessage(
-        "Camera or microphone permission denied. Please allow access in browser."
+        "Camera or microphone permission denied. Please allow access in Chrome."
       );
     }
   };
 
   // =========================================================
-  // START CAMERA ON COMPONENT LOAD
+  // START CAMERA
   // =========================================================
 
   useEffect(() => {
@@ -372,75 +474,61 @@ function VideoInterview({
   }, []);
 
   // =========================================================
-  // START D-ID CONNECTION
+  // SPEAK GEMINI QUESTION
   // =========================================================
 
-  const connectDID = async () => {
-    if (!didManagerRef.current) {
-      throw new Error(
-        "D-ID Agent Manager is not initialized."
-      );
-    }
+  // const speakGeminiQuestion = async (
+  //   question
+  // ) => {
+  //   if (!question) {
+  //     return;
+  //   }
 
-    if (didReady) {
-      return;
-    }
+  //   const manager = didManagerRef.current;
 
-    setDidConnecting(true);
-    setErrorMessage("");
+  //   if (!manager) {
+  //     console.warn(
+  //       "D-ID Agent Manager not available."
+  //     );
 
-    await didManagerRef.current.connect();
+  //     setErrorMessage(
+  //       "D-ID interviewer is not connected."
+  //     );
 
-    setDidReady(true);
-    setDidConnecting(false);
-  };
+  //     return;
+  //   }
 
-  // =========================================================
-  // SPEAK GEMINI QUESTION USING D-ID
-  // =========================================================
+  //   try {
+  //     setIsSpeaking(true);
 
-  const speakGeminiQuestion = async (
-    question
-  ) => {
-    if (!question) {
-      return;
-    }
+  //     console.log(
+  //       "🎙️ D-ID SPEAKING GEMINI QUESTION:"
+  //     );
 
-    if (!didManagerRef.current) {
-      console.warn(
-        "D-ID Agent Manager not available"
-      );
-      return;
-    }
+  //     console.log(question);
 
-    try {
-      setIsSpeaking(true);
+  //     await manager.speak({
+  //       type: "text",
+  //       input: question,
+  //     });
 
-      console.log(
-        "D-ID speaking Gemini question:",
-        question
-      );
+  //     console.log(
+  //       "✅ Question sent to D-ID"
+  //     );
+  //   } catch (error) {
+  //     console.error(
+  //       "❌ D-ID SPEAK ERROR:",
+  //       error
+  //     );
 
-      await didManagerRef.current.speak({
-        type: "text",
-        input: question,
+  //     setIsSpeaking(false);
 
-        // Expressive V4 can use sentiment.
-        sentiment: "professional",
-      });
-    } catch (error) {
-      console.error(
-        "D-ID speak error:",
-        error
-      );
-
-      setIsSpeaking(false);
-
-      setErrorMessage(
-        "AI interviewer could not speak the question."
-      );
-    }
-  };
+  //     setErrorMessage(
+  //       `AI interviewer could not speak: ${error?.message || "Unknown error"
+  //       }`
+  //     );
+  //   }
+  // };
 
   // =========================================================
   // START INTERVIEW
@@ -450,59 +538,42 @@ function VideoInterview({
     try {
       setErrorMessage("");
 
-      // Start candidate camera if not ready
       if (!cameraReady) {
         await startCamera();
       }
 
-      // Connect D-ID
-      await connectDID();
-
       setInterviewStarted(true);
       setInterviewFinished(false);
       setElapsedTime(0);
-
-      // Browser user gesture allows media playback.
-      if (
-        questions.length > 0
-      ) {
-        setTimeout(() => {
-          speakGeminiQuestion(
-            questions[0]
-          );
-        }, 700);
-      }
     } catch (error) {
-      console.error(
-        "Start interview error:",
-        error
-      );
+      console.error(error);
 
       setErrorMessage(
-        error?.message ||
-          "Unable to start interview."
+        "Unable to start interview."
       );
     }
   };
 
   // =========================================================
-  // SPEAK CURRENT QUESTION
+  // REPEAT QUESTION
   // =========================================================
 
-  const speakCurrentQuestion = async () => {
-    if (!questions.length) {
-      return;
-    }
+  // const speakCurrentQuestion = async () => {
+  //   if (!questions.length) {
+  //     return;
+  //   }
 
-    const question =
-      questions[currentQuestion];
+  //   const question =
+  //     questions[currentQuestion];
 
-    if (!question) {
-      return;
-    }
+  //   if (!question) {
+  //     return;
+  //   }
 
-    await speakGeminiQuestion(question);
-  };
+  //   await speakGeminiQuestion(
+  //     question
+  //   );
+  // };
 
   // =========================================================
   // SPEECH RECOGNITION
@@ -515,8 +586,9 @@ function VideoInterview({
 
     if (!SpeechRecognition) {
       setErrorMessage(
-        "Speech recognition is not supported in this browser. Please use Google Chrome."
+        "Speech recognition is not supported. Please use Google Chrome."
       );
+
       return;
     }
 
@@ -528,9 +600,7 @@ function VideoInterview({
       new SpeechRecognition();
 
     recognition.lang = "en-US";
-
     recognition.continuous = true;
-
     recognition.interimResults = true;
 
     recognition.onstart = () => {
@@ -539,7 +609,6 @@ function VideoInterview({
 
     recognition.onresult = (event) => {
       let finalText = "";
-      let interimText = "";
 
       for (
         let i = event.resultIndex;
@@ -553,17 +622,15 @@ function VideoInterview({
           event.results[i].isFinal
         ) {
           finalText += transcript;
-        } else {
-          interimText += transcript;
         }
       }
 
-      setCurrentAnswer(
-        (previous) =>
-          previous +
-          finalText +
-          interimText
-      );
+      if (finalText) {
+        setCurrentAnswer(
+          (previous) =>
+            previous + " " + finalText
+        );
+      }
     };
 
     recognition.onerror = (event) => {
@@ -591,7 +658,12 @@ function VideoInterview({
 
   const stopListening = () => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.log(error);
+      }
+
       recognitionRef.current = null;
     }
 
@@ -633,7 +705,6 @@ function VideoInterview({
 
   const nextQuestion = async () => {
     stopListening();
-
     saveCurrentAnswer();
 
     if (
@@ -643,18 +714,14 @@ function VideoInterview({
       const nextIndex =
         currentQuestion + 1;
 
-      setCurrentQuestion(nextIndex);
+      setCurrentQuestion(
+        nextIndex
+      );
 
       setCurrentAnswer(
         answers[nextIndex] || ""
       );
 
-      // Give React time to update UI
-      setTimeout(() => {
-        speakGeminiQuestion(
-          questions[nextIndex]
-        );
-      }, 500);
     } else {
       finishInterview();
     }
@@ -666,7 +733,6 @@ function VideoInterview({
 
   const previousQuestion = () => {
     stopListening();
-
     saveCurrentAnswer();
 
     if (currentQuestion > 0) {
@@ -681,11 +747,6 @@ function VideoInterview({
         answers[previousIndex] || ""
       );
 
-      setTimeout(() => {
-        speakGeminiQuestion(
-          questions[previousIndex]
-        );
-      }, 500);
     }
   };
 
@@ -700,7 +761,6 @@ function VideoInterview({
 
     setInterviewFinished(true);
     setInterviewStarted(false);
-
     setIsSpeaking(false);
   };
 
@@ -722,16 +782,21 @@ function VideoInterview({
       );
     }
 
+    didManagerRef.current = null;
+
     if (streamRef.current) {
       streamRef.current
         .getTracks()
-        .forEach((track) => track.stop());
+        .forEach((track) =>
+          track.stop()
+        );
     }
 
     setInterviewStarted(false);
     setInterviewFinished(true);
     setIsSpeaking(false);
     setDidReady(false);
+    setDidConnecting(false);
   };
 
   // =========================================================
@@ -748,12 +813,13 @@ function VideoInterview({
 
     videoTracks.forEach((track) => {
       track.enabled = !track.enabled;
+
       setCameraOn(track.enabled);
     });
   };
 
   // =========================================================
-  // MICROPHONE TOGGLE
+  // MIC TOGGLE
   // =========================================================
 
   const toggleMic = () => {
@@ -766,6 +832,7 @@ function VideoInterview({
 
     audioTracks.forEach((track) => {
       track.enabled = !track.enabled;
+
       setMicOn(track.enabled);
     });
   };
@@ -778,11 +845,13 @@ function VideoInterview({
     return (
       <div className="video-interview-page">
         <div className="error-screen">
-          <h2>No interview questions available</h2>
+          <h2>
+            No interview questions available
+          </h2>
 
           <p>
-            Gemini did not provide interview
-            questions.
+            Gemini did not provide
+            interview questions.
           </p>
 
           <button
@@ -796,7 +865,7 @@ function VideoInterview({
   }
 
   // =========================================================
-  // COMPLETED SCREEN
+  // COMPLETED
   // =========================================================
 
   if (interviewFinished) {
@@ -807,11 +876,13 @@ function VideoInterview({
             ✓
           </div>
 
-          <h1>Interview Completed</h1>
+          <h1>
+            Interview Completed
+          </h1>
 
           <p>
-            Your {role} interview has been
-            completed successfully.
+            Your {role} interview has
+            been completed successfully.
           </p>
 
           <div className="completion-stats">
@@ -819,14 +890,22 @@ function VideoInterview({
               <strong>
                 {questions.length}
               </strong>
-              <span>Questions</span>
+
+              <span>
+                Questions
+              </span>
             </div>
 
             <div>
               <strong>
-                {formatTime(elapsedTime)}
+                {formatTime(
+                  elapsedTime
+                )}
               </strong>
-              <span>Duration</span>
+
+              <span>
+                Duration
+              </span>
             </div>
           </div>
 
@@ -847,28 +926,31 @@ function VideoInterview({
 
   return (
     <div className="video-interview-page">
-      {/* =================================================
-          HEADER
-      ================================================= */}
+
+      {/* HEADER */}
 
       <header className="video-interview-header">
         <div>
-          <h1>AI Video Interview</h1>
+          <h1>
+            AI Video Interview
+          </h1>
 
-          <p>{role}</p>
+          <p>
+            {role}
+          </p>
         </div>
 
         <div className="interview-header-right">
+
           <div className="timer">
             {formatTime(elapsedTime)}
           </div>
 
           <div
-            className={`live-status ${
-              interviewStarted
-                ? "active"
-                : ""
-            }`}
+            className={`live-status ${interviewStarted
+              ? "active"
+              : ""
+              }`}
           >
             <span></span>
 
@@ -876,12 +958,11 @@ function VideoInterview({
               ? "LIVE"
               : "READY"}
           </div>
+
         </div>
       </header>
 
-      {/* =================================================
-          ERROR
-      ================================================= */}
+      {/* ERROR */}
 
       {errorMessage && (
         <div className="interview-error">
@@ -889,91 +970,58 @@ function VideoInterview({
         </div>
       )}
 
-      {/* =================================================
-          MAIN GRID
-      ================================================= */}
+      {/* MAIN GRID */}
 
       <div className="interview-grid">
-        {/* =================================================
-            AI INTERVIEWER
-        ================================================= */}
+
+        {/* AI INTERVIEWER */}
 
         <section className="interviewer-panel">
+
           <div className="panel-title">
-            <span>REAL AI INTERVIEWER</span>
+
+            <span>
+              REAL AI INTERVIEWER
+            </span>
 
             <span
-              className={`ai-status ${
-                didReady
-                  ? "online"
-                  : ""
-              }`}
+              className={`ai-status ${didReady
+                ? "online"
+                : ""
+                }`}
             >
               <span></span>
 
               {didReady
                 ? "Online"
                 : didConnecting
-                ? "Connecting..."
-                : "Offline"}
+                  ? "Connecting..."
+                  : "Offline"}
             </span>
+
           </div>
 
           <div className="real-ai-interviewer">
-            {/* IMPORTANT:
-                DO NOT use muted here.
-                D-ID avatar needs audio.
-            */}
-
-            <video
-              ref={videoRef}
-              className={`ai-human-video ${
-                isSpeaking
-                  ? "ai-speaking"
-                  : ""
-              }`}
-              autoPlay
-              playsInline
-            />
+            <DIdAgent />
 
             <div className="ai-live-indicator">
               <span></span>
               AI LIVE
             </div>
-
-            {isSpeaking && (
-              <div className="ai-speaking-badge">
-                🎙️ Speaking...
-              </div>
-            )}
-
-            {!didReady &&
-              !didConnecting && (
-                <div className="ai-placeholder">
-                  <div className="ai-placeholder-icon">
-                    AI
-                  </div>
-
-                  <p>
-                    AI Interviewer
-                  </p>
-
-                  <small>
-                    Click Start Interview
-                  </small>
-                </div>
-              )}
           </div>
 
-          {/* AI INFORMATION */}
+          {/* AI INFO */}
 
           <div className="ai-info-card">
+
             <div className="ai-avatar-small">
               AI
             </div>
 
             <div>
-              <h3>Sarah Sharma</h3>
+              <h3>
+                Sarah Sharma
+              </h3>
 
               <p>
                 Senior {role}
@@ -983,18 +1031,23 @@ function VideoInterview({
                 Difficulty: {difficulty}
               </small>
             </div>
+
           </div>
+
         </section>
 
-        {/* =================================================
-            CANDIDATE
-        ================================================= */}
+        {/* CANDIDATE */}
 
         <section className="candidate-panel">
+
           <div className="panel-title">
-            <span>YOUR WEBCAM</span>
+
+            <span>
+              YOUR WEBCAM
+            </span>
 
             <div className="candidate-status">
+
               <span
                 className={
                   cameraOn
@@ -1014,10 +1067,13 @@ function VideoInterview({
               >
                 🎤
               </span>
+
             </div>
+
           </div>
 
           <div className="candidate-video-container">
+
             <video
               ref={candidateVideoRef}
               className="candidate-video"
@@ -1029,14 +1085,18 @@ function VideoInterview({
             {!cameraOn && (
               <div className="camera-off-overlay">
                 📷
-                <p>Camera Off</p>
+                <p>
+                  Camera Off
+                </p>
               </div>
             )}
+
           </div>
 
           {/* CAMERA CONTROLS */}
 
           <div className="candidate-controls">
+
             <button
               className={
                 cameraOn
@@ -1064,56 +1124,64 @@ function VideoInterview({
                 ? "Mic"
                 : "Mic Off"}
             </button>
+
           </div>
+
         </section>
+
       </div>
 
-      {/* =================================================
-          QUESTION
-      ================================================= */}
+      {/* QUESTION */}
 
       <section className="question-section">
+
         <div className="question-header">
+
           <span>
-            Question {currentQuestion + 1} /{" "}
+            Question{" "}
+            {currentQuestion + 1} /{" "}
             {questions.length}
           </span>
 
           <span className="question-type">
             Technical / Behavioral
           </span>
+
         </div>
 
         <div className="question-box">
+
           <p>
             {questions[currentQuestion]}
           </p>
 
           <button
             className="repeat-question-button"
-            onClick={speakCurrentQuestion}
-            disabled={
-              !didReady || isSpeaking
-            }
+            disabled
           >
             🔊 Repeat Question
           </button>
+
         </div>
+
       </section>
 
-      {/* =================================================
-          ANSWER
-      ================================================= */}
+      {/* ANSWER */}
 
       <section className="answer-section">
+
         <div className="answer-header">
-          <h3>Your Answer</h3>
+
+          <h3>
+            Your Answer
+          </h3>
 
           {isListening && (
             <span className="listening">
               🔴 Listening...
             </span>
           )}
+
         </div>
 
         <textarea
@@ -1127,6 +1195,7 @@ function VideoInterview({
         />
 
         <div className="answer-actions">
+
           <button
             className={
               isListening
@@ -1139,15 +1208,17 @@ function VideoInterview({
               ? "⏹ Stop Answer"
               : "🎤 Start Answer"}
           </button>
+
         </div>
+
       </section>
 
-      {/* =================================================
-          INTERVIEW CONTROLS
-      ================================================= */}
+      {/* CONTROLS */}
 
       <div className="interview-controls">
+
         {!interviewStarted ? (
+
           <button
             className="start-interview-button"
             onClick={startInterview}
@@ -1157,11 +1228,15 @@ function VideoInterview({
               ? "Connecting AI..."
               : "▶ Start Interview"}
           </button>
+
         ) : (
+
           <>
             <button
               className="secondary-button"
-              onClick={previousQuestion}
+              onClick={
+                previousQuestion
+              }
               disabled={
                 currentQuestion === 0
               }
@@ -1174,7 +1249,7 @@ function VideoInterview({
               onClick={nextQuestion}
             >
               {currentQuestion ===
-              questions.length - 1
+                questions.length - 1
                 ? "Finish Interview"
                 : "Next Question →"}
             </button>
@@ -1186,25 +1261,27 @@ function VideoInterview({
               End Interview
             </button>
           </>
+
         )}
+
       </div>
 
-      {/* =================================================
-          PROGRESS
-      ================================================= */}
+      {/* PROGRESS */}
 
       <div className="interview-progress">
+
         <div
           className="progress-bar"
           style={{
-            width: `${
-              ((currentQuestion + 1) /
-                questions.length) *
+            width: `${((currentQuestion + 1) /
+              questions.length) *
               100
-            }%`,
+              }%`,
           }}
         ></div>
+
       </div>
+
     </div>
   );
 }
