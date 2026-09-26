@@ -1,48 +1,103 @@
-require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const dotenv = require("dotenv");
 
-const app = require("./app");
-const connectDB = require("./config/db");
+dotenv.config();
 
-const PORT = process.env.PORT || 5000;
 
-const startServer = async () => {
-  try {
-    // Check environment variables
-    if (!process.env.MONGO_URI) {
-      throw new Error("MONGO_URI is missing in backend/.env");
-    }
+const app = express();
 
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is missing in backend/.env");
-    }
 
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET is missing in backend/.env");
-    }
+// ===============================
+// MIDDLEWARE
+// ===============================
 
-    console.log("Environment variables loaded successfully.");
-    console.log("Gemini API key loaded:", 
-      process.env.GEMINI_API_KEY.substring(0, 6) + "..."
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+
+app.use(express.json());
+
+app.use(express.urlencoded({
+  extended: true,
+}));
+
+
+// ===============================
+// DATABASE
+// ===============================
+
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB connected successfully");
+  })
+  .catch((error) => {
+    console.error(
+      "MongoDB connection error:",
+      error.message
     );
+  });
 
-    // Connect MongoDB
-    await connectDB();
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log("=================================");
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`http://localhost:${PORT}`);
-      console.log("=================================");
-    });
+// ===============================
+// ROUTES
+// ===============================
 
-  } catch (error) {
-    console.error("=================================");
-    console.error("Server failed to start:");
-    console.error(error.message);
-    console.error("=================================");
-    process.exit(1);
-  }
-};
+const authRoutes =
+  require("./routes/authRoutes");
 
-startServer();
+app.use(
+  "/api/auth",
+  authRoutes
+);
+
+
+// ===============================
+// TEST ROUTE
+// ===============================
+
+app.get("/", (req, res) => {
+
+  res.json({
+    success: true,
+    message: "Career AI Backend is running 🚀",
+  });
+
+});
+
+
+// ===============================
+// ERROR HANDLER
+// ===============================
+
+app.use((err, req, res, next) => {
+
+  console.error(err.stack);
+
+  res.status(500).json({
+    success: false,
+    message: "Something went wrong",
+  });
+
+});
+
+
+// ===============================
+// SERVER
+// ===============================
+
+const PORT =
+  process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+
+  console.log(
+    `Career AI Backend running on http://localhost:${PORT}`
+  );
+
+});
