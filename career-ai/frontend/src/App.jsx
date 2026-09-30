@@ -29,6 +29,9 @@ import VerifyOTP
 import AdminDashboard
   from "./pages/AdminDashboard";
 
+import AllUsers
+  from "./pages/AllUsers";
+
 
 import ResumeAnalyzerUI
   from "./components/ResumeAnalyzerUI";
@@ -154,6 +157,7 @@ function Home() {
     </main>
 
   );
+
 }
 
 
@@ -171,6 +175,7 @@ function App() {
 
 
       <Routes>
+
 
         {/* =================================
             PUBLIC AUTH
@@ -193,15 +198,27 @@ function App() {
 
 
         {/* =================================
-            ADMIN
+            ADMIN ROUTES
         ================================= */}
 
         <Route element={<AdminRoute />}>
+
+
+          {/* Admin Dashboard */}
 
           <Route
             path="/admin"
             element={<AdminDashboard />}
           />
+
+
+          {/* All Users */}
+
+          <Route
+            path="/admin/users"
+            element={<AllUsers />}
+          />
+
 
         </Route>
 
@@ -212,48 +229,72 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
 
+
+          {/* Home */}
+
           <Route
             path="/"
             element={<Home />}
           />
+
+
+          {/* Resume Analyzer */}
 
           <Route
             path="/resume-analyzer"
             element={<ResumeAnalyzerUI />}
           />
 
+
+          {/* Job Search */}
+
           <Route
             path="/job-search"
             element={<JobSearch />}
           />
+
+
+          {/* DSA Coach */}
 
           <Route
             path="/dsa-coach"
             element={<DSACoach />}
           />
 
+
+          {/* Mock Interview */}
+
           <Route
             path="/mock-interview"
             element={<AIMockInterviewer />}
           />
+
+
+          {/* AI Roadmap */}
 
           <Route
             path="/ai-roadmap"
             element={<AIRoadmap />}
           />
 
+
+          {/* System Design */}
+
           <Route
             path="/system-design"
             element={<AISystemDesign />}
           />
 
+
         </Route>
+
 
       </Routes>
 
     </div>
 
   );
+
 }
 
 

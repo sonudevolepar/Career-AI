@@ -6,6 +6,10 @@ const {
   resendOTP,
   login,
   getMe,
+  getAllUsers,
+  updateUserRole,
+  updateUserPassword,
+  deleteUser,
 } = require("../controllers/authController");
 
 const {
@@ -13,38 +17,25 @@ const {
   adminOnly,
 } = require("../middleware/authMiddleware");
 
-
 const router = express.Router();
 
 
-// ===============================
+// ==========================================
 // PUBLIC ROUTES
-// ===============================
+// ==========================================
 
-router.post(
-  "/register",
-  register
-);
+router.post("/register", register);
 
-router.post(
-  "/verify-otp",
-  verifyOTP
-);
+router.post("/verify-otp", verifyOTP);
 
-router.post(
-  "/resend-otp",
-  resendOTP
-);
+router.post("/resend-otp", resendOTP);
 
-router.post(
-  "/login",
-  login
-);
+router.post("/login", login);
 
 
-// ===============================
-// PROTECTED ROUTES
-// ===============================
+// ==========================================
+// PROTECTED USER ROUTES
+// ==========================================
 
 router.get(
   "/me",
@@ -53,22 +44,43 @@ router.get(
 );
 
 
-// ===============================
-// ADMIN TEST ROUTE
-// ===============================
+// ==========================================
+// ADMIN ONLY ROUTES
+// ==========================================
 
+// Get all users
 router.get(
-  "/admin-only",
+  "/admin/users",
   protect,
   adminOnly,
-  (req, res) => {
+  getAllUsers
+);
 
-    res.json({
-      success: true,
-      message: "Welcome Admin!",
-    });
 
-  }
+// Change user role
+router.patch(
+  "/admin/users/:userId/role",
+  protect,
+  adminOnly,
+  updateUserRole
+);
+
+
+// Change user password
+router.patch(
+  "/admin/users/:userId/password",
+  protect,
+  adminOnly,
+  updateUserPassword
+);
+
+
+// Delete user
+router.delete(
+  "/admin/users/:userId",
+  protect,
+  adminOnly,
+  deleteUser
 );
 
 

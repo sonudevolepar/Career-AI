@@ -1,0 +1,336 @@
+.all-users-page {
+  min-height: 100vh;
+  background: #020617;
+  color: #fff;
+  padding: 35px;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.all-users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.all-users-header h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.all-users-header p {
+  margin-top: 7px;
+  color: #94a3b8;
+}
+
+.user-count {
+  padding: 12px 18px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  color: #94a3b8;
+}
+
+.user-count strong {
+  color: #fff;
+}
+
+
+/* =========================
+   MESSAGES
+========================= */
+
+.success-message,
+.error-message {
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.success-message {
+  background: #052e16;
+  border: 1px solid #166534;
+  color: #4ade80;
+}
+
+.error-message {
+  background: #450a0a;
+  border: 1px solid #991b1b;
+  color: #f87171;
+}
+
+
+/* =========================
+   TABLE
+========================= */
+
+.users-table-wrapper {
+  overflow-x: auto;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1100px;
+}
+
+.users-table th {
+  padding: 18px;
+  text-align: left;
+  color: #94a3b8;
+  font-size: 14px;
+  background: #111827;
+  border-bottom: 1px solid #1e293b;
+}
+
+.users-table td {
+  padding: 17px 18px;
+  border-bottom: 1px solid #1e293b;
+  vertical-align: middle;
+}
+
+.users-table tbody tr:hover {
+  background: #111827;
+}
+
+
+/* =========================
+   USER
+========================= */
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    #9333ea,
+    #2563eb
+  );
+  font-weight: 700;
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.status,
+.role {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status.verified {
+  background: #052e16;
+  color: #4ade80;
+}
+
+.status.pending {
+  background: #422006;
+  color: #fbbf24;
+}
+
+.role.user {
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+.role.admin {
+  background: #3b0764;
+  color: #d8b4fe;
+}
+
+
+/* =========================
+   ACTION BUTTONS
+========================= */
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-buttons button {
+  border: none;
+  border-radius: 7px;
+  padding: 8px 11px;
+  cursor: pointer;
+  color: white;
+  font-size: 12px;
+}
+
+.role-button {
+  background: #2563eb;
+}
+
+.role-button:hover {
+  background: #1d4ed8;
+}
+
+.password-button {
+  background: #7c3aed;
+}
+
+.password-button:hover {
+  background: #6d28d9;
+}
+
+.delete-button {
+  background: #dc2626;
+}
+
+.delete-button:hover {
+  background: #b91c1c;
+}
+
+
+/* =========================
+   LOADING / EMPTY
+========================= */
+
+.loading,
+.empty {
+  padding: 60px;
+  text-align: center;
+  background: #0f172a;
+  border-radius: 16px;
+  color: #94a3b8;
+}
+
+
+/* =========================
+   MODAL
+========================= */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;
+}
+
+.password-modal {
+  position: relative;
+  width: 420px;
+  max-width: calc(100% - 30px);
+
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 18px;
+
+  padding: 30px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+}
+
+.password-modal h2 {
+  margin-top: 0;
+}
+
+.password-modal p {
+  color: #94a3b8;
+}
+
+.modal-email {
+  font-size: 14px;
+}
+
+.close-modal {
+  position: absolute;
+  top: 15px;
+  right: 18px;
+
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.password-modal input {
+  width: 100%;
+  box-sizing: border-box;
+
+  margin-top: 20px;
+  padding: 13px;
+
+  background: #1e293b;
+  color: #fff;
+
+  border: 1px solid #334155;
+  border-radius: 9px;
+
+  outline: none;
+}
+
+.password-modal input:focus {
+  border-color: #8b5cf6;
+}
+
+.save-password {
+  width: 100%;
+  margin-top: 15px;
+
+  padding: 13px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: linear-gradient(
+    90deg,
+    #9333ea,
+    #2563eb
+  );
+
+  color: white;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 700px) {
+
+  .all-users-page {
+    padding: 20px;
+  }
+
+  .all-users-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .all-users-header h1 {
+    font-size: 26px;
+  }
+}

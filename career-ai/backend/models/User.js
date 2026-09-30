@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
     },
 
+    // ===============================
+    // RBAC ROLE
+    // ===============================
+
     role: {
       type: String,
       enum: ["user", "admin"],

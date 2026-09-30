@@ -412,6 +412,13 @@ const AdminDashboard = () => {
               <button
                 className="admin-action-card"
                 key={index}
+                onClick={() => {
+
+                  if (action.title === "Manage Users") {
+                    window.location.href = "/admin/users";
+                  }
+
+                }}
               >
 
                 <div className="action-icon">

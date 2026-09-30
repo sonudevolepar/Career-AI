@@ -4,18 +4,18 @@ const User = require("../models/User");
 const sendOTPEmail = require("../utils/sendEmail");
 
 
-// ===============================
-// Generate OTP
-// ===============================
+// =====================================================
+// GENERATE OTP
+// =====================================================
 
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 
-// ===============================
-// Generate JWT
-// ===============================
+// =====================================================
+// GENERATE JWT
+// =====================================================
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -31,14 +31,16 @@ const generateToken = (user) => {
 };
 
 
-// ===============================
+// =====================================================
 // REGISTER
-// ===============================
+// New user ALWAYS gets role = "user"
+// =====================================================
 
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    // Validation
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -55,11 +57,12 @@ exports.register = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Check existing user
     let user = await User.findOne({
       email: normalizedEmail,
     });
 
-    // Already verified user
+    // Already verified
     if (user && user.isVerified) {
       return res.status(400).json({
         success: false,
@@ -67,31 +70,37 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate OTP
     const otp = generateOTP();
 
     const otpExpires = new Date(
       Date.now() + 10 * 60 * 1000
     );
 
-    // ===============================
-    // Admin detection
-    // ===============================
+    // =================================================
+    // IMPORTANT:
+    // Every new registration is USER
+    // No ADMIN_EMAIL
+    // No automatic admin creation
+    // =================================================
 
-    const role =
-      normalizedEmail ===
-      process.env.ADMIN_EMAIL?.toLowerCase()
-        ? "admin"
-        : "user";
-
+    const role = "user";
 
     if (user) {
       user.name = name;
       user.password = hashedPassword;
       user.otp = otp;
       user.otpExpires = otpExpires;
-      user.role = role;
+
+      // Keep existing role.
+      // This is important if an admin is resending
+      // registration accidentally.
+      if (!user.role) {
+        user.role = "user";
+      }
 
       await user.save();
     } else {
@@ -99,13 +108,15 @@ exports.register = async (req, res) => {
         name,
         email: normalizedEmail,
         password: hashedPassword,
+
+        // New users ALWAYS user
         role,
+
         isVerified: false,
         otp,
         otpExpires,
       });
     }
-
 
     // Send OTP
     await sendOTPEmail(
@@ -114,18 +125,16 @@ exports.register = async (req, res) => {
       otp
     );
 
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      message:
-        "Registration successful. OTP sent to your email.",
+      message: "Registration successful. OTP sent to your email.",
       email: normalizedEmail,
     });
 
   } catch (error) {
     console.error("REGISTER ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error while registering",
     });
@@ -133,9 +142,9 @@ exports.register = async (req, res) => {
 };
 
 
-// ===============================
+// =====================================================
 // VERIFY OTP
-// ===============================
+// =====================================================
 
 exports.verifyOTP = async (req, res) => {
   try {
@@ -148,8 +157,10 @@ exports.verifyOTP = async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     const user = await User.findOne({
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
     });
 
     if (!user) {
@@ -180,28 +191,29 @@ exports.verifyOTP = async (req, res) => {
       });
     }
 
-    if (user.otp !== otp) {
+    if (user.otp !== otp.toString()) {
       return res.status(400).json({
         success: false,
         message: "Invalid OTP",
       });
     }
 
-
+    // Verify user
     user.isVerified = true;
     user.otp = null;
     user.otpExpires = null;
 
     await user.save();
 
-
+    // Generate token
     const token = generateToken(user);
 
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Email verified successfully",
+
       token,
+
       user: {
         id: user._id,
         name: user.name,
@@ -213,7 +225,7 @@ exports.verifyOTP = async (req, res) => {
   } catch (error) {
     console.error("VERIFY OTP ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error while verifying OTP",
     });
@@ -221,9 +233,9 @@ exports.verifyOTP = async (req, res) => {
 };
 
 
-// ===============================
+// =====================================================
 // RESEND OTP
-// ===============================
+// =====================================================
 
 exports.resendOTP = async (req, res) => {
   try {
@@ -256,7 +268,6 @@ exports.resendOTP = async (req, res) => {
       });
     }
 
-
     const otp = generateOTP();
 
     user.otp = otp;
@@ -267,15 +278,13 @@ exports.resendOTP = async (req, res) => {
 
     await user.save();
 
-
     await sendOTPEmail(
       user.email,
       user.name,
       otp
     );
 
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "New OTP sent to your email",
     });
@@ -283,7 +292,7 @@ exports.resendOTP = async (req, res) => {
   } catch (error) {
     console.error("RESEND OTP ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Unable to resend OTP",
     });
@@ -291,9 +300,9 @@ exports.resendOTP = async (req, res) => {
 };
 
 
-// ===============================
+// =====================================================
 // LOGIN
-// ===============================
+// =====================================================
 
 exports.login = async (req, res) => {
   try {
@@ -306,8 +315,10 @@ exports.login = async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     const user = await User.findOne({
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
     });
 
     if (!user) {
@@ -317,24 +328,21 @@ exports.login = async (req, res) => {
       });
     }
 
-
-    // Email verification check
+    // Email verification
     if (!user.isVerified) {
       return res.status(403).json({
         success: false,
-        message:
-          "Please verify your email before login.",
+        message: "Please verify your email before login.",
         needsVerification: true,
         email: user.email,
       });
     }
 
-
-    const passwordMatch =
-      await bcrypt.compare(
-        password,
-        user.password
-      );
+    // Password
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (!passwordMatch) {
       return res.status(401).json({
@@ -343,11 +351,10 @@ exports.login = async (req, res) => {
       });
     }
 
-
+    // JWT contains role
     const token = generateToken(user);
 
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Login successful",
 
@@ -364,7 +371,7 @@ exports.login = async (req, res) => {
   } catch (error) {
     console.error("LOGIN ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error while login",
     });
@@ -372,9 +379,9 @@ exports.login = async (req, res) => {
 };
 
 
-// ===============================
+// =====================================================
 // GET CURRENT USER
-// ===============================
+// =====================================================
 
 exports.getMe = async (req, res) => {
   try {
@@ -389,7 +396,7 @@ exports.getMe = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       user,
     });
@@ -397,9 +404,373 @@ exports.getMe = async (req, res) => {
   } catch (error) {
     console.error("GET ME ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Unable to get user",
+    });
+  }
+};
+
+
+// =====================================================
+// GET ALL USERS
+// ADMIN ONLY
+// =====================================================
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find()
+      .select("-password -otp -otpExpires")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      users,
+    });
+
+  } catch (error) {
+    console.error("GET ALL USERS ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to get users",
+    });
+  }
+};
+
+
+// =====================================================
+// CHANGE USER ROLE
+// ADMIN ONLY
+// =====================================================
+
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    // Only these roles are allowed
+    if (!["user", "admin"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role must be either user or admin",
+      });
+    }
+
+    const targetUser = await User.findById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Prevent admin from removing their own admin access
+    if (
+      req.user.id.toString() === targetUser._id.toString() &&
+      role !== "admin"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot remove your own admin role",
+      });
+    }
+
+    targetUser.role = role;
+
+    await targetUser.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `User role changed to ${role}`,
+      user: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+        isVerified: targetUser.isVerified,
+      },
+    });
+
+  } catch (error) {
+    console.error("UPDATE USER ROLE ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to update user role",
+    });
+  }
+};
+
+
+// =====================================================
+// DELETE USER
+// ADMIN ONLY
+// =====================================================
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Admin cannot delete himself
+    if (req.user.id.toString() === userId.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot delete your own account",
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("DELETE USER ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete user",
+    });
+  }
+};
+
+// ===============================
+// GET ALL USERS - ADMIN ONLY
+// ===============================
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find()
+      .select("-password -otp -otpExpires")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      users,
+    });
+  } catch (error) {
+    console.error("GET ALL USERS ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch users",
+    });
+  }
+};
+
+
+// ===============================
+// CHANGE USER ROLE - ADMIN ONLY
+// ===============================
+
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    // Only these roles are allowed
+    if (!["user", "admin"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role. Role must be user or admin.",
+      });
+    }
+
+    const targetUser = await User.findById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Admin cannot change his own role
+    if (targetUser._id.toString() === req.user.id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot change your own role.",
+      });
+    }
+
+    // Already same role
+    if (targetUser.role === role) {
+      return res.status(400).json({
+        success: false,
+        message: `User is already ${role}.`,
+      });
+    }
+
+    // Prevent removing the last admin
+    if (targetUser.role === "admin" && role === "user") {
+      const adminCount = await User.countDocuments({
+        role: "admin",
+      });
+
+      if (adminCount <= 1) {
+        return res.status(403).json({
+          success: false,
+          message: "You cannot remove the last admin.",
+        });
+      }
+    }
+
+    targetUser.role = role;
+
+    await targetUser.save();
+
+    res.status(200).json({
+      success: true,
+      message: `User role changed to ${role}`,
+      user: {
+        id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+        isVerified: targetUser.isVerified,
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE USER ROLE ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to update user role",
+    });
+  }
+};
+
+
+// ===============================
+// CHANGE USER PASSWORD - ADMIN ONLY
+// ===============================
+
+exports.updateUserPassword = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password is required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    const targetUser = await User.findById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Admin cannot use this panel to change own password
+    if (targetUser._id.toString() === req.user.id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot change your own password from Admin Panel.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(
+      newPassword,
+      10
+    );
+
+    targetUser.password = hashedPassword;
+
+    await targetUser.save();
+
+    res.status(200).json({
+      success: true,
+      message: "User password updated successfully",
+    });
+  } catch (error) {
+    console.error("UPDATE USER PASSWORD ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to update user password",
+    });
+  }
+};
+
+
+// ===============================
+// DELETE USER - ADMIN ONLY
+// ===============================
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const targetUser = await User.findById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Admin cannot delete himself
+    if (targetUser._id.toString() === req.user.id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot delete your own account.",
+      });
+    }
+
+    // Prevent deleting the last admin
+    if (targetUser.role === "admin") {
+      const adminCount = await User.countDocuments({
+        role: "admin",
+      });
+
+      if (adminCount <= 1) {
+        return res.status(403).json({
+          success: false,
+          message: "You cannot delete the last admin.",
+        });
+      }
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.error("DELETE USER ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to delete user",
     });
   }
 };
