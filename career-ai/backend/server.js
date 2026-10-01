@@ -44,8 +44,10 @@ mongoose
 // ===============================
 
 const authRoutes = require("./routes/authRoutes");
+const aiAssistantRoutes = require("./routes/aiAssistantRoutes");
 
 app.use("/api/auth", authRoutes);
+app.use("/api/ai-assistant", aiAssistantRoutes);
 
 // ===============================
 // TEST ROUTE

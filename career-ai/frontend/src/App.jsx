@@ -6,7 +6,6 @@ import {
   Link,
 } from "react-router-dom";
 
-
 import Navbar
   from "./components/Navbar";
 
@@ -15,6 +14,9 @@ import ProtectedRoute
 
 import AdminRoute
   from "./components/AdminRoute";
+
+import AIAssistant
+  from "./components/AIAssistant/AIAssistant";
 
 
 import Login
@@ -290,6 +292,15 @@ function App() {
 
 
       </Routes>
+
+
+      {/* =====================================
+          AI ASSISTANT
+          Available on USER + ADMIN pages
+      ===================================== */}
+
+      <AIAssistant />
+
 
     </div>
 
