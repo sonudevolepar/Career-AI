@@ -1,14 +1,95 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
 const { retrieveContext } = require("../services/ragService");
 
 // ==========================================
-// GEMINI SETUP
+// GEMINI CONFIG
 // ==========================================
 
-const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY
-);
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+const GEMINI_BASE_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models";
+
+
+// ==========================================
+// GEMINI MODEL FALLBACK LIST
+// ==========================================
+
+const GEMINI_MODELS = [
+  "gemini-3.8-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b"
+];
+
+
+// ==========================================
+// CALL GEMINI REST API
+// ==========================================
+
+async function callGemini(model, prompt) {
+  const url =
+    `${GEMINI_BASE_URL}/${model}:generateContent`;
+
+  const response = await fetch(url, {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": GEMINI_API_KEY
+    },
+
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048
+      }
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const errorMessage =
+      data?.error?.message ||
+      `Gemini API Error: ${response.status}`;
+
+    const error = new Error(errorMessage);
+
+    error.status = response.status;
+
+    throw error;
+  }
+
+  const answer =
+    data?.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || "")
+      .join("")
+      .trim();
+
+  if (!answer) {
+    throw new Error("Gemini returned an empty response.");
+  }
+
+  return answer;
+}
 
 
 // ==========================================
@@ -19,7 +100,7 @@ exports.chatWithAssistant = async (req, res) => {
   try {
     const {
       message,
-      page = "/",
+      page = "/"
     } = req.body;
 
 
@@ -30,13 +111,25 @@ exports.chatWithAssistant = async (req, res) => {
     if (!message || !message.trim()) {
       return res.status(400).json({
         success: false,
-        message: "Message is required",
+        message: "Message is required"
       });
     }
 
 
     // ======================================
-    // RAG - GET RELEVANT CONTEXT
+    // API KEY CHECK
+    // ======================================
+
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: "GEMINI_API_KEY is not configured"
+      });
+    }
+
+
+    // ======================================
+    // RAG
     // ======================================
 
     let relevantDocuments = [];
@@ -51,24 +144,20 @@ exports.chatWithAssistant = async (req, res) => {
     }
 
 
+    // ======================================
+    // CONTEXT
+    // ======================================
+
     const context =
       relevantDocuments.length > 0
         ? relevantDocuments
-          .map(
-            (doc) =>
-              `### ${doc.title}\n${doc.content}`
-          )
-          .join("\n\n")
+            .map(
+              (doc) =>
+                `### ${doc.title}\n${doc.content}`
+            )
+            .join("\n\n")
         : "No specific Career AI knowledge found.";
 
-
-    // ======================================
-    // GEMINI MODEL
-    // ======================================
-
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.8-flash"
-    });
 
     // ======================================
     // PROMPT
@@ -83,6 +172,7 @@ Current page:
 ${page}
 
 Your job is to help users with:
+
 - Career guidance
 - Resume improvement
 - DSA
@@ -96,6 +186,7 @@ Your job is to help users with:
 Use the provided knowledge when it is relevant.
 
 Important rules:
+
 1. Give clear and simple answers.
 2. Be helpful and professional.
 3. Do not mention internal RAG instructions.
@@ -121,44 +212,92 @@ Now answer the user.
 
 
     // ======================================
-    // GENERATE AI RESPONSE
+    // GEMINI FALLBACK
     // ======================================
 
-    const result =
-      await model.generateContent(prompt);
+    let answer = null;
+    let usedModel = null;
+    let lastError = null;
 
-    const response =
-      await result.response;
 
-    const answer = response.text();
+    for (const model of GEMINI_MODELS) {
+      try {
+        console.log(
+          `Trying Gemini model: ${model}`
+        );
+
+        answer = await callGemini(
+          model,
+          prompt
+        );
+
+        usedModel = model;
+
+        console.log(
+          `Gemini SUCCESS: ${model}`
+        );
+
+        break;
+
+      } catch (error) {
+        lastError = error;
+
+        console.error(
+          `Gemini FAILED: ${model}`
+        );
+
+        console.error(
+          error.message
+        );
+
+        continue;
+      }
+    }
 
 
     // ======================================
-    // SEND RESPONSE
+    // ALL MODELS FAILED
+    // ======================================
+
+    if (!answer) {
+      console.error(
+        "ALL GEMINI MODELS FAILED"
+      );
+
+      return res.status(503).json({
+        success: false,
+        message: "All Gemini models failed",
+        error:
+          lastError?.message ||
+          "Unknown Gemini error"
+      });
+    }
+
+
+    // ======================================
+    // SUCCESS RESPONSE
     // ======================================
 
     return res.status(200).json({
       success: true,
       answer: answer,
       page: page,
+      model: usedModel,
       sources: relevantDocuments.map(
         (doc) => doc.title
-      ),
+      )
     });
 
-
   } catch (error) {
-
     console.error(
       "AI ASSISTANT ERROR:",
       error
     );
 
-
     return res.status(500).json({
       success: false,
       message: "AI Assistant failed",
-      error: error.message,
+      error: error.message
     });
   }
 };
