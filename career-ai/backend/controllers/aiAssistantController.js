@@ -54,11 +54,11 @@ exports.chatWithAssistant = async (req, res) => {
     const context =
       relevantDocuments.length > 0
         ? relevantDocuments
-            .map(
-              (doc) =>
-                `### ${doc.title}\n${doc.content}`
-            )
-            .join("\n\n")
+          .map(
+            (doc) =>
+              `### ${doc.title}\n${doc.content}`
+          )
+          .join("\n\n")
         : "No specific Career AI knowledge found.";
 
 
@@ -67,9 +67,8 @@ exports.chatWithAssistant = async (req, res) => {
     // ======================================
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash"
     });
-
 
     // ======================================
     // PROMPT
