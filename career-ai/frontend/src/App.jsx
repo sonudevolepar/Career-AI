@@ -34,6 +34,9 @@ import AdminDashboard
 import AllUsers
   from "./pages/AllUsers";
 
+import Premium
+  from "./pages/Premium";
+
 
 import ResumeAnalyzerUI
   from "./components/ResumeAnalyzerUI";
@@ -151,6 +154,22 @@ function Home() {
             </Link>
 
           ))}
+
+        </div>
+
+
+        {/* =================================
+            PREMIUM CARD
+        ================================= */}
+
+        <div className="mt-10 flex justify-center">
+
+          <Link
+            to="/premium"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl font-bold transition"
+          >
+            🚀 Upgrade to Premium
+          </Link>
 
         </div>
 
@@ -285,6 +304,16 @@ function App() {
           <Route
             path="/system-design"
             element={<AISystemDesign />}
+          />
+
+
+          {/* =================================
+              PREMIUM
+          ================================= */}
+
+          <Route
+            path="/premium"
+            element={<Premium />}
           />
 
 

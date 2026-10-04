@@ -32,6 +32,29 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
+    // ===============================
+    // PREMIUM / PAYMENT
+    // ===============================
+
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+
+    premiumPlan: {
+      type: String,
+      default: null,
+    },
+
+    premiumExpiry: {
+      type: Date,
+      default: null,
+    },
+
+    // ===============================
+    // EMAIL VERIFICATION
+    // ===============================
+
     isVerified: {
       type: Boolean,
       default: false,

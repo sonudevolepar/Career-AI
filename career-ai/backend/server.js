@@ -45,9 +45,14 @@ mongoose
 
 const authRoutes = require("./routes/authRoutes");
 const aiAssistantRoutes = require("./routes/aiAssistantRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
+// Existing routes
 app.use("/api/auth", authRoutes);
 app.use("/api/ai-assistant", aiAssistantRoutes);
+
+// Razorpay Payment routes
+app.use("/api/payment", paymentRoutes);
 
 // ===============================
 // TEST ROUTE
