@@ -10,6 +10,8 @@ import {
 
 import { useAuth } from "../context/AuthContext";
 
+import "./Login.css";
+
 
 const Login = () => {
 
@@ -83,30 +85,38 @@ const Login = () => {
 
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+    <div className="login-page">
 
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+      <div className="login-card">
 
-        <h1 className="text-3xl font-bold text-white text-center">
+        {/* Heading */}
+
+        <h1 className="login-title">
           Welcome Back
         </h1>
 
-        <p className="text-slate-400 text-center mt-2">
+        <p className="login-subtitle">
           Login to Career AI
         </p>
 
 
+        {/* Error */}
+
         {error && (
-          <div className="mt-5 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-lg">
+          <div className="login-error">
             {error}
           </div>
         )}
 
 
+        {/* Login Form */}
+
         <form
           onSubmit={handleLogin}
-          className="mt-6 space-y-4"
+          className="login-form"
         >
+
+          {/* Email */}
 
           <input
             type="email"
@@ -116,9 +126,11 @@ const Login = () => {
               setEmail(e.target.value)
             }
             required
-            className="w-full px-4 py-3 rounded-xl bg-slate-800 text-white border border-slate-700 outline-none focus:border-purple-500"
+            className="login-input"
           />
 
+
+          {/* Password */}
 
           <input
             type="password"
@@ -128,14 +140,16 @@ const Login = () => {
               setPassword(e.target.value)
             }
             required
-            className="w-full px-4 py-3 rounded-xl bg-slate-800 text-white border border-slate-700 outline-none focus:border-purple-500"
+            className="login-input"
           />
 
+
+          {/* Login Button */}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold disabled:opacity-50"
+            className="login-submit"
           >
             {loading
               ? "Logging in..."
@@ -145,13 +159,15 @@ const Login = () => {
         </form>
 
 
-        <p className="text-center text-slate-400 mt-6">
+        {/* Register */}
+
+        <p className="register-text">
 
           Don't have an account?{" "}
 
           <Link
             to="/register"
-            className="text-purple-400"
+            className="register-link"
           >
             Register
           </Link>

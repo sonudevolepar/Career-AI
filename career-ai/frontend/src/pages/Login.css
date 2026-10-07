@@ -1,0 +1,307 @@
+/* ========================================
+   LOGIN PAGE
+======================================== */
+
+.login-page {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: #020617;
+}
+
+
+/* ========================================
+   LOGIN CARD
+======================================== */
+
+.login-card {
+  width: 100%;
+  max-width: 480px;
+
+  padding: 40px;
+
+  background: #0f172a;
+
+  border: 1px solid #1e293b;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.4);
+
+  transition:
+    transform 0.4s ease,
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
+}
+
+
+/* Card hover */
+
+.login-card:hover {
+  transform: translateY(-5px);
+
+  border-color: rgba(168, 85, 247, 0.5);
+
+  box-shadow:
+    0 20px 60px rgba(124, 58, 237, 0.25);
+}
+
+
+/* ========================================
+   TITLE
+======================================== */
+
+.login-title {
+  margin: 0;
+
+  text-align: center;
+
+  color: #ffffff;
+
+  font-size: 32px;
+
+  font-weight: 700;
+}
+
+
+/* ========================================
+   SUBTITLE
+======================================== */
+
+.login-subtitle {
+  margin-top: 8px;
+  margin-bottom: 0;
+
+  text-align: center;
+
+  color: #94a3b8;
+
+  font-size: 16px;
+}
+
+
+/* ========================================
+   ERROR MESSAGE
+======================================== */
+
+.login-error {
+  margin-top: 20px;
+
+  padding: 12px 14px;
+
+  border-radius: 10px;
+
+  background: rgba(239, 68, 68, 0.1);
+
+  border: 1px solid rgba(239, 68, 68, 0.3);
+
+  color: #f87171;
+
+  font-size: 14px;
+}
+
+
+/* ========================================
+   FORM
+======================================== */
+
+.login-form {
+  margin-top: 24px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 16px;
+}
+
+
+/* ========================================
+   INPUT
+======================================== */
+
+.login-input {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 15px 16px;
+
+  border-radius: 12px;
+
+  background: #1e293b;
+
+  border: 1px solid #334155;
+
+  color: #ffffff;
+
+  font-size: 16px;
+
+  outline: none;
+
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease,
+    background 0.3s ease;
+}
+
+
+/* Placeholder */
+
+.login-input::placeholder {
+  color: #94a3b8;
+}
+
+
+/* ========================================
+   INPUT HOVER
+======================================== */
+
+.login-input:hover {
+  border-color: #8b5cf6;
+
+  background: #243047;
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 0 15px rgba(139, 92, 246, 0.2);
+}
+
+
+/* ========================================
+   INPUT FOCUS
+======================================== */
+
+.login-input:focus {
+  border-color: #a855f7;
+
+  background: #243047;
+
+  box-shadow:
+    0 0 0 3px rgba(168, 85, 247, 0.15),
+    0 0 20px rgba(168, 85, 247, 0.25);
+
+  transform: translateY(-2px);
+}
+
+
+/* ========================================
+   LOGIN BUTTON
+======================================== */
+
+.login-submit {
+  width: 100%;
+
+  padding: 14px;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #9333ea,
+      #2563eb
+    );
+
+  color: #ffffff;
+
+  font-size: 16px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    filter 0.3s ease;
+}
+
+
+/* ========================================
+   LOGIN BUTTON HOVER
+======================================== */
+
+.login-submit:hover:not(:disabled) {
+
+  transform:
+    translateY(-3px)
+    scale(1.02);
+
+  filter: brightness(1.1);
+
+  box-shadow:
+    0 0 20px rgba(147, 51, 234, 0.5),
+    0 0 35px rgba(37, 99, 235, 0.25);
+}
+
+
+/* ========================================
+   LOGIN BUTTON CLICK
+======================================== */
+
+.login-submit:active:not(:disabled) {
+
+  transform:
+    translateY(0)
+    scale(0.98);
+}
+
+
+/* ========================================
+   DISABLED BUTTON
+======================================== */
+
+.login-submit:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+
+/* ========================================
+   REGISTER TEXT
+======================================== */
+
+.register-text {
+  margin-top: 24px;
+
+  text-align: center;
+
+  color: #94a3b8;
+
+  font-size: 15px;
+}
+
+
+/* ========================================
+   REGISTER LINK
+======================================== */
+
+.register-link {
+  color: #c084fc;
+
+  text-decoration: none;
+
+  transition:
+    color 0.3s ease,
+    text-shadow 0.3s ease;
+}
+
+
+.register-link:hover {
+  color: #e9d5ff;
+
+  text-shadow:
+    0 0 10px rgba(192, 132, 252, 0.7);
+}

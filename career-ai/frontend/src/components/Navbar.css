@@ -1,0 +1,224 @@
+.navbar {
+  width: 100%;
+  background: #020617;
+  border-bottom: 1px solid #1e293b;
+}
+
+.navbar-container {
+  max-width: 1280px;
+  margin: auto;
+  padding: 16px 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* =========================
+   LOGO
+========================= */
+
+.navbar-logo {
+  color: white;
+  font-size: 26px;
+  font-weight: 700;
+  text-decoration: none;
+
+  transition: all 0.3s ease;
+}
+
+.navbar-logo:hover {
+  color: #a855f7;
+  transform: scale(1.05);
+
+  text-shadow:
+    0 0 10px rgba(168, 85, 247, 0.7);
+}
+
+
+/* =========================
+   NAVIGATION
+========================= */
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+
+/* =========================
+   NAV LINKS
+========================= */
+
+.nav-link {
+  position: relative;
+
+  color: #cbd5e1;
+  text-decoration: none;
+
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #a855f7;
+  transform: translateY(-2px);
+}
+
+
+/* Underline */
+
+.nav-link::after {
+  content: "";
+
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+
+  width: 0;
+  height: 2px;
+
+  background: #a855f7;
+
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+
+/* =========================
+   ADMIN
+========================= */
+
+.admin-btn {
+  padding: 8px 16px;
+
+  border-radius: 8px;
+
+  background: #9333ea;
+  color: white;
+
+  text-decoration: none;
+
+  transition: all 0.3s ease;
+}
+
+.admin-btn:hover {
+  background: #a855f7;
+
+  transform: translateY(-2px) scale(1.05);
+
+  box-shadow:
+    0 0 20px rgba(168, 85, 247, 0.6);
+}
+
+
+/* =========================
+   USER NAME
+========================= */
+
+.user-name {
+  color: #cbd5e1;
+
+  transition: all 0.3s ease;
+}
+
+.user-name:hover {
+  color: white;
+}
+
+
+/* =========================
+   LOGIN
+========================= */
+
+.login-btn {
+  padding: 8px 16px;
+
+  border-radius: 8px;
+
+  border: 1px solid rgba(168, 85, 247, 0.5);
+
+  color: #c084fc;
+
+  text-decoration: none;
+
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+  background: #9333ea;
+
+  color: white;
+
+  border-color: #a855f7;
+
+  transform: translateY(-2px) scale(1.05);
+
+  box-shadow:
+    0 0 20px rgba(168, 85, 247, 0.6);
+}
+
+
+/* =========================
+   REGISTER
+========================= */
+
+.register-btn {
+  padding: 8px 16px;
+
+  border-radius: 8px;
+
+  background: linear-gradient(
+    90deg,
+    #9333ea,
+    #2563eb
+  );
+
+  color: white;
+
+  text-decoration: none;
+
+  transition: all 0.3s ease;
+}
+
+.register-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+
+  box-shadow:
+    0 0 25px rgba(99, 102, 241, 0.7);
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+.logout-btn {
+  padding: 8px 16px;
+
+  border-radius: 8px;
+
+  background: rgba(239, 68, 68, 0.1);
+
+  color: #f87171;
+
+  border: 1px solid rgba(239, 68, 68, 0.3);
+
+  cursor: pointer;
+
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #ef4444;
+
+  color: white;
+
+  transform: translateY(-2px) scale(1.05);
+
+  box-shadow:
+    0 0 18px rgba(239, 68, 68, 0.5);
+}
