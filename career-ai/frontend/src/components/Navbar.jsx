@@ -12,7 +12,10 @@ const Navbar = () => {
 
         {/* Logo */}
         <Link to="/" className="navbar-logo">
-          Career AI
+          <img style={{width: "300px"}}
+            src="/career-ai-logo.svg"
+            alt="Career AI"
+          />
         </Link>
 
         {/* Navigation */}

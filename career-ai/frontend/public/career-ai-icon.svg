@@ -1,0 +1,283 @@
+<svg
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+
+  <defs>
+
+    <!-- Main Purple → Blue Gradient -->
+    <linearGradient
+      id="careerGradient"
+      x1="80"
+      y1="70"
+      x2="430"
+      y2="440"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset="0%" stop-color="#D946EF"/>
+      <stop offset="45%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+
+    <!-- Blue Accent -->
+    <linearGradient
+      id="blueGradient"
+      x1="300"
+      y1="250"
+      x2="430"
+      y2="120"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+
+    <!-- Glow Effect -->
+    <filter
+      id="glow"
+      x="-50%"
+      y="-50%"
+      width="200%"
+      height="200%"
+    >
+      <feGaussianBlur
+        stdDeviation="10"
+        result="blur"
+      />
+
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+  </defs>
+
+
+  <!-- ========================================= -->
+  <!-- OUTER C - CAREER -->
+  <!-- ========================================= -->
+
+  <path
+    d="
+      M 395 105
+
+      C 345 65 285 48 225 55
+
+      C 135 65 67 128 54 215
+
+      C 41 305 91 391 171 432
+
+      C 249 472 343 452 397 391
+    "
+
+    stroke="url(#careerGradient)"
+    stroke-width="38"
+    stroke-linecap="round"
+    fill="none"
+
+    filter="url(#glow)"
+  />
+
+
+  <!-- ========================================= -->
+  <!-- GRADUATION CAP -->
+  <!-- ========================================= -->
+
+  <path
+    d="
+      M 132 157
+      L 226 116
+      L 320 157
+      L 226 198
+      Z
+    "
+
+    fill="white"
+  />
+
+
+  <!-- Cap Lower Part -->
+
+  <path
+    d="
+      M 165 174
+
+      L 165 207
+
+      C 184 227 268 227 287 207
+
+      L 287 174
+
+      L 226 201
+
+      Z
+    "
+
+    fill="#F8FAFC"
+  />
+
+
+  <!-- ========================================= -->
+  <!-- GRADUATION TASSEL -->
+  <!-- ========================================= -->
+
+  <path
+    d="
+      M 300 153
+      L 300 205
+    "
+
+    stroke="white"
+    stroke-width="9"
+    stroke-linecap="round"
+  />
+
+  <circle
+    cx="300"
+    cy="217"
+    r="9"
+    fill="white"
+  />
+
+
+  <!-- ========================================= -->
+  <!-- STUDENT HEAD -->
+  <!-- ========================================= -->
+
+  <circle
+    cx="226"
+    cy="241"
+    r="39"
+    fill="white"
+  />
+
+
+  <!-- ========================================= -->
+  <!-- STUDENT BODY -->
+  <!-- ========================================= -->
+
+  <path
+    d="
+      M 143 351
+
+      C 151 292
+      180 267
+      226 267
+
+      C 272 267
+      301 292
+      309 351
+
+      Z
+    "
+
+    fill="white"
+  />
+
+
+  <!-- ========================================= -->
+  <!-- CAREER GROWTH GRAPH -->
+  <!-- ========================================= -->
+
+  <!-- First Bar -->
+
+  <rect
+    x="210"
+    y="330"
+    width="25"
+    height="48"
+    rx="5"
+    fill="url(#careerGradient)"
+  />
+
+
+  <!-- Second Bar -->
+
+  <rect
+    x="247"
+    y="304"
+    width="25"
+    height="74"
+    rx="5"
+    fill="url(#careerGradient)"
+  />
+
+
+  <!-- Third Bar -->
+
+  <rect
+    x="284"
+    y="270"
+    width="25"
+    height="108"
+    rx="5"
+    fill="url(#careerGradient)"
+  />
+
+
+  <!-- ========================================= -->
+  <!-- UPWARD CAREER ARROW -->
+  <!-- ========================================= -->
+
+  <path
+    d="
+      M 182 365
+
+      C 224 350
+      263 326
+      298 294
+
+      C 325 269
+      348 237
+      374 200
+    "
+
+    stroke="url(#blueGradient)"
+    stroke-width="18"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+
+  <!-- ========================================= -->
+  <!-- ARROW HEAD -->
+  <!-- ========================================= -->
+
+  <path
+    d="
+      M 347 198
+      L 382 181
+      L 379 220
+      Z
+    "
+
+    fill="#38BDF8"
+  />
+
+
+  <!-- ========================================= -->
+  <!-- SMALL AI SPARK -->
+  <!-- ========================================= -->
+
+  <path
+    d="
+      M 385 115
+      L 392 133
+      L 410 140
+      L 392 147
+      L 385 165
+      L 378 147
+      L 360 140
+      L 378 133
+      Z
+    "
+
+    fill="#38BDF8"
+    opacity="0.9"
+  />
+
+</svg>

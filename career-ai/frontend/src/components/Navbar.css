@@ -222,3 +222,15 @@
   box-shadow:
     0 0 18px rgba(239, 68, 68, 0.5);
 }
+
+.career-logo img {
+  width: 180px;
+  height: auto;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.career-logo img:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.7));
+}

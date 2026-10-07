@@ -1,0 +1,305 @@
+<svg
+  width="900"
+  height="300"
+  viewBox="0 0 900 300"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+
+  <defs>
+
+    <!-- Main Logo Gradient -->
+    <linearGradient
+      id="logoGradient"
+      x1="40"
+      y1="40"
+      x2="230"
+      y2="240"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset="0%" stop-color="#D946EF"/>
+      <stop offset="45%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+
+    <!-- AI Gradient -->
+    <linearGradient
+      id="aiGradient"
+      x1="700"
+      y1="80"
+      x2="820"
+      y2="220"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset="0%" stop-color="#D946EF"/>
+      <stop offset="50%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+
+    <!-- Glow -->
+    <filter
+      id="glow"
+      x="-50%"
+      y="-50%"
+      width="200%"
+      height="200%"
+    >
+      <feGaussianBlur
+        stdDeviation="7"
+        result="blur"
+      />
+
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+  </defs>
+
+
+  <!-- ===================================== -->
+  <!-- LOGO ICON -->
+  <!-- ===================================== -->
+
+  <!-- Outer C Shape -->
+
+  <path
+    d="
+      M 220 62
+      C 185 30 135 28 92 48
+      C 43 71 20 119 26 168
+      C 32 218 68 254 116 267
+      C 159 278 202 262 228 230
+    "
+    stroke="url(#logoGradient)"
+    stroke-width="28"
+    stroke-linecap="round"
+    fill="none"
+    filter="url(#glow)"
+  />
+
+
+  <!-- ===================================== -->
+  <!-- STUDENT / PERSON -->
+  <!-- ===================================== -->
+
+  <!-- Graduation Cap -->
+
+  <path
+    d="
+      M 82 101
+      L 135 78
+      L 188 101
+      L 135 124
+      Z
+    "
+    fill="white"
+  />
+
+  <!-- Cap Bottom -->
+
+  <path
+    d="
+      M 103 111
+      L 103 130
+      C 118 143 153 143 168 130
+      L 168 111
+      L 135 125
+      Z
+    "
+    fill="#F8FAFC"
+  />
+
+  <!-- Graduation Tassel -->
+
+  <path
+    d="
+      M 177 101
+      L 177 133
+    "
+    stroke="white"
+    stroke-width="5"
+    stroke-linecap="round"
+  />
+
+  <circle
+    cx="177"
+    cy="139"
+    r="5"
+    fill="white"
+  />
+
+
+  <!-- Head -->
+
+  <circle
+    cx="135"
+    cy="151"
+    r="25"
+    fill="white"
+  />
+
+
+  <!-- Body -->
+
+  <path
+    d="
+      M 82 224
+      C 88 188 106 174 135 174
+      C 164 174 182 188 188 224
+      Z
+    "
+    fill="white"
+  />
+
+
+  <!-- ===================================== -->
+  <!-- GROWTH GRAPH -->
+  <!-- ===================================== -->
+
+  <!-- Graph Bars -->
+
+  <rect
+    x="128"
+    y="214"
+    width="13"
+    height="22"
+    rx="2"
+    fill="url(#logoGradient)"
+  />
+
+  <rect
+    x="147"
+    y="202"
+    width="13"
+    height="34"
+    rx="2"
+    fill="url(#logoGradient)"
+  />
+
+  <rect
+    x="166"
+    y="187"
+    width="13"
+    height="49"
+    rx="2"
+    fill="url(#logoGradient)"
+  />
+
+
+  <!-- Growth Arrow -->
+
+  <path
+    d="
+      M 115 224
+      C 137 214 157 199 175 180
+      C 187 167 198 151 210 134
+    "
+    stroke="url(#logoGradient)"
+    stroke-width="10"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- Arrow Head -->
+
+  <path
+    d="
+      M 190 136
+      L 213 126
+      L 211 151
+    "
+    fill="url(#logoGradient)"
+  />
+
+
+  <!-- ===================================== -->
+  <!-- CAREER TEXT -->
+  <!-- ===================================== -->
+
+  <text
+    x="260"
+    y="155"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="82"
+    font-weight="700"
+    letter-spacing="-3"
+    fill="white"
+  >
+    Career
+  </text>
+
+
+  <!-- ===================================== -->
+  <!-- AI TEXT -->
+  <!-- ===================================== -->
+
+  <text
+    x="615"
+    y="155"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="82"
+    font-weight="800"
+    letter-spacing="-3"
+    fill="url(#aiGradient)"
+  >
+    AI
+  </text>
+
+
+  <!-- ===================================== -->
+  <!-- TAGLINE -->
+  <!-- ===================================== -->
+
+  <text
+    x="263"
+    y="202"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="22"
+    font-weight="400"
+    letter-spacing="5"
+    fill="#CBD5E1"
+  >
+    LEARN
+  </text>
+
+  <circle
+    cx="355"
+    cy="195"
+    r="3"
+    fill="#94A3B8"
+  />
+
+  <text
+    x="375"
+    y="202"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="22"
+    font-weight="400"
+    letter-spacing="5"
+    fill="#CBD5E1"
+  >
+    PRACTICE
+  </text>
+
+  <circle
+    cx="520"
+    cy="195"
+    r="3"
+    fill="#94A3B8"
+  />
+
+  <text
+    x="540"
+    y="202"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="22"
+    font-weight="400"
+    letter-spacing="5"
+    fill="#CBD5E1"
+  >
+    GET HIRED
+  </text>
+
+</svg>
