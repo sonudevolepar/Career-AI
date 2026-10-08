@@ -1,27 +1,17 @@
+
 import React, { useState } from "react";
+import "./AIRoadmap.css";
 
-const AIRoadmap = () => {
-  // ================================
-  // FORM STATES
-  // ================================
-
+function AIRoadmap() {
   const [field, setField] = useState("");
   const [duration, setDuration] = useState("6 Months");
   const [level, setLevel] = useState("Beginner");
   const [dailyTime, setDailyTime] = useState("2 Hours");
   const [learningMode, setLearningMode] = useState("Self Learning");
 
-  // ================================
-  // ROADMAP STATES
-  // ================================
-
   const [roadmap, setRoadmap] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // ================================
-  // GENERATE ROADMAP
-  // ================================
 
   const generateRoadmap = async () => {
     if (!field) {
@@ -38,11 +28,9 @@ const AIRoadmap = () => {
         "http://localhost:5000/api/roadmap/generate",
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
             field,
             duration,
@@ -53,33 +41,44 @@ const AIRoadmap = () => {
         }
       );
 
-      const data = await response.json();
+      let data;
+
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        throw new Error(
+          "Server returned an invalid response. Please check whether the backend is running."
+        );
+      }
 
       console.log("ROADMAP API RESPONSE:", data);
 
       if (!response.ok) {
         throw new Error(
-          data.message || "Failed to generate roadmap"
+          data?.message ||
+            data?.error ||
+            "Failed to generate learning roadmap."
+        );
+      }
+
+      if (!data?.roadmap) {
+        throw new Error(
+          "Roadmap was not received from the server."
         );
       }
 
       setRoadmap(data.roadmap);
-
     } catch (err) {
       console.error("Roadmap Error:", err);
 
       setError(
-        err.message ||
-          "Something went wrong while generating roadmap."
+        err?.message ||
+          "Something went wrong while generating the roadmap."
       );
     } finally {
       setLoading(false);
     }
   };
-
-  // ================================
-  // RESET
-  // ================================
 
   const resetRoadmap = () => {
     setRoadmap(null);
@@ -87,59 +86,39 @@ const AIRoadmap = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10">
+    <div className="ai-roadmap-page">
+      <div className="ai-roadmap-container">
+        {/* Header */}
+        <div className="roadmap-header">
+          <div className="roadmap-header-icon">🤖</div>
 
-      <div className="max-w-7xl mx-auto">
-
-        {/* =====================================
-            HEADER
-        ===================================== */}
-
-        <div className="text-center mb-10">
-
-          <div className="inline-block bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-semibold mb-4">
-            AI Powered Learning Planner
+          <div>
+            <h1>AI Learning Roadmap</h1>
+            <p>
+              Create a personalized learning roadmap based on your
+              goals, level and available study time.
+            </p>
           </div>
-
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-800">
-            AI Learning Roadmap
-          </h1>
-
-          <p className="text-slate-600 mt-4 text-lg max-w-2xl mx-auto">
-            Select a field and get a complete month-by-month
-            learning roadmap with topics, projects and free
-            learning resources.
-          </p>
-
         </div>
 
-        {/* =====================================
-            INPUT SECTION
-        ===================================== */}
+        {/* Form */}
+        <div className="roadmap-form-card">
+          <h2>Build Your Learning Roadmap</h2>
 
-        <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
-
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">
-            🎯 Build Your Learning Plan
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-6">
-
-            {/* FIELD */}
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-2">
-                Select Learning Field
+          <div className="roadmap-form-grid">
+            {/* Learning Field */}
+            <div className="roadmap-form-group">
+              <label htmlFor="field">
+                Learning Field
               </label>
 
               <select
+                id="field"
                 value={field}
                 onChange={(e) => setField(e.target.value)}
-                className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
               >
-
                 <option value="">
-                  Select a field
+                  Select Learning Field
                 </option>
 
                 <option value="AI / Machine Learning">
@@ -194,32 +173,27 @@ const AIRoadmap = () => {
                   iOS Development
                 </option>
 
-                <option value="Blockchain">
-                  Blockchain
+                <option value="Blockchain Development">
+                  Blockchain Development
                 </option>
 
                 <option value="Game Development">
                   Game Development
                 </option>
-
               </select>
             </div>
 
-            {/* DURATION */}
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-2">
+            {/* Duration */}
+            <div className="roadmap-form-group">
+              <label htmlFor="duration">
                 Learning Duration
               </label>
 
               <select
+                id="duration"
                 value={duration}
-                onChange={(e) =>
-                  setDuration(e.target.value)
-                }
-                className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setDuration(e.target.value)}
               >
-
                 <option value="3 Months">
                   3 Months
                 </option>
@@ -235,25 +209,20 @@ const AIRoadmap = () => {
                 <option value="12 Months">
                   12 Months
                 </option>
-
               </select>
             </div>
 
-            {/* LEVEL */}
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-2">
+            {/* Level */}
+            <div className="roadmap-form-group">
+              <label htmlFor="level">
                 Current Level
               </label>
 
               <select
+                id="level"
                 value={level}
-                onChange={(e) =>
-                  setLevel(e.target.value)
-                }
-                className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setLevel(e.target.value)}
               >
-
                 <option value="Beginner">
                   Beginner
                 </option>
@@ -265,64 +234,55 @@ const AIRoadmap = () => {
                 <option value="Advanced">
                   Advanced
                 </option>
-
               </select>
             </div>
 
-            {/* DAILY TIME */}
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-2">
+            {/* Daily Time */}
+            <div className="roadmap-form-group">
+              <label htmlFor="dailyTime">
                 Daily Study Time
               </label>
 
               <select
+                id="dailyTime"
                 value={dailyTime}
-                onChange={(e) =>
-                  setDailyTime(e.target.value)
-                }
-                className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setDailyTime(e.target.value)}
               >
-
                 <option value="1 Hour">
-                  1 Hour / Day
+                  1 Hour
                 </option>
 
                 <option value="2 Hours">
-                  2 Hours / Day
+                  2 Hours
                 </option>
 
                 <option value="3 Hours">
-                  3 Hours / Day
+                  3 Hours
                 </option>
 
                 <option value="4 Hours">
-                  4 Hours / Day
+                  4 Hours
                 </option>
 
                 <option value="5+ Hours">
-                  5+ Hours / Day
+                  5+ Hours
                 </option>
-
               </select>
             </div>
 
-            {/* LEARNING MODE */}
-
-            <div className="md:col-span-2">
-
-              <label className="block font-semibold text-slate-700 mb-2">
+            {/* Learning Mode */}
+            <div className="roadmap-form-group">
+              <label htmlFor="learningMode">
                 Learning Mode
               </label>
 
               <select
+                id="learningMode"
                 value={learningMode}
                 onChange={(e) =>
                   setLearningMode(e.target.value)
                 }
-                className="w-full border border-slate-300 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
               >
-
                 <option value="Self Learning">
                   Self Learning
                 </option>
@@ -335,443 +295,447 @@ const AIRoadmap = () => {
                   Documentation
                 </option>
 
-                <option value="Mixed Learning">
-                  Mixed Learning
+                <option value="Mixed">
+                  Mixed
                 </option>
-
               </select>
-
             </div>
-
           </div>
 
-          {/* =====================================
-              ERROR
-          ===================================== */}
-
+          {/* Error */}
           {error && (
-            <div className="mt-6 bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">
-              {error}
+            <div className="roadmap-error">
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 
-          {/* =====================================
-              BUTTONS
-          ===================================== */}
-
-          <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-
+          {/* Buttons */}
+          <div className="roadmap-actions">
             <button
+              type="button"
+              className="generate-roadmap-btn"
               onClick={generateRoadmap}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl transition disabled:opacity-60"
             >
-
-              {loading
-                ? "🤖 Creating Your Roadmap..."
-                : "🚀 Generate AI Roadmap"}
-
+              {loading ? (
+                <>
+                  <span className="roadmap-spinner"></span>
+                  Generating Roadmap...
+                </>
+              ) : (
+                <>🚀 Generate Roadmap</>
+              )}
             </button>
 
             {roadmap && (
               <button
+                type="button"
+                className="reset-roadmap-btn"
                 onClick={resetRoadmap}
-                className="border border-slate-300 text-slate-700 font-semibold px-8 py-3 rounded-xl hover:bg-slate-100 transition"
               >
-                Create New Roadmap
+                🔄 Create New
               </button>
             )}
-
           </div>
-
         </div>
 
-        {/* =====================================
-            ROADMAP RESULT
-        ===================================== */}
-
-        {roadmap && (
-
-          <div className="mt-10 space-y-8">
-
-            {/* TITLE */}
-
-            <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
-
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
-                <div>
-
-                  <p className="text-blue-600 font-semibold">
-                    Your Personalized Learning Plan
-                  </p>
-
-                  <h2 className="text-3xl font-bold text-slate-800 mt-2">
-                    🚀 {field} Roadmap
-                  </h2>
-
-                </div>
-
-                <div className="bg-blue-50 px-5 py-3 rounded-xl">
-
-                  <p className="text-sm text-slate-500">
-                    Duration
-                  </p>
-
-                  <p className="font-bold text-blue-600">
-                    {duration}
-                  </p>
-
-                </div>
-
-              </div>
-
-              {roadmap.summary && (
-                <p className="text-slate-600 mt-5 leading-7">
-                  {roadmap.summary}
-                </p>
-              )}
-
+        {/* Loading */}
+        {loading && (
+          <div className="roadmap-loading-card">
+            <div className="roadmap-loading-icon">
+              🤖
             </div>
 
-            {/* =====================================
-                MONTHLY ROADMAP
-            ===================================== */}
+            <h3>AI is creating your roadmap...</h3>
 
-            {roadmap.months && (
-              <div className="space-y-6">
+            <p>
+              Please wait while Career AI analyzes your
+              learning preferences and creates a personalized
+              roadmap.
+            </p>
+          </div>
+        )}
 
-                {roadmap.months.map(
-                  (month, monthIndex) => (
-
-                    <div
-                      key={monthIndex}
-                      className="bg-white rounded-2xl shadow-md p-6 md:p-8"
-                    >
-
-                      {/* MONTH HEADER */}
-
-                      <div className="flex items-center gap-4 mb-6">
-
-                        <div className="bg-blue-600 text-white w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg">
-                          {monthIndex + 1}
-                        </div>
-
-                        <div>
-
-                          <p className="text-sm text-blue-600 font-semibold">
-                            MONTH {monthIndex + 1}
-                          </p>
-
-                          <h3 className="text-2xl font-bold text-slate-800">
-                            {month.title}
-                          </h3>
-
-                        </div>
-
-                      </div>
-
-                      {/* MONTH DESCRIPTION */}
-
-                      {month.description && (
-                        <p className="text-slate-600 mb-6">
-                          {month.description}
-                        </p>
-                      )}
-
-                      {/* WEEKS */}
-
-                      {month.weeks && (
-                        <div className="grid md:grid-cols-2 gap-5">
-
-                          {month.weeks.map(
-                            (week, weekIndex) => (
-
-                              <div
-                                key={weekIndex}
-                                className="border border-slate-200 rounded-xl p-5"
-                              >
-
-                                <h4 className="font-bold text-lg text-slate-800">
-                                  Week {weekIndex + 1}
-                                </h4>
-
-                                {week.focus && (
-                                  <p className="text-blue-600 font-medium mt-2">
-                                    {week.focus}
-                                  </p>
-                                )}
-
-                                {week.topics && (
-                                  <ul className="list-disc ml-5 mt-3 space-y-1 text-slate-600">
-
-                                    {week.topics.map(
-                                      (topic, index) => (
-                                        <li key={index}>
-                                          {topic}
-                                        </li>
-                                      )
-                                    )}
-
-                                  </ul>
-                                )}
-
-                                {week.practice && (
-                                  <div className="mt-4 bg-slate-50 p-3 rounded-lg">
-
-                                    <p className="font-semibold text-slate-700">
-                                      💻 Practice
-                                    </p>
-
-                                    <p className="text-sm text-slate-600 mt-1">
-                                      {week.practice}
-                                    </p>
-
-                                  </div>
-                                )}
-
-                              </div>
-
-                            )
-                          )}
-
-                        </div>
-                      )}
-
-                    </div>
-
-                  )
-                )}
-
-              </div>
-            )}
-
-            {/* =====================================
-                PROJECTS
-            ===================================== */}
-
-            {roadmap.projects && (
-
-              <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
-
-                <h3 className="text-2xl font-bold text-slate-800 mb-6">
-                  💻 Projects to Build
-                </h3>
-
-                <div className="grid md:grid-cols-2 gap-5">
-
-                  {roadmap.projects.map(
-                    (project, index) => (
-
-                      <div
-                        key={index}
-                        className="border border-slate-200 rounded-xl p-5"
-                      >
-
-                        <h4 className="text-lg font-bold text-slate-800">
-                          {project.name}
-                        </h4>
-
-                        <p className="text-slate-600 mt-2">
-                          {project.description}
-                        </p>
-
-                        {project.technologies && (
-                          <div className="flex flex-wrap gap-2 mt-4">
-
-                            {project.technologies.map(
-                              (tech, techIndex) => (
-
-                                <span
-                                  key={techIndex}
-                                  className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm"
-                                >
-                                  {tech}
-                                </span>
-
-                              )
-                            )}
-
-                          </div>
-                        )}
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
+        {/* Roadmap Result */}
+        {roadmap && !loading && (
+          <div className="roadmap-result">
+            {/* Summary */}
+            <section className="roadmap-section roadmap-summary-section">
+              <div className="section-title">
+                <span>🎯</span>
+                <h2>Roadmap Overview</h2>
               </div>
 
-            )}
-
-            {/* =====================================
-                FREE RESOURCES
-            ===================================== */}
-
-            {roadmap.resources && (
-
-              <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
-
-                <h3 className="text-2xl font-bold text-slate-800 mb-2">
-                  📚 Free Learning Resources
-                </h3>
-
-                <p className="text-slate-600 mb-6">
-                  Learn from free online courses, documentation
-                  and practice platforms.
+              <div className="roadmap-summary-card">
+                <p>
+                  {roadmap.summary ||
+                    "Your personalized learning roadmap is ready."}
                 </p>
 
-                <div className="grid md:grid-cols-2 gap-5">
+                <div className="roadmap-meta">
+                  <div className="meta-item">
+                    <span>📚 Field</span>
+                    <strong>{field}</strong>
+                  </div>
 
-                  {roadmap.resources.map(
-                    (resource, index) => (
+                  <div className="meta-item">
+                    <span>⏳ Duration</span>
+                    <strong>{duration}</strong>
+                  </div>
 
-                      <div
-                        key={index}
-                        className="border border-slate-200 rounded-xl p-5"
-                      >
+                  <div className="meta-item">
+                    <span>📈 Level</span>
+                    <strong>{level}</strong>
+                  </div>
 
-                        <div className="flex items-start justify-between gap-4">
+                  <div className="meta-item">
+                    <span>⏰ Daily Time</span>
+                    <strong>{dailyTime}</strong>
+                  </div>
 
-                          <div>
+                  <div className="meta-item">
+                    <span>🎓 Mode</span>
+                    <strong>{learningMode}</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
 
-                            <h4 className="font-bold text-lg text-slate-800">
-                              {resource.name}
-                            </h4>
+            {/* Months */}
+            {Array.isArray(roadmap.months) &&
+              roadmap.months.length > 0 && (
+                <section className="roadmap-section">
+                  <div className="section-title">
+                    <span>📅</span>
+                    <h2>Learning Roadmap</h2>
+                  </div>
 
-                            {resource.type && (
-                              <p className="text-sm text-blue-600 mt-1">
-                                {resource.type}
-                              </p>
-                            )}
+                  <div className="months-container">
+                    {roadmap.months.map(
+                      (month, monthIndex) => (
+                        <div
+                          className="month-card"
+                          key={`month-${monthIndex}`}
+                        >
+                          <div className="month-header">
+                            <div className="month-number">
+                              {monthIndex + 1}
+                            </div>
 
-                            {resource.description && (
-                              <p className="text-slate-600 mt-2 text-sm">
-                                {resource.description}
-                              </p>
-                            )}
+                            <div>
+                              <h3>
+                                {month.title ||
+                                  `Month ${
+                                    monthIndex + 1
+                                  }`}
+                              </h3>
 
+                              {month.description && (
+                                <p>
+                                  {month.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
+
+                          {/* Weeks */}
+                          {Array.isArray(month.weeks) &&
+                            month.weeks.length > 0 && (
+                              <div className="weeks-container">
+                                {month.weeks.map(
+                                  (week, weekIndex) => (
+                                    <div
+                                      className="week-card"
+                                      key={`week-${monthIndex}-${weekIndex}`}
+                                    >
+                                      <div className="week-header">
+                                        <span className="week-badge">
+                                          Week{" "}
+                                          {weekIndex +
+                                            1}
+                                        </span>
+
+                                        <h4>
+                                          {week.focus ||
+                                            "Weekly Learning"}
+                                        </h4>
+                                      </div>
+
+                                      {/* Topics */}
+                                      {Array.isArray(
+                                        week.topics
+                                      ) &&
+                                        week.topics.length >
+                                          0 && (
+                                          <div className="week-topics">
+                                            <h5>
+                                              📌 Topics
+                                            </h5>
+
+                                            <ul>
+                                              {week.topics.map(
+                                                (
+                                                  topic,
+                                                  topicIndex
+                                                ) => (
+                                                  <li
+                                                    key={`topic-${monthIndex}-${weekIndex}-${topicIndex}`}
+                                                  >
+                                                    {topic}
+                                                  </li>
+                                                )
+                                              )}
+                                            </ul>
+                                          </div>
+                                        )}
+
+                                      {/* Practice */}
+                                      {week.practice && (
+                                        <div className="week-practice">
+                                          <strong>
+                                            💻 Practice:
+                                          </strong>
+
+                                          <span>
+                                            {
+                                              week.practice
+                                            }
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            )}
+
+                          {/* Monthly Project */}
+                          {month.project && (
+                            <div className="monthly-project">
+                              <strong>
+                                🚀 Monthly Project
+                              </strong>
+
+                              <p>{month.project}</p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </section>
+              )}
+
+            {/* Projects */}
+            {Array.isArray(roadmap.projects) &&
+              roadmap.projects.length > 0 && (
+                <section className="roadmap-section">
+                  <div className="section-title">
+                    <span>🚀</span>
+                    <h2>Practical Projects</h2>
+                  </div>
+
+                  <div className="projects-grid">
+                    {roadmap.projects.map(
+                      (project, index) => (
+                        <div
+                          className="project-card"
+                          key={`project-${index}`}
+                        >
+                          <div className="project-number">
+                            {index + 1}
+                          </div>
+
+                          <h3>
+                            {project.name ||
+                              `Project ${index + 1}`}
+                          </h3>
+
+                          {project.description && (
+                            <p>
+                              {project.description}
+                            </p>
+                          )}
+
+                          {Array.isArray(
+                            project.technologies
+                          ) &&
+                            project.technologies.length >
+                              0 && (
+                              <div className="technology-list">
+                                {project.technologies.map(
+                                  (
+                                    technology,
+                                    techIndex
+                                  ) => (
+                                    <span
+                                      key={`tech-${index}-${techIndex}`}
+                                    >
+                                      {technology}
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            )}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </section>
+              )}
+
+            {/* Resources */}
+            {Array.isArray(roadmap.resources) &&
+              roadmap.resources.length > 0 && (
+                <section className="roadmap-section">
+                  <div className="section-title">
+                    <span>📚</span>
+                    <h2>Free Learning Resources</h2>
+                  </div>
+
+                  <div className="resources-grid">
+                    {roadmap.resources.map(
+                      (resource, index) => (
+                        <div
+                          className="resource-card"
+                          key={`resource-${index}`}
+                        >
+                          <div className="resource-top">
+                            <span className="resource-icon">
+                              🔗
+                            </span>
+
+                            <span className="resource-type">
+                              {resource.type ||
+                                "Learning Resource"}
+                            </span>
+                          </div>
+
+                          <h3>
+                            {resource.name ||
+                              `Resource ${index + 1}`}
+                          </h3>
+
+                          {resource.description && (
+                            <p>
+                              {resource.description}
+                            </p>
+                          )}
 
                           {resource.url && (
                             <a
                               href={resource.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="shrink-0 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700"
+                              className="resource-link"
                             >
-                              Open
+                              Open Resource →
                             </a>
                           )}
-
                         </div>
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
-              </div>
-
-            )}
-
-            {/* =====================================
-                DSA
-            ===================================== */}
-
-            {roadmap.dsa && (
-
-              <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
-
-                <h3 className="text-2xl font-bold text-slate-800 mb-4">
-                  🧠 DSA Practice
-                </h3>
-
-                {roadmap.dsa.topics && (
-
-                  <div className="flex flex-wrap gap-3">
-
-                    {roadmap.dsa.topics.map(
-                      (topic, index) => (
-
-                        <span
-                          key={index}
-                          className="bg-purple-50 text-purple-700 px-4 py-2 rounded-full"
-                        >
-                          {topic}
-                        </span>
-
                       )
                     )}
+                  </div>
+                </section>
+              )}
 
+            {/* DSA */}
+            {roadmap.dsa &&
+              (Array.isArray(roadmap.dsa.topics) ||
+                roadmap.dsa.practicePlan) && (
+                <section className="roadmap-section">
+                  <div className="section-title">
+                    <span>🧠</span>
+                    <h2>DSA Practice Plan</h2>
                   </div>
 
-                )}
+                  <div className="dsa-card">
+                    {Array.isArray(
+                      roadmap.dsa.topics
+                    ) &&
+                      roadmap.dsa.topics.length > 0 && (
+                        <div className="dsa-topics">
+                          <h3>Important Topics</h3>
 
-                {roadmap.dsa.practicePlan && (
-                  <p className="text-slate-600 mt-5">
-                    <strong>Practice Plan:</strong>{" "}
-                    {roadmap.dsa.practicePlan}
-                  </p>
-                )}
+                          <div className="dsa-topic-list">
+                            {roadmap.dsa.topics.map(
+                              (topic, index) => (
+                                <span
+                                  key={`dsa-${index}`}
+                                >
+                                  {topic}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
 
-              </div>
+                    {roadmap.dsa.practicePlan && (
+                      <div className="dsa-practice">
+                        <h3>Practice Plan</h3>
 
-            )}
-
-            {/* =====================================
-                FINAL CHECKLIST
-            ===================================== */}
-
-            {roadmap.finalChecklist && (
-
-              <div className="bg-green-50 border border-green-200 rounded-2xl p-6 md:p-8">
-
-                <h3 className="text-2xl font-bold text-slate-800 mb-4">
-                  ✅ Final Learning Checklist
-                </h3>
-
-                <div className="space-y-3">
-
-                  {roadmap.finalChecklist.map(
-                    (item, index) => (
-
-                      <div
-                        key={index}
-                        className="flex gap-3 items-start"
-                      >
-
-                        <span className="text-green-600 font-bold">
-                          ✓
-                        </span>
-
-                        <p className="text-slate-700">
-                          {item}
+                        <p>
+                          {roadmap.dsa.practicePlan}
                         </p>
-
                       </div>
+                    )}
+                  </div>
+                </section>
+              )}
 
-                    )
-                  )}
+            {/* Final Checklist */}
+            {Array.isArray(
+              roadmap.finalChecklist
+            ) &&
+              roadmap.finalChecklist.length > 0 && (
+                <section className="roadmap-section">
+                  <div className="section-title">
+                    <span>✅</span>
+                    <h2>Final Checklist</h2>
+                  </div>
 
-                </div>
+                  <div className="checklist-card">
+                    {roadmap.finalChecklist.map(
+                      (item, index) => (
+                        <div
+                          className="checklist-item"
+                          key={`check-${index}`}
+                        >
+                          <span className="check-icon">
+                            ✓
+                          </span>
 
-              </div>
-
-            )}
-
+                          <span>{item}</span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </section>
+              )}
           </div>
-
         )}
 
-      </div>
+        {/* Empty State */}
+        {!roadmap && !loading && !error && (
+          <div className="roadmap-empty-state">
+            <div className="empty-icon">🗺️</div>
 
+            <h3>Your Learning Roadmap</h3>
+
+            <p>
+              Select your learning field and preferences
+              above, then click{" "}
+              <strong>Generate Roadmap</strong> to create
+              your personalized AI learning plan.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
-};
+}
 
 export default AIRoadmap;
+

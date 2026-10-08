@@ -1,4 +1,25 @@
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// =====================================================
+// GEMINI AI LEARNING ROADMAP SERVICE
+// =====================================================
+
+const GEMINI_API_KEY =
+  process.env.GEMINI_API_KEY;
+
+// =====================================================
+// GEMINI MODELS
+// =====================================================
+// If one model is busy/unavailable,
+// the next model will automatically be tried.
+
+const GEMINI_MODELS = [
+  "gemini-3.6-flash",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+];
+
+// =====================================================
+// GENERATE LEARNING ROADMAP
+// =====================================================
 
 const generateLearningRoadmap = async ({
   field,
@@ -8,8 +29,14 @@ const generateLearningRoadmap = async ({
   learningMode,
 }) => {
   if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is missing");
+    throw new Error(
+      "GEMINI_API_KEY is missing"
+    );
   }
+
+  // ===================================================
+  // PROMPT
+  // ===================================================
 
   const prompt = `
 You are an expert AI learning curriculum designer.
@@ -191,99 +218,441 @@ Return exactly this JSON structure:
 }
 `;
 
-  try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
-      {
-        method: "POST",
+  // ===================================================
+  // TRY GEMINI MODELS
+  // ===================================================
 
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": GEMINI_API_KEY,
-        },
+  let lastError = null;
 
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-
-          generationConfig: {
-            responseMimeType: "application/json",
-          },
-        }),
-      }
-    );
-    const data = await response.json();
-
-    console.log("Gemini Roadmap Status:", response.status);
-
-    if (!response.ok) {
-      console.error(
-        "Gemini Roadmap Error:",
-        JSON.stringify(data, null, 2)
-      );
-
-      throw new Error(
-        data?.error?.message ||
-        "Gemini failed to generate roadmap"
-      );
-    }
-
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) {
-      throw new Error(
-        "No roadmap response received from Gemini"
-      );
-    }
-
-    console.log("Gemini Roadmap Response Received");
-
-    // Remove accidental markdown if Gemini adds it
-    const cleanText = text
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    let roadmap;
-
+  for (const model of GEMINI_MODELS) {
     try {
-      roadmap = JSON.parse(cleanText);
-    } catch (parseError) {
+      console.log("");
+      console.log(
+        "========================================"
+      );
+      console.log(
+        "🤖 TRYING GEMINI ROADMAP MODEL"
+      );
+      console.log(
+        "========================================"
+      );
+
+      console.log("Model:", model);
+      console.log("Field:", field);
+      console.log("Duration:", duration);
+      console.log("Level:", level);
+      console.log("Daily Time:", dailyTime);
+      console.log("Learning Mode:", learningMode);
+
+      // =================================================
+      // GEMINI API URL
+      // =================================================
+
+      const GEMINI_URL =
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+      // =================================================
+      // API REQUEST
+      // =================================================
+
+      const response = await fetch(
+        GEMINI_URL,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "x-goog-api-key":
+              GEMINI_API_KEY,
+          },
+
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+
+            generationConfig: {
+              temperature: 0.7,
+
+              maxOutputTokens: 8192,
+
+              responseMimeType:
+                "application/json",
+            },
+          }),
+        }
+      );
+
+      // =================================================
+      // READ RESPONSE
+      // =================================================
+
+      const responseText =
+        await response.text();
+
+      console.log(
+        `Gemini ${model} Status:`,
+        response.status
+      );
+
+      // =================================================
+      // SUCCESS RESPONSE
+      // =================================================
+
+      if (response.ok) {
+        let data;
+
+        try {
+          data =
+            JSON.parse(responseText);
+        } catch (parseError) {
+          console.error(
+            "Gemini API JSON Parse Error:",
+            parseError.message
+          );
+
+          throw new Error(
+            "Invalid JSON response received from Gemini API."
+          );
+        }
+
+        const text =
+          data?.candidates?.[0]
+            ?.content?.parts?.[0]?.text;
+
+        if (!text) {
+          throw new Error(
+            "No roadmap response received from Gemini."
+          );
+        }
+
+        console.log("");
+        console.log(
+          "========================================"
+        );
+        console.log(
+          "✅ GEMINI ROADMAP RESPONSE RECEIVED"
+        );
+        console.log(
+          "========================================"
+        );
+
+        console.log(
+          "Model Used:",
+          model
+        );
+
+        // ===============================================
+        // CLEAN JSON
+        // ===============================================
+
+        const cleanText =
+          text
+            .replace(
+              /^```json\s*/i,
+              ""
+            )
+            .replace(
+              /^```\s*/i,
+              ""
+            )
+            .replace(
+              /\s*```$/i,
+              ""
+            )
+            .trim();
+
+        // ===============================================
+        // PARSE ROADMAP
+        // ===============================================
+
+        let roadmap;
+
+        try {
+          roadmap =
+            JSON.parse(cleanText);
+        } catch (parseError) {
+          console.error(
+            "========================================"
+          );
+
+          console.error(
+            "❌ ROADMAP JSON PARSE ERROR"
+          );
+
+          console.error(
+            "========================================"
+          );
+
+          console.error(
+            parseError.message
+          );
+
+          console.error(
+            "Gemini Raw Response:"
+          );
+
+          console.error(
+            cleanText
+          );
+
+          throw new Error(
+            "AI returned invalid roadmap format."
+          );
+        }
+
+        // ===============================================
+        // BASIC VALIDATION
+        // ===============================================
+
+        if (
+          !roadmap ||
+          typeof roadmap !== "object"
+        ) {
+          throw new Error(
+            "Invalid roadmap object received from AI."
+          );
+        }
+
+        if (
+          !Array.isArray(
+            roadmap.months
+          )
+        ) {
+          throw new Error(
+            "AI roadmap does not contain valid months."
+          );
+        }
+
+        if (
+          !Array.isArray(
+            roadmap.projects
+          )
+        ) {
+          roadmap.projects = [];
+        }
+
+        if (
+          !Array.isArray(
+            roadmap.resources
+          )
+        ) {
+          roadmap.resources = [];
+        }
+
+        if (
+          !roadmap.dsa ||
+          typeof roadmap.dsa !==
+            "object"
+        ) {
+          roadmap.dsa = {
+            topics: [],
+            practicePlan: "",
+          };
+        }
+
+        if (
+          !Array.isArray(
+            roadmap.finalChecklist
+          )
+        ) {
+          roadmap.finalChecklist = [];
+        }
+
+        // ===============================================
+        // SUCCESS
+        // ===============================================
+
+        console.log("");
+        console.log(
+          "========================================"
+        );
+
+        console.log(
+          "✅ ROADMAP GENERATED SUCCESSFULLY"
+        );
+
+        console.log(
+          "========================================"
+        );
+
+        console.log(
+          "Model Used:",
+          model
+        );
+
+        console.log(
+          "Months:",
+          roadmap.months.length
+        );
+
+        console.log(
+          "Projects:",
+          roadmap.projects.length
+        );
+
+        console.log(
+          "Resources:",
+          roadmap.resources.length
+        );
+
+        return roadmap;
+      }
+
+      // =================================================
+      // GEMINI ERROR
+      // =================================================
+
+      console.error("");
       console.error(
-        "Roadmap JSON Parse Error:",
-        parseError
+        "========================================"
       );
 
       console.error(
-        "Gemini Raw Response:",
-        cleanText
+        `❌ GEMINI ${model} ERROR`
       );
 
-      throw new Error(
-        "AI returned invalid roadmap format"
+      console.error(
+        "========================================"
       );
+
+      console.error(
+        "Status:",
+        response.status
+      );
+
+      console.error(
+        "Response:",
+        responseText
+      );
+
+      let errorMessage =
+        `Gemini ${model} failed with status ${response.status}`;
+
+      try {
+        const errorData =
+          JSON.parse(
+            responseText
+          );
+
+        errorMessage =
+          errorData?.error?.message ||
+          errorMessage;
+      } catch (parseError) {
+        // Keep original error message
+      }
+
+      const error =
+        new Error(errorMessage);
+
+      error.status =
+        response.status;
+
+      error.response =
+        responseText;
+
+      lastError = error;
+
+      // =================================================
+      // FALLBACK CONDITIONS
+      // =================================================
+
+      if (
+        response.status === 404 ||
+        response.status === 429 ||
+        response.status === 500 ||
+        response.status === 502 ||
+        response.status === 503 ||
+        response.status === 504
+      ) {
+        console.log("");
+        console.log(
+          `⚠️ Model ${model} unavailable.`
+        );
+
+        console.log(
+          "➡️ Trying next Gemini model..."
+        );
+
+        continue;
+      }
+
+      // Other errors should stop immediately
+      throw error;
+
+    } catch (error) {
+      console.error("");
+      console.error(
+        `❌ Error with model ${model}:`
+      );
+
+      console.error(
+        error.message
+      );
+
+      lastError = error;
+
+      // =================================================
+      // FALLBACK FOR TEMPORARY GEMINI ERRORS
+      // =================================================
+
+      if (
+        error.status === 404 ||
+        error.status === 429 ||
+        error.status === 500 ||
+        error.status === 502 ||
+        error.status === 503 ||
+        error.status === 504
+      ) {
+        console.log(
+          "➡️ Trying next fallback model..."
+        );
+
+        continue;
+      }
+
+      throw error;
     }
-
-    return roadmap;
-
-  } catch (error) {
-    console.error(
-      "generateLearningRoadmap Error:",
-      error
-    );
-
-    throw error;
   }
+
+  // =====================================================
+  // ALL MODELS FAILED
+  // =====================================================
+
+  console.error("");
+  console.error(
+    "========================================"
+  );
+
+  console.error(
+    "❌ ALL GEMINI ROADMAP MODELS FAILED"
+  );
+
+  console.error(
+    "========================================"
+  );
+
+  throw (
+    lastError ||
+    new Error(
+      "All Gemini models failed."
+    )
+  );
 };
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = {
   generateLearningRoadmap,

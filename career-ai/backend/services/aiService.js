@@ -4,8 +4,7 @@
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// Use models that are commonly available through Gemini API.
-// If one is unavailable, the next model will be tried.
+// Gemini models
 const GEMINI_MODELS = [
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
@@ -133,7 +132,6 @@ const callGemini = async (prompt) => {
 
       lastError = error;
 
-      // Try another model for temporary/model availability errors
       if (
         response.status === 404 ||
         response.status === 429 ||
@@ -149,7 +147,6 @@ const callGemini = async (prompt) => {
         continue;
       }
 
-      // Authentication / bad request
       throw error;
     } catch (error) {
       console.error(
@@ -213,6 +210,231 @@ const parseGeminiJSON = (text) => {
       "Gemini returned invalid JSON."
     );
   }
+};
+
+// ============================================================
+// ANALYZE RESUME WITH AI
+// ============================================================
+
+const analyzeResumeWithAI = async (
+  resumeText,
+  targetRole
+) => {
+  console.log("");
+  console.log("====================================");
+  console.log("📄 STARTING RESUME AI ANALYSIS");
+  console.log("====================================");
+
+  console.log("Target Role:", targetRole);
+  console.log(
+    "Resume Text Length:",
+    resumeText?.length || 0
+  );
+
+  if (!resumeText || !resumeText.trim()) {
+    throw new Error(
+      "Resume text is required."
+    );
+  }
+
+  if (!targetRole || !targetRole.trim()) {
+    throw new Error(
+      "Target job role is required."
+    );
+  }
+
+  // Limit extremely large resumes
+  const cleanedResumeText =
+    resumeText.trim().slice(0, 30000);
+
+  const prompt = `
+You are an expert ATS resume analyzer and professional career coach.
+
+Analyze the candidate's resume against the target job role.
+
+TARGET JOB ROLE:
+"${targetRole}"
+
+RESUME TEXT:
+"""
+${cleanedResumeText}
+"""
+
+Your task is to provide a realistic ATS-style analysis.
+
+Evaluate:
+
+1. ATS match score
+2. Professional summary
+3. Skills matching the target role
+4. Missing skills
+5. Resume strengths
+6. Resume weaknesses
+7. Practical improvement suggestions
+
+IMPORTANT RULES:
+
+- Evaluate ONLY the information available in the resume.
+- Do not invent experience, education, projects, certifications, or skills.
+- Missing skills should be skills that are relevant to the target role but are not clearly present in the resume.
+- Matched skills should only contain skills clearly found in the resume.
+- Give an ATS score from 0 to 100.
+- Keep the analysis practical and useful for job preparation.
+- Do not give markdown.
+- Return ONLY valid JSON.
+- Do not wrap the JSON inside markdown code fences.
+
+Return exactly this JSON structure:
+
+{
+  "atsScore": 0,
+  "summary": "Professional summary of the resume compared with the target role.",
+  "matchedSkills": [
+    "Skill 1",
+    "Skill 2"
+  ],
+  "missingSkills": [
+    "Skill 1",
+    "Skill 2"
+  ],
+  "strengths": [
+    "Strength 1",
+    "Strength 2"
+  ],
+  "weaknesses": [
+    "Weakness 1",
+    "Weakness 2"
+  ],
+  "improvementSuggestions": [
+    "Suggestion 1",
+    "Suggestion 2",
+    "Suggestion 3"
+  ]
+}
+
+ATS SCORE GUIDELINES:
+
+90-100:
+Excellent match with strong relevant skills, projects, experience and keywords.
+
+75-89:
+Very good match with most important requirements covered.
+
+60-74:
+Good but has noticeable skill or keyword gaps.
+
+40-59:
+Average match with several important gaps.
+
+0-39:
+Weak match for the selected target role.
+
+Make the analysis specific to the target role:
+"${targetRole}"
+`;
+
+  const result = await callGemini(prompt);
+
+  console.log(
+    "Resume analysis model:",
+    result.model
+  );
+
+  const analysis =
+    parseGeminiJSON(result.text);
+
+  // ==========================================================
+  // VALIDATE RESPONSE
+  // ==========================================================
+
+  if (!analysis || typeof analysis !== "object") {
+    throw new Error(
+      "Invalid resume analysis received from Gemini."
+    );
+  }
+
+  // ATS SCORE
+  let atsScore = Number(
+    analysis.atsScore
+  );
+
+  if (Number.isNaN(atsScore)) {
+    atsScore = 0;
+  }
+
+  atsScore = Math.max(
+    0,
+    Math.min(100, atsScore)
+  );
+
+  // Arrays
+  const matchedSkills =
+    Array.isArray(analysis.matchedSkills)
+      ? analysis.matchedSkills
+      : [];
+
+  const missingSkills =
+    Array.isArray(analysis.missingSkills)
+      ? analysis.missingSkills
+      : [];
+
+  const strengths =
+    Array.isArray(analysis.strengths)
+      ? analysis.strengths
+      : [];
+
+  const weaknesses =
+    Array.isArray(analysis.weaknesses)
+      ? analysis.weaknesses
+      : [];
+
+  const improvementSuggestions =
+    Array.isArray(
+      analysis.improvementSuggestions
+    )
+      ? analysis.improvementSuggestions
+      : [];
+
+  const finalAnalysis = {
+    atsScore,
+
+    summary:
+      typeof analysis.summary === "string"
+        ? analysis.summary
+        : "No summary available.",
+
+    matchedSkills,
+
+    missingSkills,
+
+    strengths,
+
+    weaknesses,
+
+    improvementSuggestions,
+  };
+
+  console.log("");
+  console.log("====================================");
+  console.log("✅ RESUME ANALYSIS COMPLETED");
+  console.log("====================================");
+
+  console.log(
+    "ATS Score:",
+    finalAnalysis.atsScore
+  );
+
+  console.log(
+    "Matched Skills:",
+    finalAnalysis.matchedSkills.length
+  );
+
+  console.log(
+    "Missing Skills:",
+    finalAnalysis.missingSkills.length
+  );
+
+  return finalAnalysis;
 };
 
 // ============================================================
@@ -367,7 +589,7 @@ Return exactly this structure:
 };
 
 // ============================================================
-// GENERATE INTERVIEW FEEDBACKb the
+// GENERATE INTERVIEW FEEDBACK
 // ============================================================
 
 const generateInterviewFeedback = async (
@@ -421,6 +643,8 @@ Score must be between 0 and 100.
 // ============================================================
 
 module.exports = {
+  callGemini,
+  analyzeResumeWithAI,
   generateInterviewQuestions,
   generateInterviewFeedback,
 };
