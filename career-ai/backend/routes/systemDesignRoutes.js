@@ -1,6 +1,3 @@
-// ======================================================
-// SYSTEM DESIGN ROUTES
-// ======================================================
 
 const express = require("express");
 
@@ -10,13 +7,22 @@ const {
 
 const router = express.Router();
 
-// ======================================================
-// GENERATE SYSTEM DESIGN
-// ======================================================
+// Health check
+router.get("/health", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "System Design API is running.",
+  });
+});
 
-router.post(
-  "/generate",
-  generateSystemDesignController
-);
+// Generate system design
+router.post("/generate", (req, res, next) => {
+  console.log(
+    "System Design request body:",
+    JSON.stringify(req.body || {})
+  );
+
+  return generateSystemDesignController(req, res, next);
+});
 
 module.exports = router;
