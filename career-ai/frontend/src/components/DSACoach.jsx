@@ -1,1848 +1,895 @@
+
 import React, { useEffect, useState } from "react";
-
-// ======================================================
-// COMPLETE DSA CURRICULUM - 17 TOPICS
-// ======================================================
-
-const problems = {
-  Arrays: {
-    Easy: {
-      title: "Two Sum",
-      description:
-        "Given an array of integers nums and an integer target, return the indices of the two numbers such that they add up to target.",
-      input: "nums = [2, 7, 11, 15], target = 9",
-      output: "[0, 1]",
-      explanation: "nums[0] + nums[1] = 2 + 7 = 9",
-      funcName: "twoSum",
-      args: "nums, target",
-      hints: [
-        "Start by checking every possible pair of numbers.",
-        "The brute force approach takes O(n²) time.",
-        "Try using a Hash Map to improve the solution.",
-        "For every number, calculate target - current number.",
-        "If the complement exists in the map, return both indices.",
-      ],
-    },
-
-    Medium: {
-      title: "Maximum Subarray",
-      description: "Find the contiguous subarray with largest sum.",
-      input: "[-2,1,-3,4,-1,2,1,-5,4]",
-      output: "6",
-      explanation: "Subarray [4,-1,2,1] has sum 6.",
-      funcName: "maxSubArray",
-      args: "nums",
-      hints: [
-        "Think about keeping a running sum.",
-        "Use Kadane's Algorithm.",
-        "At every position decide whether to start a new subarray.",
-        "If the current sum becomes worse than the current number, restart.",
-        "Keep track of the maximum sum found so far.",
-      ],
-    },
-
-    Hard: {
-      title: "First Missing Positive",
-      description: "Find smallest missing positive integer.",
-      input: "[3, 4, -1, 1]",
-      output: "2",
-      explanation: "2 is missing.",
-      funcName: "firstMissingPositive",
-      args: "nums",
-      hints: [
-        "Only positive numbers are important.",
-        "The answer must be between 1 and n + 1.",
-        "Try modifying the array in-place.",
-        "Place number x at index x - 1.",
-        "Find the first index where nums[i] is not i + 1.",
-      ],
-    },
-  },
-
-  Strings: {
-    Easy: {
-      title: "Valid Palindrome",
-      description: "Check if string is palindrome.",
-      input: '"racecar"',
-      output: "true",
-      explanation: "Reads the same forwards and backwards.",
-      funcName: "isPalindrome",
-      args: "s",
-      hints: [
-        "A palindrome reads the same from both directions.",
-        "Use two pointers.",
-        "One pointer starts from the left.",
-        "Another pointer starts from the right.",
-        "Move inward while comparing characters.",
-      ],
-    },
-
-    Medium: {
-      title: "Longest Substring Without Repeating Characters",
-      description: "Find length of longest substring.",
-      input: '"abcabcbb"',
-      output: "3",
-      explanation: '"abc" is the answer.',
-      funcName: "lengthOfLongestSubstring",
-      args: "s",
-      hints: [
-        "Think about a sliding window.",
-        "Keep track of characters inside the current window.",
-        "A Set can help detect duplicates.",
-        "Move the left pointer when a duplicate appears.",
-        "Keep the maximum window length.",
-      ],
-    },
-
-    Hard: {
-      title: "Minimum Window Substring",
-      description: "Find minimum window containing characters.",
-      input: 's="ADOBECODEBANC", t="ABC"',
-      output: '"BANC"',
-      explanation: "Contains A, B, and C.",
-      funcName: "minWindow",
-      args: "s, t",
-      hints: [
-        "Use two pointers.",
-        "Create a frequency map for characters in t.",
-        "Expand the right pointer to make the window valid.",
-        "Once valid, move the left pointer to shrink it.",
-        "Store the smallest valid window.",
-      ],
-    },
-  },
-
-  "Two Pointers": {
-    Easy: {
-      title: "Valid Palindrome II",
-      description: "Check if palindrome after deleting one char.",
-      input: '"abca"',
-      output: "true",
-      explanation: "Delete 'c'.",
-      funcName: "validPalindrome",
-      args: "s",
-      hints: [
-        "Use two pointers.",
-        "Start one pointer from each end.",
-        "When characters match, move both pointers.",
-        "When they don't match, consider deleting one character.",
-        "Check both possible deletions.",
-      ],
-    },
-
-    Medium: {
-      title: "Container With Most Water",
-      description: "Find max area.",
-      input: "[1,8,6,2,5,4,8,3,7]",
-      output: "49",
-      explanation: "Max area between index 1 and 8.",
-      funcName: "maxArea",
-      args: "height",
-      hints: [
-        "Area depends on width and the smaller height.",
-        "Start pointers at both ends.",
-        "Calculate the current area.",
-        "Move the shorter line inward.",
-        "Keep the maximum area.",
-      ],
-    },
-
-    Hard: {
-      title: "Trapping Rain Water",
-      description: "Calculate trapped water.",
-      input: "[0,1,0,2,1,0,1,3,2,1,2,1]",
-      output: "6",
-      explanation: "6 units trapped.",
-      funcName: "trap",
-      args: "height",
-      hints: [
-        "Water at a position depends on left and right maximum heights.",
-        "Use two pointers.",
-        "Maintain leftMax and rightMax.",
-        "Process the side with the smaller maximum.",
-        "Add the difference between maximum and current height.",
-      ],
-    },
-  },
-
-  "Sliding Window": {
-    Easy: {
-      title: "Maximum Average Subarray I",
-      description: "Find max average of k elements.",
-      input: "nums=[1,12,-5,-6,50,3], k=4",
-      output: "12.5",
-      explanation: "Maximum sum is 50.",
-      funcName: "findMaxAverage",
-      args: "nums, k",
-      hints: [
-        "The window always contains exactly k elements.",
-        "Calculate the sum of the first k elements.",
-        "Slide the window one position at a time.",
-        "Remove the left element and add the new right element.",
-        "Track the maximum sum and divide by k.",
-      ],
-    },
-
-    Medium: {
-      title: "Permutation in String",
-      description: "Check if permutation exists.",
-      input: 's1="ab", s2="eidbaooo"',
-      output: "true",
-      explanation: '"ba" is a permutation.',
-      funcName: "checkInclusion",
-      args: "s1, s2",
-      hints: [
-        "Use a fixed-size sliding window.",
-        "The window size should equal s1.length.",
-        "Track character frequencies.",
-        "Compare window frequencies with s1.",
-        "Return true when all frequencies match.",
-      ],
-    },
-
-    Hard: {
-      title: "Sliding Window Maximum",
-      description: "Find max in each window.",
-      input: "nums=[1,3,-1,-3,5,3,6,7], k=3",
-      output: "[3,3,5,5,6,7]",
-      explanation: "Maximum element from each window.",
-      funcName: "maxSlidingWindow",
-      args: "nums, k",
-      hints: [
-        "A normal window scan is too slow.",
-        "Use a deque.",
-        "Keep indexes whose values can become maximum.",
-        "Maintain the deque in decreasing value order.",
-        "The front of the deque is the maximum.",
-      ],
-    },
-  },
-
-  "Hash Tables": {
-    Easy: {
-      title: "Contains Duplicate",
-      description: "Check if array has duplicates.",
-      input: "[1,2,3,1]",
-      output: "true",
-      explanation: "1 appears twice.",
-      funcName: "containsDuplicate",
-      args: "nums",
-      hints: [
-        "You need to remember values already seen.",
-        "A Hash Set is useful.",
-        "Iterate through every number.",
-        "If the number is already in the Set, return true.",
-        "Otherwise insert it into the Set.",
-      ],
-    },
-
-    Medium: {
-      title: "Group Anagrams",
-      description: "Group anagrams together.",
-      input: '["eat","tea","tan","ate","nat","bat"]',
-      output: '[["bat"],["nat","tan"],["ate","eat","tea"]]',
-      explanation: "Words are grouped by their characters.",
-      funcName: "groupAnagrams",
-      args: "strs",
-      hints: [
-        "Anagrams contain the same characters.",
-        "Sort every string.",
-        "Use the sorted string as a key.",
-        "Store words having the same key together.",
-        "Return all groups.",
-      ],
-    },
-
-    Hard: {
-      title: "Substring with Concatenation of All Words",
-      description: "Find starting indices of valid substrings.",
-      input: 's="barfoothefoobarman", words=["foo","bar"]',
-      output: "[0,9]",
-      explanation: "Matches barfoo and foobar.",
-      funcName: "findSubstring",
-      args: "s, words",
-      hints: [
-        "All words have the same length.",
-        "Create a frequency map for words.",
-        "Use a sliding window.",
-        "Track how many words are currently valid.",
-        "Reset the window when an invalid word appears.",
-      ],
-    },
-  },
-
-  "Linked List": {
-    Easy: {
-      title: "Reverse Linked List",
-      description: "Reverse a singly linked list.",
-      input: "head = [1,2,3,4,5]",
-      output: "[5,4,3,2,1]",
-      explanation: "The links are reversed.",
-      funcName: "reverseList",
-      args: "head",
-      hints: [
-        "You need to change the direction of every next pointer.",
-        "Keep a prev pointer.",
-        "Keep a current pointer.",
-        "Save current.next before changing it.",
-        "Move prev and current forward.",
-      ],
-    },
-
-    Medium: {
-      title: "Remove Nth Node From End",
-      description: "Remove nth node from the end.",
-      input: "head=[1,2,3,4,5], n=2",
-      output: "[1,2,3,5]",
-      explanation: "Node 4 is removed.",
-      funcName: "removeNthFromEnd",
-      args: "head, n",
-      hints: [
-        "Use two pointers.",
-        "Move the fast pointer n positions ahead.",
-        "Then move both pointers together.",
-        "The slow pointer will reach the node before the target.",
-        "Remove the target node.",
-      ],
-    },
-
-    Hard: {
-      title: "Merge K Sorted Lists",
-      description: "Merge k sorted linked lists.",
-      input: "lists = [[1,4,5],[1,3,4],[2,6]]",
-      output: "[1,1,2,3,4,4,5,6]",
-      explanation: "All lists are merged.",
-      funcName: "mergeKLists",
-      args: "lists",
-      hints: [
-        "Each individual list is already sorted.",
-        "You can repeatedly find the smallest node.",
-        "A Min Heap can make finding the smallest node efficient.",
-        "Put the first node of every list into the heap.",
-        "After removing a node, insert its next node.",
-      ],
-    },
-  },
-
-  Stack: {
-    Easy: {
-      title: "Valid Parentheses",
-      description: "Check if brackets are valid.",
-      input: '"()[]{}"',
-      output: "true",
-      explanation: "All brackets close correctly.",
-      funcName: "isValid",
-      args: "s",
-      hints: [
-        "Opening brackets need matching closing brackets.",
-        "Use a stack.",
-        "Push every opening bracket.",
-        "When a closing bracket appears, compare with stack top.",
-        "The stack must be empty at the end.",
-      ],
-    },
-
-    Medium: {
-      title: "Evaluate Reverse Polish Notation",
-      description: "Evaluate an RPN expression.",
-      input: '["2","1","+","3","*"]',
-      output: "9",
-      explanation: "(2+1)*3=9.",
-      funcName: "evalRPN",
-      args: "tokens",
-      hints: [
-        "Use a stack.",
-        "Push numbers onto the stack.",
-        "When an operator appears, pop two numbers.",
-        "Apply the operator in the correct order.",
-        "Push the result back onto the stack.",
-      ],
-    },
-
-    Hard: {
-      title: "Largest Rectangle in Histogram",
-      description: "Find largest rectangle area.",
-      input: "[2,1,5,6,2,3]",
-      output: "10",
-      explanation: "Maximum rectangle area is 10.",
-      funcName: "largestRectangleArea",
-      args: "heights",
-      hints: [
-        "For every bar, find how far it can extend.",
-        "A smaller height limits the rectangle.",
-        "Use a monotonic stack.",
-        "Store indexes of increasing heights.",
-        "Calculate area when a smaller bar appears.",
-      ],
-    },
-  },
-
-  Queue: {
-    Easy: {
-      title: "Implement Queue Using Stack",
-      description: "Implement FIFO queue using two stacks.",
-      input: '["push","push","peek"]',
-      output: "[1,2,1]",
-      explanation: "Queue follows FIFO.",
-      funcName: "MyQueue",
-      args: "",
-      hints: [
-        "A queue follows First In First Out.",
-        "A stack follows Last In First Out.",
-        "Use two stacks to reverse the order.",
-        "Use one stack for input and another for output.",
-        "Move elements to the output stack when needed.",
-      ],
-    },
-
-    Medium: {
-      title: "Circular Queue",
-      description: "Design a circular queue.",
-      input: "capacity = 3",
-      output: "true",
-      explanation: "Empty positions are reused.",
-      funcName: "MyCircularQueue",
-      args: "k",
-      hints: [
-        "Use an array of fixed capacity.",
-        "Keep track of the front.",
-        "Keep track of the rear.",
-        "Track the current size.",
-        "Use modulo to wrap indexes around.",
-      ],
-    },
-
-    Hard: {
-      title: "Design Circular Deque",
-      description: "Design a double-ended circular queue.",
-      input: "capacity = 3",
-      output: "true",
-      explanation: "Insertion and deletion work from both ends.",
-      funcName: "MyCircularDeque",
-      args: "k",
-      hints: [
-        "Deque supports operations at both ends.",
-        "Use a circular array.",
-        "Track front and rear positions.",
-        "Track the current number of elements.",
-        "Use modulo arithmetic for wrap-around.",
-      ],
-    },
-  },
-
-  "Binary Search": {
-    Easy: {
-      title: "Binary Search",
-      description: "Find target index in sorted array.",
-      input: "nums=[-1,0,3,5,9,12], target=9",
-      output: "4",
-      explanation: "Target is at index 4.",
-      funcName: "search",
-      args: "nums, target",
-      hints: [
-        "The array is sorted.",
-        "Use left and right pointers.",
-        "Calculate the middle index.",
-        "Discard half of the search space.",
-        "Continue until the target is found.",
-      ],
-    },
-
-    Medium: {
-      title: "Search in Rotated Sorted Array",
-      description: "Find target in rotated sorted array.",
-      input: "nums=[4,5,6,7,0,1,2], target=0",
-      output: "4",
-      explanation: "Target is at index 4.",
-      funcName: "search",
-      args: "nums, target",
-      hints: [
-        "One half of the array is always sorted.",
-        "Find the middle element.",
-        "Determine which half is sorted.",
-        "Check whether target belongs to that half.",
-        "Discard the other half.",
-      ],
-    },
-
-    Hard: {
-      title: "Median of Two Sorted Arrays",
-      description: "Find median of two sorted arrays.",
-      input: "nums1=[1,3], nums2=[2]",
-      output: "2.0",
-      explanation: "Median is 2.",
-      funcName: "findMedianSortedArrays",
-      args: "nums1, nums2",
-      hints: [
-        "The arrays are sorted.",
-        "Try partitioning the arrays.",
-        "Binary search on the smaller array.",
-        "Make sure left values are smaller than right values.",
-        "Calculate the median from the partition.",
-      ],
-    },
-  },
-
-  Trees: {
-    Easy: {
-      title: "Invert Binary Tree",
-      description: "Invert a binary tree.",
-      input: "root=[4,2,7,1,3,6,9]",
-      output: "[4,7,2,9,6,3,1]",
-      explanation: "Left and right children are swapped.",
-      funcName: "invertTree",
-      args: "root",
-      hints: [
-        "Every node has left and right children.",
-        "Swap the children of each node.",
-        "Recursion can solve this naturally.",
-        "Process the left subtree.",
-        "Process the right subtree.",
-      ],
-    },
-
-    Medium: {
-      title: "Lowest Common Ancestor",
-      description: "Find LCA of two nodes.",
-      input: "root=[3,5,1,6,2,0,8], p=5, q=1",
-      output: "3",
-      explanation: "The LCA is node 3.",
-      funcName: "lowestCommonAncestor",
-      args: "root, p, q",
-      hints: [
-        "Start from the root.",
-        "If root is p or q, it may be the answer.",
-        "Search the left subtree.",
-        "Search the right subtree.",
-        "If both sides find a node, root is the LCA.",
-      ],
-    },
-
-    Hard: {
-      title: "Binary Tree Maximum Path Sum",
-      description: "Find maximum path sum.",
-      input: "root=[-10,9,20,null,null,15,7]",
-      output: "42",
-      explanation: "15 -> 20 -> 7 gives 42.",
-      funcName: "maxPathSum",
-      args: "root",
-      hints: [
-        "A path can pass through a node.",
-        "Use post-order traversal.",
-        "Calculate the best contribution from each child.",
-        "Ignore negative contributions.",
-        "Update a global maximum at every node.",
-      ],
-    },
-  },
-
-  Graphs: {
-    Easy: {
-      title: "Flood Fill",
-      description: "Fill connected pixels with a new color.",
-      input:
-        "image=[[1,1,1],[1,1,0],[1,0,1]], sr=1, sc=1, color=2",
-      output: "[[2,2,2],[2,2,0],[2,0,1]]",
-      explanation: "Connected pixels are changed.",
-      funcName: "floodFill",
-      args: "image, sr, sc, color",
-      hints: [
-        "Treat every pixel as a graph node.",
-        "A pixel has up to four neighbors.",
-        "Use DFS or BFS.",
-        "Only visit pixels having the original color.",
-        "Change the color when visiting.",
-      ],
-    },
-
-    Medium: {
-      title: "Number of Islands",
-      description: "Count connected islands.",
-      input: "grid=[['1','1','0'],['0','0','1']]",
-      output: "2",
-      explanation: "There are 2 separate islands.",
-      funcName: "numIslands",
-      args: "grid",
-      hints: [
-        "Scan every cell.",
-        "When you find land, start a traversal.",
-        "Use DFS or BFS.",
-        "Mark visited land so it is not counted again.",
-        "Each new traversal represents one island.",
-      ],
-    },
-
-    Hard: {
-      title: "Word Ladder",
-      description: "Find shortest transformation sequence.",
-      input: 'beginWord="hit", endWord="cog"',
-      output: "5",
-      explanation: "hit -> hot -> dot -> dog -> cog.",
-      funcName: "ladderLength",
-      args: "beginWord, endWord, wordList",
-      hints: [
-        "This is a shortest path problem.",
-        "Use BFS.",
-        "Each word is a graph node.",
-        "Connect words differing by one character.",
-        "The first time you reach the target gives the shortest path.",
-      ],
-    },
-  },
-
-  "Heaps (Priority Queue)": {
-    Easy: {
-      title: "Kth Largest Element in a Stream",
-      description: "Find kth largest element.",
-      input: "k=3, nums=[4,5,8,2]",
-      output: "4",
-      explanation: "4 is the 3rd largest.",
-      funcName: "add",
-      args: "val",
-      hints: [
-        "You need to keep track of the largest k values.",
-        "A Min Heap is useful.",
-        "Keep heap size equal to k.",
-        "If heap becomes larger than k, remove the smallest.",
-        "The heap top becomes the kth largest.",
-      ],
-    },
-
-    Medium: {
-      title: "Top K Frequent Elements",
-      description: "Return k most frequent elements.",
-      input: "nums=[1,1,1,2,2,3], k=2",
-      output: "[1,2]",
-      explanation: "1 and 2 are the most frequent.",
-      funcName: "topKFrequent",
-      args: "nums, k",
-      hints: [
-        "First count the frequency of each number.",
-        "Use a Hash Map.",
-        "Then find the k highest frequencies.",
-        "A heap can efficiently maintain the top k.",
-        "Return the numbers stored in the heap.",
-      ],
-    },
-
-    Hard: {
-      title: "Find Median from Data Stream",
-      description: "Get median at any time.",
-      input: "addNum(1), findMedian()",
-      output: "1.0",
-      explanation: "Median is 1.0.",
-      funcName: "findMedian",
-      args: "",
-      hints: [
-        "Split numbers into lower and upper halves.",
-        "Use two heaps.",
-        "Use a Max Heap for the lower half.",
-        "Use a Min Heap for the upper half.",
-        "Keep both heaps balanced.",
-      ],
-    },
-  },
-
-  "Dynamic Programming": {
-    Easy: {
-      title: "Climbing Stairs",
-      description: "Count ways to climb n stairs.",
-      input: "n=3",
-      output: "3",
-      explanation: "There are 3 possible ways.",
-      funcName: "climbStairs",
-      args: "n",
-      hints: [
-        "To reach stair n, come from n-1 or n-2.",
-        "This creates a recurrence relation.",
-        "Use dp[i] to store the number of ways.",
-        "dp[i] = dp[i-1] + dp[i-2].",
-        "You can optimize the space to two variables.",
-      ],
-    },
-
-    Medium: {
-      title: "Coin Change",
-      description: "Find fewest coins to make amount.",
-      input: "coins=[1,2,5], amount=11",
-      output: "3",
-      explanation: "11 = 5 + 5 + 1.",
-      funcName: "coinChange",
-      args: "coins, amount",
-      hints: [
-        "Use Dynamic Programming.",
-        "dp[i] represents minimum coins for amount i.",
-        "Try every coin for every amount.",
-        "Use dp[i-coin] + 1.",
-        "Take the minimum result.",
-      ],
-    },
-
-    Hard: {
-      title: "Edit Distance",
-      description: "Find minimum operations to convert word1 to word2.",
-      input: 'word1="horse", word2="ros"',
-      output: "3",
-      explanation: "Three operations are required.",
-      funcName: "minDistance",
-      args: "word1, word2",
-      hints: [
-        "Use a 2D DP table.",
-        "Compare characters at current positions.",
-        "If characters match, no new operation is needed.",
-        "Otherwise consider insert, delete, and replace.",
-        "Take the minimum of the three operations.",
-      ],
-    },
-  },
-
-  "Greedy Algorithms": {
-    Easy: {
-      title: "Assign Cookies",
-      description: "Maximize number of happy children.",
-      input: "g=[1,2,3], s=[1,1]",
-      output: "1",
-      explanation: "Only one child can receive a suitable cookie.",
-      funcName: "findContentChildren",
-      args: "g, s",
-      hints: [
-        "Sort both arrays.",
-        "Start from the smallest child.",
-        "Try to give the smallest suitable cookie.",
-        "Use two pointers.",
-        "Count successfully satisfied children.",
-      ],
-    },
-
-    Medium: {
-      title: "Jump Game",
-      description: "Can you reach the last index?",
-      input: "nums=[2,3,1,1,4]",
-      output: "true",
-      explanation: "The last index is reachable.",
-      funcName: "canJump",
-      args: "nums",
-      hints: [
-        "You don't need to try every possible jump.",
-        "Track the furthest index reachable.",
-        "Update the furthest position at every index.",
-        "If the current index is beyond the reachable range, return false.",
-        "If the last index becomes reachable, return true.",
-      ],
-    },
-
-    Hard: {
-      title: "Minimum Number of Taps",
-      description: "Find minimum taps to cover garden.",
-      input: "n=5, ranges=[3,4,1,1,0,0]",
-      output: "1",
-      explanation: "Tap 0 covers the complete garden.",
-      funcName: "minTaps",
-      args: "n, ranges",
-      hints: [
-        "Convert every tap into an interval.",
-        "Each interval covers a range of positions.",
-        "This becomes similar to Jump Game.",
-        "Greedily choose the interval extending farthest.",
-        "Count the number of intervals used.",
-      ],
-    },
-  },
-
-  Backtracking: {
-    Easy: {
-      title: "Binary Watch",
-      description: "Return all possible times.",
-      input: "turnedOn=1",
-      output: '["0:01","0:02","0:04","0:08","0:16"]',
-      explanation: "Exactly one LED is turned on.",
-      funcName: "readBinaryWatch",
-      args: "turnedOn",
-      hints: [
-        "A binary watch contains hour and minute LEDs.",
-        "Generate possible combinations.",
-        "Count the number of set bits.",
-        "Check whether the hour and minute are valid.",
-        "Return all valid times.",
-      ],
-    },
-
-    Medium: {
-      title: "Permutations",
-      description: "Return all possible permutations.",
-      input: "nums=[1,2,3]",
-      output: "[[1,2,3],[1,3,2],...]",
-      explanation: "All possible permutations are generated.",
-      funcName: "permute",
-      args: "nums",
-      hints: [
-        "Build the permutation one element at a time.",
-        "Use recursion.",
-        "Track which elements are already used.",
-        "Backtrack after exploring a choice.",
-        "Continue until the permutation contains all elements.",
-      ],
-    },
-
-    Hard: {
-      title: "N-Queens",
-      description: "Place n queens on an n x n board.",
-      input: "n=4",
-      output: "[[...]]",
-      explanation: "Generate all valid queen arrangements.",
-      funcName: "solveNQueens",
-      args: "n",
-      hints: [
-        "Place one queen per row.",
-        "Track occupied columns.",
-        "Track both diagonals.",
-        "Backtrack when a position is invalid.",
-        "Continue until all rows contain queens.",
-      ],
-    },
-  },
-
-  "Sorting & Searching": {
-    Easy: {
-      title: "Merge Sorted Array",
-      description: "Merge nums2 into nums1.",
-      input: "nums1=[1,2,3,0,0,0], nums2=[2,5,6]",
-      output: "[1,2,2,3,5,6]",
-      explanation: "The arrays are merged in-place.",
-      funcName: "merge",
-      args: "nums1, m, nums2, n",
-      hints: [
-        "Both arrays are sorted.",
-        "Use three pointers.",
-        "Start from the end of both valid portions.",
-        "Put the larger element at the end.",
-        "Move pointers backward.",
-      ],
-    },
-
-    Medium: {
-      title: "Sort Colors",
-      description: "Sort 0s, 1s, and 2s.",
-      input: "nums=[2,0,2,1,1,0]",
-      output: "[0,0,1,1,2,2]",
-      explanation: "Array is sorted in-place.",
-      funcName: "sortColors",
-      args: "nums",
-      hints: [
-        "There are only three possible values.",
-        "Use the Dutch National Flag algorithm.",
-        "Keep low, mid, and high pointers.",
-        "Move 0s to the left.",
-        "Move 2s to the right.",
-      ],
-    },
-
-    Hard: {
-      title: "Count Smaller Numbers After Self",
-      description: "Count smaller elements to the right.",
-      input: "nums=[5,2,6,1]",
-      output: "[2,1,1,0]",
-      explanation: "Each position contains its count.",
-      funcName: "countSmaller",
-      args: "nums",
-      hints: [
-        "Brute force takes O(n²).",
-        "Try using Merge Sort.",
-        "During merging, count elements that move ahead.",
-        "Maintain original indexes.",
-        "Store the count for each original index.",
-      ],
-    },
-  },
-
-  "Recursion": {
-    Easy: {
-      title: "Fibonacci Number",
-      description: "Calculate the nth Fibonacci number.",
-      input: "n = 5",
-      output: "5",
-      explanation: "Fibonacci sequence: 0,1,1,2,3,5.",
-      funcName: "fib",
-      args: "n",
-      hints: [
-        "Fibonacci is defined using previous two values.",
-        "The base cases are n=0 and n=1.",
-        "For other values use fib(n-1) + fib(n-2).",
-        "This is a classic recursion problem.",
-        "Memoization can improve the time complexity.",
-      ],
-    },
-
-    Medium: {
-      title: "Power of Number",
-      description: "Calculate x raised to the power n.",
-      input: "x = 2, n = 10",
-      output: "1024",
-      explanation: "2^10 = 1024.",
-      funcName: "myPow",
-      args: "x, n",
-      hints: [
-        "Think recursively about the exponent.",
-        "x^n can be divided into smaller powers.",
-        "For even n, use x^(n/2) twice.",
-        "For odd n, multiply one extra x.",
-        "This can reduce the complexity to O(log n).",
-      ],
-    },
-
-    Hard: {
-      title: "Generate Parentheses",
-      description: "Generate all valid combinations of n pairs of parentheses.",
-      input: "n = 3",
-      output: '["((()))","(()())","(())()","()(())","()()()"]',
-      explanation: "All generated combinations are valid.",
-      funcName: "generateParenthesis",
-      args: "n",
-      hints: [
-        "Use backtracking.",
-        "Track the number of open parentheses.",
-        "Track the number of close parentheses.",
-        "You can add ')' only when close < open.",
-        "Stop when the string length becomes 2*n.",
-      ],
-    },
-  },
-};
-
-// ======================================================
-// TOPICS
-// ======================================================
-
-const topics = Object.keys(problems);
-
-// ======================================================
-// DSA COACH COMPONENT
-// ======================================================
-
-const DSACoach = () => {
-  const [topic, setTopic] = useState("Arrays");
-  const [difficulty, setDifficulty] = useState("Easy");
-  const [language, setLanguage] = useState("JavaScript");
-
-  const [code, setCode] = useState("");
-  const [result, setResult] = useState(null);
-
-  const [hintLevel, setHintLevel] = useState(0);
-  const [showHint, setShowHint] = useState(false);
-
-  const [time, setTime] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(true);
-
-  const [problemsSolved, setProblemsSolved] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-
-  const currentProblem = problems[topic][difficulty];
-
-  // ====================================================
-  // STARTER CODE
-  // ====================================================
-
-  const getStarterCode = (prob, lang) => {
-    if (lang === "Java") {
-      if (prob.funcName === "twoSum") {
-        return `import java.util.*;
-
-public class Main {
-
-    public static int[] twoSum(int[] nums, int target) {
-
-        HashMap<Integer, Integer> map = new HashMap<>();
-
-        for (int i = 0; i < nums.length; i++) {
-
-            int complement = target - nums[i];
-
-            if (map.containsKey(complement)) {
-                return new int[] {
-                    map.get(complement),
-                    i
-                };
-            }
-
-            map.put(nums[i], i);
-        }
-
-        return new int[] {};
-    }
-
-    public static void main(String[] args) {
-
-        int[] nums = {2, 7, 11, 15};
-        int target = 9;
-
-        int[] result = twoSum(nums, target);
-
-        System.out.println(Arrays.toString(result));
-    }
-}`;
-
-      }
-
-      return `public class Main {
-
-    public static void main(String[] args) {
-
-        // Write your Java solution here
-
-        System.out.println("Hello from Career AI DSA Coach");
-
-    }
-}`;
-    }
-
-    if (lang === "Python") {
-      return `def ${prob.funcName}(${prob.args}):
-    # Write your Python solution here
-    pass
-
-
-# Test your solution here
-print("Run your solution")`;
-    }
-
-    if (lang === "C++") {
-      return `#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <algorithm>
-
-using namespace std;
-
-int main() {
-
-    // Write your C++ solution here
-
-    return 0;
-}`;
-    }
-
-    return `function ${prob.funcName}(${prob.args}) {
-
-  // Write your JavaScript solution here
+import "./DSACoach.css";
+
+const problems = [
+  {
+    topic: "Arrays",
+    title: "Two Sum",
+    difficulty: "Easy",
+    description:
+      "Given an array of integers nums and an integer target, return the indices of the two numbers such that they add up to target.",
+    examples: [
+      {
+        input: "nums = [2, 7, 11, 15], target = 9",
+        output: "[0, 1]",
+        explanation: "nums[0] + nums[1] = 2 + 7 = 9.",
+      },
+    ],
+    hint: "Use a Map to store each number and its index. For every number, check whether target - number already exists.",
+    starter: `function twoSum(nums, target) {
+  // Write your solution here
 
 }
 
-// Test your solution here
-console.log("Run your solution");`;
-  };
+console.log(twoSum([2, 7, 11, 15], 9));`,
+    tests: [
+      {
+        args: [[2, 7, 11, 15], 9],
+        expected: [0, 1],
+        call: (fn) => fn([2, 7, 11, 15], 9),
+      },
+      {
+        args: [[3, 2, 4], 6],
+        expected: [1, 2],
+        call: (fn) => fn([3, 2, 4], 6),
+      },
+      {
+        args: [[3, 3], 6],
+        expected: [0, 1],
+        call: (fn) => fn([3, 3], 6),
+      },
+    ],
+    functionName: "twoSum",
+    time: "O(n) expected",
+    space: "O(n) expected",
+  },
+  {
+    topic: "Strings",
+    title: "Reverse a String",
+    difficulty: "Easy",
+    description:
+      "Write a function that reverses a string and returns the reversed result.",
+    examples: [
+      {
+        input: 's = "hello"',
+        output: '"olleh"',
+        explanation: "Return the characters in reverse order.",
+      },
+    ],
+    hint: "JavaScript strings can be converted to an array of characters. Think about reverse() and join().",
+    starter: `function reverseString(s) {
+  // Write your solution here
 
-  // ====================================================
-  // RESET PROBLEM
-  // ====================================================
+}
 
-  const resetProblemState = (
-    newTopic = topic,
-    newDifficulty = difficulty,
-    newLanguage = language
-  ) => {
-    const prob = problems[newTopic][newDifficulty];
+console.log(reverseString("hello"));`,
+    tests: [
+      {
+        args: ["hello"],
+        expected: "olleh",
+        call: (fn) => fn("hello"),
+      },
+      {
+        args: ["Career AI"],
+        expected: "IA reeraC",
+        call: (fn) => fn("Career AI"),
+      },
+      {
+        args: [""],
+        expected: "",
+        call: (fn) => fn(""),
+      },
+    ],
+    functionName: "reverseString",
+    time: "O(n)",
+    space: "O(n)",
+  },
+  {
+    topic: "Binary Search",
+    title: "Binary Search",
+    difficulty: "Easy",
+    description:
+      "Given a sorted array of integers, return the index of target. Return -1 if the target does not exist.",
+    examples: [
+      {
+        input: "nums = [-1, 0, 3, 5, 9, 12], target = 9",
+        output: "4",
+        explanation: "The target 9 is located at index 4.",
+      },
+    ],
+    hint: "Maintain left and right boundaries. Compare the middle element with the target and eliminate half of the search range.",
+    starter: `function search(nums, target) {
+  // Write your solution here
 
-    setCode(getStarterCode(prob, newLanguage));
-    setResult(null);
+}
 
-    // IMPORTANT:
-    // Every new problem starts with 0 hints
-    setHintLevel(0);
+console.log(search([-1, 0, 3, 5, 9, 12], 9));`,
+    tests: [
+      {
+        expected: 4,
+        call: (fn) => fn([-1, 0, 3, 5, 9, 12], 9),
+      },
+      {
+        expected: -1,
+        call: (fn) => fn([-1, 0, 3, 5, 9, 12], 2),
+      },
+      {
+        expected: 0,
+        call: (fn) => fn([5], 5),
+      },
+    ],
+    functionName: "search",
+    time: "O(log n)",
+    space: "O(1)",
+  },
+  {
+    topic: "Dynamic Programming",
+    title: "Climbing Stairs",
+    difficulty: "Easy",
+    description:
+      "You can climb one or two steps at a time. Return the number of distinct ways to reach the top of n stairs.",
+    examples: [
+      {
+        input: "n = 4",
+        output: "5",
+        explanation: "There are five distinct ways to reach step four.",
+      },
+    ],
+    hint: "The number of ways to reach step n is the sum of the ways to reach steps n - 1 and n - 2.",
+    starter: `function climbStairs(n) {
+  // Write your solution here
+
+}
+
+console.log(climbStairs(4));`,
+    tests: [
+      { expected: 2, call: (fn) => fn(2) },
+      { expected: 5, call: (fn) => fn(4) },
+      { expected: 8, call: (fn) => fn(5) },
+    ],
+    functionName: "climbStairs",
+    time: "O(n)",
+    space: "O(1) optimized",
+  },
+  {
+    topic: "Arrays",
+    title: "Maximum Element",
+    difficulty: "Easy",
+    description:
+      "Given a non-empty array of integers, return the largest element.",
+    examples: [
+      {
+        input: "nums = [3, 9, 2, 12, 5]",
+        output: "12",
+        explanation: "12 is the largest element in the array.",
+      },
+    ],
+    hint: "Keep track of the largest value seen so far while traversing the array.",
+    starter: `function findMaximum(nums) {
+  // Write your solution here
+
+}
+
+console.log(findMaximum([3, 9, 2, 12, 5]));`,
+    tests: [
+      {
+        expected: 12,
+        call: (fn) => fn([3, 9, 2, 12, 5]),
+      },
+      {
+        expected: -1,
+        call: (fn) => fn([-8, -1, -5]),
+      },
+      {
+        expected: 7,
+        call: (fn) => fn([7]),
+      },
+    ],
+    functionName: "findMaximum",
+    time: "O(n)",
+    space: "O(1)",
+  },
+  {
+    topic: "Linked List",
+    title: "Reverse Linked List",
+    difficulty: "Medium",
+    description:
+      "Reverse a singly linked list and return the new head. This exercise uses an array as a simplified input/output representation.",
+    examples: [
+      {
+        input: "head = [1, 2, 3, 4, 5]",
+        output: "[5, 4, 3, 2, 1]",
+        explanation: "The node order is reversed.",
+      },
+    ],
+    hint: "For the array-based version, reverse the array. A real linked-list solution changes each node's next pointer.",
+    starter: `function reverseList(head) {
+  // Array-based version of the problem
+
+}
+
+console.log(reverseList([1, 2, 3, 4, 5]));`,
+    tests: [
+      {
+        expected: [5, 4, 3, 2, 1],
+        call: (fn) => fn([1, 2, 3, 4, 5]),
+      },
+      {
+        expected: [2, 1],
+        call: (fn) => fn([1, 2]),
+      },
+      {
+        expected: [],
+        call: (fn) => fn([]),
+      },
+    ],
+    functionName: "reverseList",
+    time: "O(n)",
+    space: "O(n) for array version",
+  },
+  {
+    topic: "Trees",
+    title: "Maximum Depth of Binary Tree",
+    difficulty: "Easy",
+    description:
+      "For a binary tree represented as nested objects, return its maximum depth. A null tree has depth zero.",
+    examples: [
+      {
+        input: "root = { left: {}, right: {} }",
+        output: "2",
+        explanation: "The root and its children form two levels.",
+      },
+    ],
+    hint: "Use recursion. The depth is one plus the maximum depth of the left and right subtrees.",
+    starter: `function maxDepth(root) {
+  // Write your solution here
+
+}
+
+console.log(maxDepth({ left: {}, right: {} }));`,
+    tests: [
+      {
+        expected: 0,
+        call: (fn) => fn(null),
+      },
+      {
+        expected: 1,
+        call: (fn) => fn({}),
+      },
+      {
+        expected: 2,
+        call: (fn) => fn({ left: {}, right: {} }),
+      },
+    ],
+    functionName: "maxDepth",
+    time: "O(n)",
+    space: "O(h) recursion",
+  },
+];
+
+const topics = [
+  "All Topics",
+  "Arrays",
+  "Strings",
+  "Linked List",
+  "Trees",
+  "Binary Search",
+  "Dynamic Programming",
+];
+
+const languages = ["JavaScript", "Java", "Python", "C++"];
+
+const starterFor = (problem, language) => {
+  if (language === "JavaScript") return problem.starter;
+
+  if (language === "Python") {
+    return `class Solution:\n    def ${problem.functionName}(self):\n        # Write your solution here\n        pass`;
+  }
+
+  if (language === "Java") {
+    return `class Solution {\n    public Object ${problem.functionName}() {\n        // Write your solution here\n        return null;\n    }\n}`;
+  }
+
+  return `#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    return 0;\n}`;
+};
+
+function formatTime(seconds) {
+  const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const remaining = String(seconds % 60).padStart(2, "0");
+  return `${minutes}:${remaining}`;
+}
+
+function safeFormat(value) {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function valuesEqual(actual, expected) {
+  return safeFormat(actual) === safeFormat(expected);
+}
+
+function executeJavaScript(code, problem) {
+  if (code.length > 20000) {
+    throw new Error("Code is too long. Please keep your solution under 20,000 characters.");
+  }
+
+  // This is a client-side practice runner, not a secure production sandbox.
+  // Never use it to execute untrusted code from other users on a server.
+  const runFunction = new Function(
+    `"use strict";\n${code}\n; return typeof ${problem.functionName} === "function" ? ${problem.functionName} : null;`
+  );
+
+  const solution = runFunction();
+
+  if (typeof solution !== "function") {
+    throw new Error(
+      `Function "${problem.functionName}" was not found. Please use the required function name.`
+    );
+  }
+
+  return problem.tests.map((test, index) => {
+    try {
+      const actual = test.call(solution);
+      const passed = valuesEqual(actual, test.expected);
+
+      return {
+        number: index + 1,
+        passed,
+        actual: safeFormat(actual),
+        expected: safeFormat(test.expected),
+      };
+    } catch (error) {
+      return {
+        number: index + 1,
+        passed: false,
+        actual: error.message || "Runtime error",
+        expected: safeFormat(test.expected),
+      };
+    }
+  });
+}
+
+export default function DSACoach() {
+  const [topic, setTopic] = useState("All Topics");
+  const [difficulty, setDifficulty] = useState("All");
+  const [language, setLanguage] = useState("JavaScript");
+  const [problemIndex, setProblemIndex] = useState(0);
+  const [code, setCode] = useState(problems[0].starter);
+  const [elapsed, setElapsed] = useState(0);
+  const [results, setResults] = useState([]);
+  const [output, setOutput] = useState("");
+  const [showHint, setShowHint] = useState(false);
+  const [activeTab, setActiveTab] = useState("Testcases");
+  const [attempted, setAttempted] = useState(false);
+
+  const filteredProblems = problems.filter((problem) => {
+    const topicMatches = topic === "All Topics" || problem.topic === topic;
+    const difficultyMatches =
+      difficulty === "All" || problem.difficulty === difficulty;
+
+    return topicMatches && difficultyMatches;
+  });
+
+  const problem =
+    filteredProblems[Math.min(problemIndex, filteredProblems.length - 1)] ||
+    problems[0];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setElapsed((current) => current + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  function resetResults() {
+    setResults([]);
+    setOutput("");
+    setAttempted(false);
+    setActiveTab("Testcases");
+  }
+
+  function changeProblem(nextIndex, nextList = filteredProblems) {
+    if (!nextList.length) return;
+
+    const safeIndex = (nextIndex + nextList.length) % nextList.length;
+    const nextProblem = nextList[safeIndex];
+
+    setProblemIndex(safeIndex);
+    setCode(starterFor(nextProblem, language));
     setShowHint(false);
+    resetResults();
+  }
 
-    setTime(0);
-    setIsTimerRunning(true);
-  };
+  function handleTopicChange(nextTopic) {
+    const nextList = problems.filter((item) => {
+      const topicMatches =
+        nextTopic === "All Topics" || item.topic === nextTopic;
+      const difficultyMatches =
+        difficulty === "All" || item.difficulty === difficulty;
 
-  // ====================================================
-  // LANGUAGE CHANGE
-  // ====================================================
+      return topicMatches && difficultyMatches;
+    });
 
-  useEffect(() => {
-    resetProblemState(topic, difficulty, language);
+    setTopic(nextTopic);
+    setProblemIndex(0);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language]);
-
-  // ====================================================
-  // TIMER
-  // ====================================================
-
-  useEffect(() => {
-    let interval;
-
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        setTime((prev) => prev + 1);
-      }, 1000);
+    if (nextList.length) {
+      setCode(starterFor(nextList[0], language));
     }
 
-    return () => clearInterval(interval);
-  }, [isTimerRunning]);
+    setShowHint(false);
+    resetResults();
+  }
 
-  // ====================================================
-  // FORMAT TIME
-  // ====================================================
+  function handleDifficultyChange(nextDifficulty) {
+    const nextList = problems.filter((item) => {
+      const topicMatches = topic === "All Topics" || item.topic === topic;
+      const difficultyMatches =
+        nextDifficulty === "All" || item.difficulty === nextDifficulty;
 
-  const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60)
-      .toString()
-      .padStart(2, "0");
-
-    const secondsPart = (seconds % 60)
-      .toString()
-      .padStart(2, "0");
-
-    return `${minutes}:${secondsPart}`;
-  };
-
-  // ====================================================
-  // TOPIC CHANGE
-  // ====================================================
-
-  const handleTopicChange = (newTopic) => {
-    setTopic(newTopic);
-    setDifficulty("Easy");
-
-    resetProblemState(
-      newTopic,
-      "Easy",
-      language
-    );
-  };
-
-  // ====================================================
-  // DIFFICULTY CHANGE
-  // ====================================================
-
-  const handleDifficultyChange = (newDifficulty) => {
-    setDifficulty(newDifficulty);
-
-    resetProblemState(
-      topic,
-      newDifficulty,
-      language
-    );
-  };
-
-  // ====================================================
-  // RESET CODE
-  // ====================================================
-
-  const handleResetCode = () => {
-    setCode(
-      getStarterCode(
-        currentProblem,
-        language
-      )
-    );
-
-    setResult({
-      type: "info",
-      message: "Code reset to default template.",
+      return topicMatches && difficultyMatches;
     });
-  };
 
-  // ====================================================
-  // RUN CODE
-  // ====================================================
+    setDifficulty(nextDifficulty);
+    setProblemIndex(0);
 
-  const handleRunCode = async () => {
-    if (!code.trim()) {
-      setResult({
-        type: "error",
-        message:
-          "Please write some code before running.",
-      });
+    if (nextList.length) {
+      setCode(starterFor(nextList[0], language));
+    }
 
+    setShowHint(false);
+    resetResults();
+  }
+
+  function handleLanguageChange(nextLanguage) {
+    setLanguage(nextLanguage);
+    setCode(starterFor(problem, nextLanguage));
+    resetResults();
+  }
+
+  function handleRun() {
+    if (language !== "JavaScript") {
+      setActiveTab("Output");
+      setOutput(
+        `${language} execution is not connected.\n\nThe editor supports writing code, but running and submitting ${language} requires a compiler API or your own backend execution service.`
+      );
       return;
     }
-
-    setIsRunning(true);
-
-    setResult({
-      type: "info",
-      message:
-        `Running ${language} code...`,
-    });
 
     try {
-      console.log(
-        "Sending code to backend..."
+      const capturedResults = executeJavaScript(code, problem);
+      setResults(capturedResults);
+      setOutput(
+        capturedResults
+          .map(
+            (result) =>
+              `Test ${result.number}: ${result.passed ? "Accepted" : "Failed"}\nExpected: ${result.expected}\nActual: ${result.actual}`
+          )
+          .join("\n\n")
       );
-
-      const response = await fetch(
-        "http://localhost:5000/api/dsa/run",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          body: JSON.stringify({
-            code: code,
-            language: language,
-          }),
-        }
-      );
-
-      console.log(
-        "Backend status:",
-        response.status
-      );
-
-      let data;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          "Backend returned an invalid response."
-        );
-      }
-
-      console.log(
-        "Backend response:",
-        data
-      );
-
-      if (!response.ok || !data.success) {
-        setResult({
-          type: "error",
-          message:
-            data.output ||
-            data.message ||
-            "Code execution failed.",
-        });
-
-        return;
-      }
-
-      setResult({
-        type: "success",
-        message:
-          `Output: ${
-            data.output ||
-            "Program executed successfully with no output."
-          }`,
-      });
-
+      setActiveTab("Testcases");
+      setAttempted(false);
     } catch (error) {
-      console.error(
-        "Run Code Error:",
-        error
-      );
-
-      setResult({
-        type: "error",
-        message:
-          "Backend connection failed. Make sure backend is running on http://localhost:5000",
-      });
-
-    } finally {
-      setIsRunning(false);
+      setResults([]);
+      setOutput(`Error: ${error.message}`);
+      setActiveTab("Output");
     }
-  };
+  }
 
-  // ====================================================
-  // SUBMIT
-  // ====================================================
-
-  const handleSubmit = () => {
-    if (!code.trim()) {
-      setResult({
-        type: "error",
-        message:
-          "Please write some code before submitting.",
-      });
-
+  function handleSubmit() {
+    if (language !== "JavaScript") {
+      setActiveTab("Output");
+      setOutput(
+        `Cannot submit ${language} yet. Connect a real code execution backend to compile and validate this language.`
+      );
       return;
     }
 
-    setIsTimerRunning(false);
+    try {
+      const submissionResults = executeJavaScript(code, problem);
+      setResults(submissionResults);
+      setAttempted(true);
+      setActiveTab("Testcases");
 
-    setProblemsSolved(
-      (prev) => prev + 1
-    );
+      const passedCount = submissionResults.filter(
+        (result) => result.passed
+      ).length;
 
-    setResult({
-      type: "success",
-      message:
-        `Code submitted successfully! Solved in ${formatTime(
-          time
-        )}.`,
-    });
-  };
-
-  // ====================================================
-  // HINT SYSTEM - EXACTLY 5 HITS
-  // ====================================================
-
-  const handleHint = () => {
-    const maxHints =
-      currentProblem.hints.length;
-
-    if (hintLevel < maxHints) {
-      const nextLevel =
-        hintLevel + 1;
-
-      setHintLevel(nextLevel);
-      setShowHint(true);
-
-      console.log(
-        `Hint ${nextLevel}/${maxHints} revealed`
+      setOutput(
+        passedCount === submissionResults.length
+          ? `Accepted\n\nAll ${submissionResults.length} test cases passed.`
+          : `Wrong Answer\n\n${passedCount} of ${submissionResults.length} test cases passed.`
       );
+    } catch (error) {
+      setResults([]);
+      setAttempted(true);
+      setActiveTab("Output");
+      setOutput(`Compilation / Runtime Error\n\n${error.message}`);
     }
-  };
+  }
 
-  // ====================================================
-  // NEXT PROBLEM
-  // ====================================================
+  function handleReset() {
+    setCode(starterFor(problem, language));
+    resetResults();
+  }
 
-  const handleNextProblem = () => {
-    const difficultyOrder = [
-      "Easy",
-      "Medium",
-      "Hard",
-    ];
-
-    const currentIndex =
-      difficultyOrder.indexOf(
-        difficulty
-      );
-
-    if (
-      currentIndex <
-      difficultyOrder.length - 1
-    ) {
-      handleDifficultyChange(
-        difficultyOrder[
-          currentIndex + 1
-        ]
-      );
-    } else {
-      handleDifficultyChange("Easy");
-    }
-  };
-
-  // ====================================================
-  // TAB INDENTATION
-  // ====================================================
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Tab") {
-      e.preventDefault();
-
-      const start =
-        e.target.selectionStart;
-
-      const end =
-        e.target.selectionEnd;
-
-      const newCode =
-        code.substring(0, start) +
-        "  " +
-        code.substring(end);
-
-      setCode(newCode);
-
-      setTimeout(() => {
-        e.target.selectionStart =
-          e.target.selectionEnd =
-            start + 2;
-      }, 0);
-    }
-  };
-
-  // ====================================================
-  // UI
-  // ====================================================
+  function handleNextProblem() {
+    changeProblem(problemIndex + 1);
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 md:px-8">
-
-      <div className="mx-auto max-w-7xl">
-
-        {/* HEADER */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-
-          <div>
-            <h1 className="text-3xl font-bold text-blue-600 md:text-4xl">
-              🤖 DSA Coach
-            </h1>
-
-            <p className="mt-2 text-slate-600">
-              Your AI-powered personal DSA learning coach
-            </p>
-
-            <p className="mt-1 text-sm font-semibold text-blue-500">
-              {topics.length} DSA Topics Available
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white px-5 py-3 shadow-sm border border-slate-200 w-fit">
-
-            <p className="text-sm font-semibold text-slate-500">
-              Time Elapsed
-            </p>
-
-            <p
-              className={`text-2xl font-mono font-bold ${
-                isTimerRunning
-                  ? "text-blue-600"
-                  : "text-green-600"
-              }`}
-            >
-              ⏱️ {formatTime(time)}
-            </p>
-
-          </div>
-        </div>
-
-        {/* SELECTION PANEL */}
-        <div className="mb-6 rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
-
-          <div className="grid gap-5 md:grid-cols-3">
-
-            {/* TOPIC */}
+    <main className="dsa-page">
+      <div className="dsa-container">
+        <header className="dsa-header">
+          <div className="dsa-heading">
+            <div className="dsa-brand-icon">🤖</div>
             <div>
+              <div className="dsa-eyebrow">
+                CAREER AI <span>•</span> LEARN. PRACTICE. GET HIRED.
+              </div>
+              <h1>DSA Coach</h1>
+              <p>Your AI-powered personal DSA learning workspace.</p>
+            </div>
+          </div>
 
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                DSA Topic
-              </label>
+          <div className="dsa-timer">
+            <div className="dsa-timer-icon">◷</div>
+            <div>
+              <span>TIME ELAPSED</span>
+              <strong>{formatTime(elapsed)}</strong>
+            </div>
+          </div>
+        </header>
 
+        <section className="dsa-stats">
+          <div className="dsa-stat">
+            <span className="dsa-stat-icon blue">▤</span>
+            <div>
+              <strong>{problems.length}</strong>
+              <span>Practice Problems</span>
+            </div>
+          </div>
+
+          <div className="dsa-stat">
+            <span className="dsa-stat-icon purple">⌘</span>
+            <div>
+              <strong>Run & Submit</strong>
+              <span>Test your solution</span>
+            </div>
+          </div>
+
+          <div className="dsa-stat">
+            <span className="dsa-stat-icon green">✓</span>
+            <div>
+              <strong>Interview</strong>
+              <span>Ready Skills</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="dsa-filter-card">
+          <div className="dsa-section-heading">
+            <div>
+              <span className="dsa-section-icon">⚙</span>
+              <h2>Practice Setup</h2>
+            </div>
+            <span className="dsa-live-badge">
+              <i /> Workspace Ready
+            </span>
+          </div>
+
+          <div className="dsa-filter-grid">
+            <label className="dsa-field">
+              <span>DSA Topic</span>
               <select
                 value={topic}
-                onChange={(e) =>
-                  handleTopicChange(
-                    e.target.value
-                  )
-                }
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 font-medium bg-white"
+                onChange={(event) => handleTopicChange(event.target.value)}
               >
                 {topics.map((item) => (
-                  <option
-                    key={item}
-                    value={item}
-                  >
+                  <option value={item} key={item}>
                     {item}
                   </option>
                 ))}
               </select>
+            </label>
 
-            </div>
-
-            {/* DIFFICULTY */}
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Difficulty
-              </label>
-
+            <label className="dsa-field">
+              <span>Difficulty</span>
               <select
                 value={difficulty}
-                onChange={(e) =>
-                  handleDifficultyChange(
-                    e.target.value
-                  )
+                onChange={(event) =>
+                  handleDifficultyChange(event.target.value)
                 }
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 font-medium bg-white"
               >
-                <option value="Easy">
-                  🟢 Easy
-                </option>
-
-                <option value="Medium">
-                  🟡 Medium
-                </option>
-
-                <option value="Hard">
-                  🔴 Hard
-                </option>
+                <option value="All">All Difficulties</option>
+                <option value="Easy">🟢 Easy</option>
+                <option value="Medium">🟡 Medium</option>
+                <option value="Hard">🔴 Hard</option>
               </select>
+            </label>
 
-            </div>
-
-            {/* LANGUAGE */}
-            <div>
-
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Language
-              </label>
-
+            <label className="dsa-field">
+              <span>Programming Language</span>
               <select
                 value={language}
-                onChange={(e) =>
-                  setLanguage(
-                    e.target.value
-                  )
-                }
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 font-medium bg-white"
+                onChange={(event) => handleLanguageChange(event.target.value)}
               >
-                <option value="Java">
-                  Java
-                </option>
-
-                <option value="JavaScript">
-                  JavaScript
-                </option>
-
-                <option value="Python">
-                  Python
-                </option>
-
-                <option value="C++">
-                  C++
-                </option>
+                {languages.map((item) => (
+                  <option value={item} key={item}>
+                    {item}
+                  </option>
+                ))}
               </select>
-
-            </div>
-
+            </label>
           </div>
-        </div>
+        </section>
 
-        {/* MAIN GRID */}
-        <div className="grid gap-6 lg:grid-cols-2">
-
-          {/* PROBLEM PANEL */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100 flex flex-col">
-
-            <div className="mb-5 flex items-start justify-between gap-4">
-
+        <div className="dsa-workspace">
+          <section className="dsa-question-panel">
+            <div className="dsa-panel-top">
               <div>
-
-                <p className="mb-2 text-sm font-bold text-blue-600 uppercase tracking-wider">
-                  {topic}
-                </p>
-
-                <h2 className="text-2xl font-bold text-slate-900">
-                  {currentProblem.title}
-                </h2>
-
+                <span className="dsa-kicker">
+                  {problem.topic.toUpperCase()}
+                </span>
+                <h2>{problem.title}</h2>
               </div>
 
-              <span
-                className={`rounded-full px-4 py-1.5 text-sm font-bold whitespace-nowrap ${
-                  difficulty === "Easy"
-                    ? "bg-green-100 text-green-700"
-                    : difficulty === "Medium"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {difficulty}
+              <span className={`dsa-difficulty ${problem.difficulty.toLowerCase()}`}>
+                {problem.difficulty}
               </span>
-
             </div>
 
-            <p className="leading-7 text-slate-700 text-lg border-l-4 border-blue-200 pl-4 bg-slate-50 p-3 rounded-r-lg">
-              {currentProblem.description}
-            </p>
+            <p className="dsa-question-description">{problem.description}</p>
 
-            {/* EXAMPLE */}
-            <div className="mt-6 rounded-xl bg-slate-900 p-5 text-sm text-white font-mono shadow-inner overflow-x-auto">
-
-              <p className="mb-3 font-semibold text-slate-400 uppercase tracking-widest text-xs">
-                Example
-              </p>
-
-              <p>
-                <span className="text-blue-400 font-bold">
-                  Input:
-                </span>{" "}
-                {currentProblem.input}
-              </p>
-
-              <p className="mt-2">
-                <span className="text-green-400 font-bold">
-                  Output:
-                </span>{" "}
-                {currentProblem.output}
-              </p>
-
-              <p className="mt-3 text-slate-400 italic border-t border-slate-700 pt-2 text-xs">
-                Explanation:{" "}
-                {currentProblem.explanation}
-              </p>
-
-            </div>
-
-            {/* AI COACH */}
-            <div className="mt-auto pt-6">
-
-              <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-5">
-
-                <div className="flex items-center justify-between gap-4">
-
-                  <div>
-
-                    <h3 className="font-bold text-blue-900 flex items-center gap-2">
-                      🤖 AI Coach
-                    </h3>
-
-                    <p className="text-xs text-blue-700 mt-1">
-
-                      {hintLevel <
-                      currentProblem.hints.length
-                        ? `Stuck? Take a hint (${hintLevel}/${currentProblem.hints.length})`
-                        : "All 5 hints revealed!"}
-
-                    </p>
-
-                  </div>
-
-                  <button
-                    onClick={handleHint}
-                    disabled={
-                      hintLevel >=
-                      currentProblem.hints.length
-                    }
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
-                  >
-                    💡{" "}
-                    {hintLevel >=
-                    currentProblem.hints.length
-                      ? "All Hints"
-                      : "Get Hint"}
-                  </button>
-
+            {problem.examples.map((example, index) => (
+              <div className="dsa-example-card" key={index}>
+                <div className="dsa-example-title">
+                  <span>▣</span> EXAMPLE {index + 1}
                 </div>
-
-                {/* HINTS */}
-                {showHint && (
-                  <div className="mt-4 flex flex-col gap-2">
-
-                    {currentProblem.hints
-                      .slice(0, hintLevel)
-                      .map(
-                        (
-                          hint,
-                          index
-                        ) => (
-                          <div
-                            key={index}
-                            className="rounded-lg bg-white p-3 text-sm text-slate-700 shadow-sm border border-slate-100 flex gap-3 items-start"
-                          >
-
-                            <span className="bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded text-xs">
-                              {index + 1}
-                            </span>
-
-                            <p className="mt-0.5 font-medium">
-                              {hint}
-                            </p>
-
-                          </div>
-                        )
-                      )}
-
-                  </div>
-                )}
-
+                <div className="dsa-example-line">
+                  <strong>Input:</strong>
+                  <code>{example.input}</code>
+                </div>
+                <div className="dsa-example-line">
+                  <strong>Output:</strong>
+                  <code>{example.output}</code>
+                </div>
+                <div className="dsa-example-explanation">
+                  <strong>Explanation:</strong> {example.explanation}
+                </div>
               </div>
+            ))}
 
+            <div className="dsa-hint-box">
+              <button
+                className="dsa-hint-toggle"
+                onClick={() => setShowHint((current) => !current)}
+                type="button"
+                aria-expanded={showHint}
+              >
+                <span>💡</span>
+                <span>{showHint ? "Hide Hint" : "Need a hint?"}</span>
+                <span className="dsa-hint-arrow">{showHint ? "−" : "+"}</span>
+              </button>
+
+              {showHint && <p>{problem.hint}</p>}
             </div>
-          </div>
 
-          {/* CODE EDITOR */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100 flex flex-col">
-
-            <div className="mb-4 flex items-center justify-between">
-
+            <div className="dsa-complexity-card">
               <div>
+                <span>⏱</span>
+                <div>
+                  <small>Time Complexity</small>
+                  <strong>{problem.time}</strong>
+                </div>
+              </div>
+              <div>
+                <span>◫</span>
+                <div>
+                  <small>Space Complexity</small>
+                  <strong>{problem.space}</strong>
+                </div>
+              </div>
+            </div>
 
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  💻 Editor
+            <div className="dsa-question-footer">
+              <span>✦ Keep learning, one problem at a time.</span>
+            </div>
+          </section>
+
+          <section className="dsa-editor-panel">
+            <div className="dsa-editor-heading">
+              <div>
+                <h2>
+                  <span>⌘</span> Code Editor
                 </h2>
-
-                <p className="mt-1 text-sm font-medium text-slate-500">
-                  {language} Workspace
-                </p>
-
+                <p>{language} Development Workspace</p>
               </div>
 
               <button
-                onClick={handleResetCode}
-                disabled={isRunning}
-                className="text-sm font-semibold text-slate-500 hover:text-red-500 transition px-3 py-1 bg-slate-100 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                className="dsa-reset-button"
+                onClick={handleReset}
+                type="button"
               >
-                🔄 Reset Code
+                ↻ Reset Code
               </button>
-
             </div>
 
-            {/* EDITOR */}
-            <div className="overflow-hidden rounded-xl bg-slate-950 flex-grow shadow-inner">
+            <div className="dsa-code-window">
+              <div className="dsa-code-titlebar">
+                <div className="dsa-window-dots">
+                  <i />
+                  <i />
+                  <i />
+                </div>
 
-              <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3 bg-slate-900">
-
-                <span className="h-3 w-3 rounded-full bg-red-500"></span>
-
-                <span className="h-3 w-3 rounded-full bg-yellow-500"></span>
-
-                <span className="h-3 w-3 rounded-full bg-green-500"></span>
-
-                <span className="ml-3 text-xs font-mono text-slate-400">
-
-                  {language === "Java"
-                    ? "Main.java"
+                <span>
+                  main.
+                  {language === "JavaScript"
+                    ? "js"
                     : language === "Python"
-                    ? "main.py"
-                    : language === "JavaScript"
-                    ? "main.js"
-                    : "main.cpp"}
-
+                      ? "py"
+                      : language === "Java"
+                        ? "java"
+                        : "cpp"}
                 </span>
 
+                <span className="dsa-code-language">{language}</span>
               </div>
 
-              <textarea
-                value={code}
-                onChange={(e) =>
-                  setCode(e.target.value)
-                }
-                onKeyDown={handleKeyDown}
-                spellCheck="false"
-                disabled={isRunning}
-                className="h-[380px] w-full resize-none bg-slate-950 p-5 font-mono text-[15px] leading-relaxed text-green-400 outline-none focus:ring-1 focus:ring-slate-700 disabled:opacity-70"
-              />
-
-            </div>
-
-            {/* ACTION BUTTONS */}
-            <div className="mt-5 flex flex-wrap gap-3">
-
-              <button
-                onClick={handleRunCode}
-                disabled={isRunning}
-                className="flex-1 rounded-xl bg-slate-800 px-5 py-3 font-semibold text-white transition hover:bg-slate-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isRunning
-                  ? "⏳ Running..."
-                  : "▶ Run Code"}
-              </button>
-
-              <button
-                onClick={handleSubmit}
-                disabled={isRunning}
-                className="flex-1 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 shadow-md shadow-blue-200 disabled:opacity-50"
-              >
-                🚀 Submit
-              </button>
-
-              <button
-                onClick={handleNextProblem}
-                disabled={isRunning}
-                className="w-full md:w-auto rounded-xl border-2 border-slate-200 px-5 py-3 font-bold text-slate-700 transition hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50"
-              >
-                Next Problem ➔
-              </button>
-
-            </div>
-
-            {/* RESULT */}
-            {result && (
-              <div
-                className={`mt-5 rounded-xl p-4 text-sm font-medium border ${
-                  result.type === "success"
-                    ? "bg-green-50 text-green-800 border-green-200"
-                    : result.type === "error"
-                    ? "bg-red-50 text-red-800 border-red-200"
-                    : "bg-blue-50 text-blue-800 border-blue-200"
-                }`}
-              >
-
-                <div className="flex gap-3 items-start">
-
-                  <span className="text-xl">
-
-                    {result.type === "success"
-                      ? "✅"
-                      : result.type === "error"
-                      ? "❌"
-                      : "ℹ️"}
-
-                  </span>
-
-                  <pre className="whitespace-pre-wrap break-words font-sans">
-                    {result.message}
-                  </pre>
-
+              <div className="dsa-code-body">
+                <div className="dsa-line-numbers" aria-hidden="true">
+                  {code.split("\n").map((_, index) => (
+                    <div key={index}>{index + 1}</div>
+                  ))}
                 </div>
 
+                <textarea
+                  className="dsa-code-textarea"
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                  spellCheck="false"
+                  aria-label="Code editor"
+                  autoCapitalize="off"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  wrap="off"
+                />
               </div>
-            )}
 
-          </div>
+              <div className="dsa-editor-status">
+                <span><i /> Editor Ready</span>
+                <span>UTF-8</span>
+                <span>{language}</span>
+              </div>
+            </div>
+
+            <div className="dsa-editor-actions">
+              <button
+                className="dsa-run-button"
+                onClick={handleRun}
+                type="button"
+              >
+                ▶ Run Code
+              </button>
+
+              <button
+                className="dsa-submit-button"
+                onClick={handleSubmit}
+                type="button"
+              >
+                ✓ Submit Solution
+              </button>
+
+              <button
+                className="dsa-clear-button"
+                onClick={() => {
+                  setOutput("");
+                  setResults([]);
+                  setAttempted(false);
+                }}
+                type="button"
+              >
+                Clear Output
+              </button>
+
+              <button
+                className="dsa-next-button"
+                onClick={handleNextProblem}
+                type="button"
+              >
+                Next Problem →
+              </button>
+            </div>
+
+            <div className="dsa-output-panel">
+              <div className="dsa-output-tabs">
+                <div>
+                  <button
+                    className={activeTab === "Testcases" ? "active" : ""}
+                    onClick={() => setActiveTab("Testcases")}
+                    type="button"
+                  >
+                    ▣ Testcases
+                  </button>
+                  <button
+                    className={activeTab === "Output" ? "active" : ""}
+                    onClick={() => setActiveTab("Output")}
+                    type="button"
+                  >
+                    ▷ Output
+                  </button>
+                </div>
+                <span>CONSOLE</span>
+              </div>
+
+              {activeTab === "Testcases" ? (
+                <div className="dsa-test-results">
+                  {results.length ? (
+                    <>
+                      <div className={`dsa-submission-summary ${results.every((item) => item.passed) ? "accepted" : "failed"}`}>
+                        <strong>
+                          {results.every((item) => item.passed)
+                            ? attempted
+                              ? "Accepted"
+                              : "All tests passed"
+                            : attempted
+                              ? "Wrong Answer"
+                              : "Some tests failed"}
+                        </strong>
+                        <span>
+                          {results.filter((item) => item.passed).length} /{" "}
+                          {results.length} test cases passed
+                        </span>
+                      </div>
+
+                      {results.map((result) => (
+                        <div
+                          className={`dsa-test-case ${result.passed ? "passed" : "failed"}`}
+                          key={result.number}
+                        >
+                          <div>
+                            <strong>
+                              {result.passed ? "✓" : "✕"} Test Case{" "}
+                              {result.number}
+                            </strong>
+                            <span>{result.passed ? "Passed" : "Failed"}</span>
+                          </div>
+                          <p>Expected: {result.expected}</p>
+                          <p>Actual: {result.actual}</p>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div className="dsa-empty-output">
+                      <span>⌘</span>
+                      <strong>No test results yet</strong>
+                      <p>
+                        Click Run Code to test your solution or Submit Solution
+                        to validate all test cases.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <pre className="dsa-output-content">
+                  {output || "Your output will appear here after running or submitting your solution."}
+                </pre>
+              )}
+            </div>
+          </section>
         </div>
 
-        {/* PROGRESS */}
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-
-          <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-md text-white">
-
-            <p className="text-sm font-medium text-blue-100">
-              Problems Solved
-            </p>
-
-            <p className="mt-2 text-4xl font-black">
-              {problemsSolved}
-            </p>
-
-            <p className="mt-1 text-sm font-medium text-blue-100">
-              Keep crushing it! 🔥
-            </p>
-
-          </div>
-
-          <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
-
-            <p className="text-sm font-semibold text-slate-500">
-              Current Target
-            </p>
-
-            <p className="mt-2 text-2xl font-bold text-slate-900">
-              {topic}
-            </p>
-
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              {difficulty} Level
-            </p>
-
-          </div>
-
-          <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
-
-            <p className="text-sm font-semibold text-slate-500">
-              AI Coach Status
-            </p>
-
-            <p className="mt-2 text-2xl font-bold text-green-500 flex items-center gap-2">
-
-              <span className="relative flex h-3 w-3">
-
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-
-              </span>
-
-              Monitoring
-
-            </p>
-
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              5 hints available per problem
-            </p>
-
-          </div>
-
-        </div>
-
+        <footer className="dsa-footer">
+          <span>Career AI</span>
+          <span>Practice smart. Think clearly. Get interview-ready.</span>
+        </footer>
       </div>
-    </div>
+    </main>
   );
-};
-
-export default DSACoach;
+}

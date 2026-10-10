@@ -1,764 +1,393 @@
-import React, { useState } from 'react';
-import {
-  UploadCloud,
-  Search,
-  CheckCircle2,
-  FileText,
-  BarChart3,
-  Loader2,
-  AlertCircle,
-  XCircle,
-  Lightbulb,
-  TrendingUp,
-  AlertTriangle,
-} from 'lucide-react';
 
-const ResumeAnalyzerUI = () => {
-  const [jobRole, setJobRole] = useState('MERN STACK DEVELOPMENT');
-  const [file, setFile] = useState(null);
+import React, { useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import "./ResumeAnalyzer.css";
 
-  const [analysis, setAnalysis] = useState(null);
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+export default function ResumeAnalyzer() {
+  const fileInputRef = useRef(null);
+
+  const [targetRole, setTargetRole] = useState("MERN Stack Developer");
+  const [resume, setResume] = useState(null);
+  const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
 
-  // ==============================
-  // ANALYZE RESUME
-  // ==============================
-  const handleAnalyze = async (e) => {
-    e.preventDefault();
+  const chooseFile = (file) => {
+    setError("");
+    setResult(null);
 
-    if (!file) {
-      setError('Please upload your resume PDF first.');
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      setError("Please upload your resume in PDF format.");
       return;
     }
 
-    if (!jobRole.trim()) {
-      setError('Please enter a target job role.');
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File size must be less than 5 MB.");
       return;
     }
+
+    setResume(file);
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setResult(null);
+
+    if (!targetRole.trim()) {
+      setError("Please enter your target job role.");
+      return;
+    }
+
+    if (!resume) {
+      setError("Please upload your resume PDF first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("resume", resume);
+    formData.append("targetRole", targetRole.trim());
 
     setLoading(true);
-    setError('');
-    setAnalysis(null);
 
     try {
-      const formData = new FormData();
+      const token = localStorage.getItem("careerAI_token");
 
-      // PDF file
-      formData.append('resume', file);
+      const response = await fetch(`${API_URL}/api/resume/analyze`, {
+        method: "POST",
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
+          : {},
+        body: formData,
+      });
 
-      // Backend expects targetRole
-      formData.append('targetRole', jobRole);
+      const data = await response.json();
 
-      const response = await fetch(
-        'http://localhost:5000/api/resume/analyze',
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
-      const result = await response.json();
-
-      console.log('FULL API RESPONSE:', result);
-
-      if (!response.ok) {
+      if (!response.ok || data.success === false) {
         throw new Error(
-          result.message || 'Resume analysis failed.'
+          data.message || "Resume analysis failed. Please try again."
         );
       }
 
-      if (!result.data) {
-        throw new Error(
-          'Analysis data was not returned by the server.'
-        );
-      }
-
-      // Backend response:
-      // {
-      //   success: true,
-      //   data: analysis
-      // }
-      setAnalysis(result.data);
-
+      setResult(data.data || data.result || data);
     } catch (err) {
-      console.error('Analysis Error:', err);
-
+      console.error("Resume Analyzer Error:", err);
       setError(
-        err.message || 'Something went wrong while analyzing resume.'
+        err.message ||
+          "Unable to connect to the server. Please check your backend."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // ==============================
-  // API DATA
-  // ==============================
-
-  const score = Math.min(
-    100,
-    Math.max(
-      0,
-      Number(
-        analysis?.atsScore ??
-        analysis?.score ??
-        analysis?.atsMatchScore ??
-        0
-      )
-    )
-  );
-
-  const summary =
-    analysis?.summary ??
-    analysis?.executiveSummary ??
-    analysis?.aiSummary ??
-    'No summary available.';
-
-  const matchedSkills = Array.isArray(
-    analysis?.matchedSkills
-  )
-    ? analysis.matchedSkills
-    : Array.isArray(analysis?.skills?.matched)
-      ? analysis.skills.matched
-      : [];
-
-  const missingSkills = Array.isArray(
-    analysis?.missingSkills
-  )
-    ? analysis.missingSkills
-    : Array.isArray(analysis?.skills?.missing)
-      ? analysis.skills.missing
-      : [];
-
-  const strengths = Array.isArray(
-    analysis?.strengths
-  )
-    ? analysis.strengths
-    : [];
-
-  const weaknesses = Array.isArray(
-    analysis?.weaknesses
-  )
-    ? analysis.weaknesses
-    : [];
-
-  const improvementSuggestions = Array.isArray(
-    analysis?.improvementSuggestions
-  )
-    ? analysis.improvementSuggestions
-    : [];
-
-  // ==============================
-  // SCORE LABEL
-  // ==============================
-
-  const getScoreLabel = () => {
-    if (score >= 80) return 'Excellent Match';
-    if (score >= 60) return 'Good Match';
-    if (score >= 40) return 'Average Match';
-    return 'Needs Improvement';
+  const resetForm = () => {
+    setResume(null);
+    setResult(null);
+    setError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const getScoreColor = () => {
-    if (score >= 80) return 'bg-emerald-50 text-emerald-700';
-    if (score >= 60) return 'bg-blue-50 text-blue-700';
-    if (score >= 40) return 'bg-yellow-50 text-yellow-700';
-    return 'bg-red-50 text-red-700';
+  const getScore = () => {
+    const candidates = [
+      result?.atsScore,
+      result?.score,
+      result?.ats_score,
+      result?.analysis?.atsScore,
+    ];
+
+    const value = candidates.find(
+      (item) => item !== undefined && item !== null && !Number.isNaN(Number(item))
+    );
+
+    return value === undefined ? null : Math.max(0, Math.min(100, Number(value)));
   };
+
+  const score = result ? getScore() : null;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-12 px-4 sm:px-6 lg:px-8 font-sans">
+    <main className="resume-page">
+      <section className="resume-hero">
+        <div className="resume-hero-content">
+          <div className="resume-eyebrow">
+            <span className="resume-live-dot" />
+            CAREER AI · SMART CAREER TOOLS
+          </div>
 
-      <div className="max-w-5xl mx-auto space-y-10">
-
-        {/* =========================================
-            HEADER
-        ========================================= */}
-        <div className="text-center space-y-3">
-
-          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight">
-            AI Resume Analyzer
+          <h1>
+            Your next opportunity
+            <br />
+            starts with a <span>stronger resume.</span>
           </h1>
 
-          <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto">
-            Apna resume analyze karke ATS Score aur recommendations dekhein
+          <p>
+            Get AI-powered resume feedback, improve your ATS compatibility,
+            and discover what recruiters want to see.
           </p>
 
+          <div className="resume-hero-points">
+            <span>✦ ATS insights</span>
+            <span>✦ Skill gap analysis</span>
+            <span>✦ Actionable feedback</span>
+          </div>
         </div>
 
+        <div className="resume-hero-art" aria-hidden="true">
+          <div className="resume-orbit orbit-one" />
+          <div className="resume-orbit orbit-two" />
 
-        {/* =========================================
-            INPUT CARD
-        ========================================= */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+          <div className="resume-document">
+            <div className="resume-document-top">
+              <span className="resume-document-icon">✦</span>
+              <span className="resume-document-label">RESUME</span>
+            </div>
+            <div className="resume-document-avatar">👨‍💻</div>
+            <div className="resume-document-line line-long" />
+            <div className="resume-document-line line-medium" />
+            <div className="resume-document-section">EXPERIENCE</div>
+            <div className="resume-document-line line-long" />
+            <div className="resume-document-line line-short" />
+            <div className="resume-document-section">SKILLS</div>
+            <div className="resume-skill-pills">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="resume-check">✓</div>
+          </div>
 
-          <div className="p-8 md:p-10">
+          <div className="resume-floating-card">
+            <span className="resume-floating-icon">✧</span>
+            <div>
+              <strong>AI powered</strong>
+              <small>Resume insights</small>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            <form
-              onSubmit={handleAnalyze}
-              className="space-y-8"
-            >
+      <section className="resume-workspace">
+        <div className="resume-section-heading">
+          <div>
+            <span className="resume-section-kicker">LET'S GET STARTED</span>
+            <h2>Analyze your resume</h2>
+            <p>Upload your resume and tell us which role you're targeting.</p>
+          </div>
+          <span className="resume-secure-pill">♧ Private & secure</span>
+        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <form className="resume-form" onSubmit={handleSubmit}>
+          <div className="resume-form-grid">
+            <div className="resume-field">
+              <label htmlFor="targetRole">
+                <span className="resume-label-icon">⌕</span>
+                Target job role
+              </label>
 
-                {/* JOB ROLE */}
-                <div className="space-y-3">
+              <input
+                id="targetRole"
+                type="text"
+                value={targetRole}
+                onChange={(event) => setTargetRole(event.target.value)}
+                placeholder="e.g. MERN Stack Developer"
+                maxLength={120}
+              />
 
-                  <label className="flex items-center text-sm font-bold text-slate-700 uppercase tracking-wider">
+              <small>
+                Choose the role you want to apply for.
+              </small>
+            </div>
 
-                    <Search className="w-4 h-4 mr-2 text-blue-500" />
+            <div className="resume-field">
+              <label>
+                <span className="resume-label-icon">↥</span>
+                Upload your resume
+              </label>
 
-                    Target Job Role
-
-                  </label>
-
-                  <input
-                    type="text"
-                    value={jobRole}
-                    onChange={(e) => {
-                      setJobRole(e.target.value);
-                      setError('');
-                    }}
-                    placeholder="e.g. Data Analyst"
-                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-slate-700 font-medium transition-all outline-none"
-                  />
-
-                  <p className="text-xs text-slate-400">
-                    Example: MERN Developer, Data Analyst,
-                    Java Developer, Frontend Developer
-                  </p>
-
-                </div>
-
-
-                {/* FILE UPLOAD */}
-                <div className="space-y-3">
-
-                  <label className="flex items-center text-sm font-bold text-slate-700 uppercase tracking-wider">
-
-                    <UploadCloud className="w-4 h-4 mr-2 text-blue-500" />
-
-                    Upload Resume (PDF)
-
-                  </label>
-
-                  <div className="relative group">
-
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => {
-
-                        const selectedFile =
-                          e.target.files?.[0];
-
-                        setFile(selectedFile || null);
-                        setError('');
-                        setAnalysis(null);
-
-                      }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-
-                    <div className="w-full px-5 py-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl group-hover:border-blue-500 group-hover:bg-blue-50 transition-all flex items-center justify-between">
-
-                      <span className="text-slate-500 font-medium truncate">
-
-                        {file
-                          ? file.name
-                          : 'Choose File or Drag & Drop'}
-
-                      </span>
-
-                      <span className="bg-white text-blue-600 text-sm font-bold px-4 py-2 rounded-lg shadow-sm border border-slate-200">
-
-                        Browse
-
-                      </span>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-
-              {/* ERROR */}
-              {error && (
-
-                <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
-
-                  <AlertCircle className="w-5 h-5 shrink-0" />
-
-                  <span>
-                    {error}
-                  </span>
-
-                </div>
-
-              )}
-
-
-              {/* ANALYZE BUTTON */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full md:w-auto md:px-12 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center mx-auto"
+              <div
+                className={`resume-dropzone ${dragging ? "is-dragging" : ""} ${
+                  resume ? "has-file" : ""
+                }`}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setDragging(false);
+                  chooseFile(event.dataTransfer.files?.[0]);
+                }}
               >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  className="resume-hidden-input"
+                  onChange={(event) =>
+                    chooseFile(event.target.files?.[0])
+                  }
+                />
 
-                {loading ? (
-
+                {resume ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-
-                    Analyzing Resume...
-
+                    <div className="resume-file-icon">PDF</div>
+                    <div className="resume-file-details">
+                      <strong>{resume.name}</strong>
+                      <span>
+                        {(resume.size / (1024 * 1024)).toFixed(2)} MB · Ready
+                        to analyze
+                      </span>
+                    </div>
+                    <button
+                      className="resume-remove-file"
+                      type="button"
+                      onClick={() => {
+                        setResume(null);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = "";
+                        }
+                      }}
+                      aria-label="Remove resume"
+                    >
+                      ×
+                    </button>
                   </>
-
                 ) : (
-
                   <>
-                    <BarChart3 className="w-5 h-5 mr-2" />
-
-                    Analyze Resume
-
+                    <div className="resume-upload-icon">↑</div>
+                    <div className="resume-upload-copy">
+                      <strong>Drop your PDF resume here</strong>
+                      <span>or browse files from your computer</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="resume-browse-button"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Browse files
+                    </button>
                   </>
-
                 )}
+              </div>
 
-              </button>
-
-            </form>
-
+              <small>PDF format only · Maximum file size: 5 MB</small>
+            </div>
           </div>
 
-        </div>
+          {error && (
+            <div className="resume-alert" role="alert">
+              <span>!</span>
+              {error}
+            </div>
+          )}
 
-
-        {/* =========================================
-            ANALYSIS RESULT
-        ========================================= */}
-        {analysis && (
-
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-            <h2 className="text-2xl font-bold text-slate-800 flex items-center">
-
-              <BarChart3 className="w-6 h-6 mr-3 text-indigo-500" />
-
-              Analysis Result
-
-            </h2>
-
-
-            {/* SCORE + SUMMARY */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-
-              {/* =====================================
-                  ATS SCORE
-              ===================================== */}
-              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col items-center justify-center">
-
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">
-                  ATS Match Score
-                </h3>
-
-                <div className="relative w-40 h-40 flex items-center justify-center">
-
-                  <svg
-                    className="w-full h-full transform -rotate-90"
-                    viewBox="0 0 160 160"
-                  >
-
-                    {/* Background */}
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r="70"
-                      className="stroke-slate-100"
-                      strokeWidth="12"
-                      fill="none"
-                    />
-
-                    {/* Progress */}
-                    <circle
-                      cx="80"
-                      cy="80"
-                      r="70"
-                      className="stroke-blue-500"
-                      strokeWidth="12"
-                      fill="none"
-                      strokeDasharray="440"
-                      strokeDashoffset={
-                        440 - (440 * score) / 100
-                      }
-                      strokeLinecap="round"
-                    />
-
-                  </svg>
-
-
-                  <div className="absolute flex flex-col items-center">
-
-                    <span className="text-5xl font-black text-slate-800">
-                      {score}
-                    </span>
-
-                    <span className="text-sm font-bold text-slate-400">
-                      / 100
-                    </span>
-
-                  </div>
-
-                </div>
-
-
-                <div
-                  className={`mt-6 px-4 py-2 rounded-full text-sm font-bold ${getScoreColor()}`}
-                >
-                  {getScoreLabel()}
-                </div>
-
-              </div>
-
-
-              {/* =====================================
-                  SUMMARY
-              ===================================== */}
-              <div className="lg:col-span-2">
-
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 shadow-xl text-white h-full">
-
-                  <div className="flex items-center gap-3 mb-4">
-
-                    <div className="p-2 bg-white/10 rounded-lg">
-
-                      <FileText className="w-5 h-5 text-blue-300" />
-
-                    </div>
-
-                    <div>
-
-                      <h3 className="text-lg font-bold">
-                        AI Executive Summary
-                      </h3>
-
-                      <p className="text-xs text-slate-400 mt-1">
-                        Analysis for: {jobRole}
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                  <p className="text-slate-300 leading-relaxed text-sm md:text-base">
-                    {summary}
-                  </p>
-
-                </div>
-
-              </div>
-
+          <div className="resume-form-actions">
+            <div className="resume-form-note">
+              <span>✦</span>
+              AI-powered feedback tailored to your target role
             </div>
 
-
-            {/* =========================================
-                SKILLS SECTION
-            ========================================= */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-
-              {/* =====================================
-                  MATCHED SKILLS
-              ===================================== */}
-              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
-
-                <div className="flex items-center gap-3 mb-6">
-
-                  <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-
-                  <div>
-
-                    <h3 className="text-lg font-bold text-slate-800">
-                      Matched Skills
-                    </h3>
-
-                    <p className="text-xs text-slate-400">
-                      Skills found in your resume
-                    </p>
-
-                  </div>
-
-                </div>
-
-
-                {matchedSkills.length > 0 ? (
-
-                  <div className="flex flex-wrap gap-2">
-
-                    {matchedSkills.map((skill, index) => (
-
-                      <span
-                        key={index}
-                        className="px-4 py-2 bg-emerald-50 text-emerald-700 text-sm font-bold rounded-xl border border-emerald-100"
-                      >
-                        {skill}
-                      </span>
-
-                    ))}
-
-                  </div>
-
-                ) : (
-
-                  <p className="text-slate-500">
-                    No matched skills found.
-                  </p>
-
-                )}
-
-              </div>
-
-
-              {/* =====================================
-                  MISSING SKILLS
-              ===================================== */}
-              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
-
-                <div className="flex items-center gap-3 mb-6">
-
-                  <XCircle className="w-6 h-6 text-red-500" />
-
-                  <div>
-
-                    <h3 className="text-lg font-bold text-slate-800">
-                      Missing / Mismatch Skills
-                    </h3>
-
-                    <p className="text-xs text-slate-400">
-                      Skills important for this job role
-                    </p>
-
-                  </div>
-
-                </div>
-
-
-                {missingSkills.length > 0 ? (
-
-                  <div className="flex flex-wrap gap-2">
-
-                    {missingSkills.map((skill, index) => (
-
-                      <span
-                        key={index}
-                        className="px-4 py-2 bg-red-50 text-red-700 text-sm font-bold rounded-xl border border-red-100"
-                      >
-                        {skill}
-                      </span>
-
-                    ))}
-
-                  </div>
-
-                ) : (
-
-                  <p className="text-emerald-600 font-medium">
-                    Great! No major missing skills detected for this role.
-                  </p>
-
-                )}
-
-              </div>
-
-            </div>
-
-
-            {/* =========================================
-                STRENGTHS + WEAKNESSES
-            ========================================= */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-
-              {/* STRENGTHS */}
-              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
-
-                <div className="flex items-center gap-3 mb-6">
-
-                  <TrendingUp className="w-6 h-6 text-emerald-500" />
-
-                  <h3 className="text-lg font-bold text-slate-800">
-                    Strengths
-                  </h3>
-
-                </div>
-
-
-                {strengths.length > 0 ? (
-
-                  <ul className="space-y-3">
-
-                    {strengths.map((item, index) => (
-
-                      <li
-                        key={index}
-                        className="flex items-start gap-3 text-sm text-slate-600"
-                      >
-
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-
-                        <span>
-                          {item}
-                        </span>
-
-                      </li>
-
-                    ))}
-
-                  </ul>
-
-                ) : (
-
-                  <p className="text-slate-500">
-                    No strengths available.
-                  </p>
-
-                )}
-
-              </div>
-
-
-              {/* WEAKNESSES */}
-              <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
-
-                <div className="flex items-center gap-3 mb-6">
-
-                  <AlertTriangle className="w-6 h-6 text-orange-500" />
-
-                  <h3 className="text-lg font-bold text-slate-800">
-                    Weaknesses
-                  </h3>
-
-                </div>
-
-
-                {weaknesses.length > 0 ? (
-
-                  <ul className="space-y-3">
-
-                    {weaknesses.map((item, index) => (
-
-                      <li
-                        key={index}
-                        className="flex items-start gap-3 text-sm text-slate-600"
-                      >
-
-                        <AlertCircle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
-
-                        <span>
-                          {item}
-                        </span>
-
-                      </li>
-
-                    ))}
-
-                  </ul>
-
-                ) : (
-
-                  <p className="text-slate-500">
-                    No weaknesses available.
-                  </p>
-
-                )}
-
-              </div>
-
-            </div>
-
-
-            {/* =========================================
-                IMPROVEMENT SUGGESTIONS
-            ========================================= */}
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl p-8 border border-blue-100 shadow-xl shadow-blue-100/50">
-
-              <div className="flex items-center gap-3 mb-6">
-
-                <div className="p-2 bg-white rounded-xl shadow-sm">
-
-                  <Lightbulb className="w-6 h-6 text-yellow-500" />
-
-                </div>
-
-                <div>
-
-                  <h3 className="text-lg font-bold text-slate-800">
-                    Improvement Suggestions
-                  </h3>
-
-                  <p className="text-sm text-slate-500">
-                    How to improve your resume for {jobRole}
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              {improvementSuggestions.length > 0 ? (
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                  {improvementSuggestions.map(
-                    (suggestion, index) => (
-
-                      <div
-                        key={index}
-                        className="bg-white rounded-2xl p-5 border border-blue-100"
-                      >
-
-                        <div className="flex items-start gap-3">
-
-                          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-sm font-bold shrink-0">
-                            {index + 1}
-                          </span>
-
-                          <p className="text-sm text-slate-600 leading-relaxed">
-                            {suggestion}
-                          </p>
-
-                        </div>
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
+            <button
+              type="submit"
+              className="resume-analyze-button"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="resume-spinner" />
+                  Analyzing resume...
+                </>
               ) : (
-
-                <p className="text-slate-500">
-                  No improvement suggestions available.
-                </p>
-
+                <>
+                  Analyze my resume <span>↗</span>
+                </>
               )}
-
-            </div>
-
+            </button>
           </div>
+        </form>
 
+        {loading && (
+          <div className="resume-loading-panel">
+            <div className="resume-loading-orb">✦</div>
+            <h3>Our AI is reviewing your resume</h3>
+            <p>Checking your profile against your target role...</p>
+          </div>
         )}
 
-      </div>
+        {result && !loading && (
+          <section className="resume-results" aria-live="polite">
+            <div className="resume-results-heading">
+              <div>
+                <span className="resume-section-kicker">YOUR RESULTS</span>
+                <h2>Resume analysis report</h2>
+                <p>Review the feedback and identify your next improvements.</p>
+              </div>
+              <button
+                type="button"
+                className="resume-secondary-button"
+                onClick={resetForm}
+              >
+                Analyze another
+              </button>
+            </div>
 
-    </div>
+            {score !== null && (
+              <div className="resume-score-card">
+                <div
+                  className="resume-score-ring"
+                  style={{ "--score": `${score * 3.6}deg` }}
+                >
+                  <div className="resume-score-inner">
+                    <strong>{score}</strong>
+                    <span>out of 100</span>
+                  </div>
+                </div>
+                <div className="resume-score-copy">
+                  <span className="resume-section-kicker">ATS COMPATIBILITY</span>
+                  <h3>
+                    {score >= 80
+                      ? "Great progress!"
+                      : score >= 60
+                      ? "Room to improve"
+                      : "Let's strengthen your resume"}
+                  </h3>
+                  <p>
+                    Use the recommendations below to improve your resume.
+                    This score is an estimate, not a guarantee of selection.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="resume-report-content">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {typeof result === "string"
+                  ? result
+                  : result.report ||
+                    result.analysis ||
+                    result.feedback ||
+                    result.design ||
+                    result.message ||
+                    JSON.stringify(result, null, 2)}
+              </ReactMarkdown>
+            </div>
+          </section>
+        )}
+      </section>
+
+      <footer className="resume-footer">
+        <span className="resume-footer-mark">✦</span>
+        <span>Built for your next career move.</span>
+        <span>Career AI · Resume Intelligence</span>
+      </footer>
+    </main>
   );
-};
-
-export default ResumeAnalyzerUI;
+}

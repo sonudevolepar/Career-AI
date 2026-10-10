@@ -14,7 +14,10 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+    ],
     credentials: true,
   })
 );
@@ -43,31 +46,28 @@ const resumeRoutes = require("./routes/resumeRoutes");
 const interviewRoutes = require("./routes/interviewRoutes");
 const roadmapRoutes = require("./routes/roadmapRoutes");
 const systemDesignRoutes = require("./routes/systemDesignRoutes");
+const jobRoutes = require("./routes/jobRoutes");
 
 // ======================================================
 // ROUTES REGISTRATION
 // ======================================================
 
-// Authentication
 app.use("/api/auth", authRoutes);
 
-// AI Assistant
 app.use("/api/ai-assistant", aiAssistantRoutes);
 
-// Razorpay Payment
 app.use("/api/payment", paymentRoutes);
 
-// Resume Analyzer
 app.use("/api/resume", resumeRoutes);
 
-// AI Mock Interview
 app.use("/api/interview", interviewRoutes);
 
-// AI Learning Roadmap
 app.use("/api/roadmap", roadmapRoutes);
 
-// AI System Design Coach
 app.use("/api/system-design", systemDesignRoutes);
+
+// JOB SEARCH + JOB APPLICATION
+app.use("/api/jobs", jobRoutes);
 
 // ======================================================
 // ROOT ROUTE
@@ -76,7 +76,7 @@ app.use("/api/system-design", systemDesignRoutes);
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Career AI Backend is running 🚀",
+    message: "Career AI Backend is running",
   });
 });
 
@@ -131,6 +131,8 @@ async function startServer() {
       console.log(
         `Career AI Backend running on http://127.0.0.1:${PORT}`
       );
+
+      console.log("Job Search API: /api/jobs/search");
     });
   } catch (error) {
     console.error("Backend startup error:", error.message);

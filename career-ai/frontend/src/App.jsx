@@ -1,341 +1,303 @@
 import React from "react";
-
+import { Routes, Route, Link } from "react-router-dom";
 import {
-  Routes,
-  Route,
-  Link,
-} from "react-router-dom";
+  ArrowRight,
+  Sparkles,
+  FileText,
+  BriefcaseBusiness,
+  Code2,
+  Video,
+  Map,
+  Network,
+  Crown,
+  CheckCircle2,
+  Zap,
+  Target,
+} from "lucide-react";
 
-import Navbar
-  from "./components/Navbar";
+import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
+import AIAssistant from "./components/AIAssistant/AIAssistant";
 
-import ProtectedRoute
-  from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import VerifyOTP from "./pages/VerifyOTP";
+import AdminDashboard from "./pages/AdminDashboard";
+import AllUsers from "./pages/AllUsers";
+import Premium from "./pages/Premium";
 
-import AdminRoute
-  from "./components/AdminRoute";
+import ResumeAnalyzerUI from "./components/ResumeAnalyzerUI";
+import DSACoach from "./components/DSACoach";
+import AIMockInterviewer from "./components/AIMockInterviewer";
+import AIRoadmap from "./components/AIRoadmap";
+import AISystemDesign from "./components/AISystemDesignCoach";
+import JobSearch from "./components/JobSearch";
 
-import AIAssistant
-  from "./components/AIAssistant/AIAssistant";
+import "./App.css";
 
-
-import Login
-  from "./pages/Login";
-
-import Register
-  from "./pages/Register";
-
-import VerifyOTP
-  from "./pages/VerifyOTP";
-
-import AdminDashboard
-  from "./pages/AdminDashboard";
-
-import AllUsers
-  from "./pages/AllUsers";
-
-import Premium
-  from "./pages/Premium";
-
-
-import ResumeAnalyzerUI
-  from "./components/ResumeAnalyzerUI";
-
-import DSACoach
-  from "./components/DSACoach";
-
-import AIMockInterviewer
-  from "./components/AIMockInterviewer";
-
-import AIRoadmap
-  from "./components/AIRoadmap";
-
-import AISystemDesign
-  from "./components/AISystemDesignCoach";
-
-import JobSearch
-  from "./components/JobSearch";
-
-
-/* =====================================
-   HOME
-===================================== */
+const features = [
+  {
+    title: "AI Resume Analyzer",
+    description:
+      "Analyze your resume, check ATS compatibility, and discover ways to improve your profile.",
+    path: "/resume-analyzer",
+    icon: FileText,
+    number: "01",
+    tag: "Career Profile",
+    color: "blue",
+  },
+  {
+    title: "AI Job Search",
+    description:
+      "Explore job opportunities based on your target role, location, and experience.",
+    path: "/job-search",
+    icon: BriefcaseBusiness,
+    number: "02",
+    tag: "Find Opportunities",
+    color: "purple",
+  },
+  {
+    title: "DSA Coach",
+    description:
+      "Practice coding problems, improve your problem-solving skills, and prepare for interviews.",
+    path: "/dsa-coach",
+    icon: Code2,
+    number: "03",
+    tag: "Coding Practice",
+    color: "cyan",
+  },
+  {
+    title: "AI Mock Interview",
+    description:
+      "Prepare for technical interviews and build confidence with structured practice.",
+    path: "/mock-interview",
+    icon: Video,
+    number: "04",
+    tag: "Interview Prep",
+    color: "orange",
+  },
+  {
+    title: "Career Roadmap",
+    description:
+      "Build a learning path for your target role with skills and actionable milestones.",
+    path: "/ai-roadmap",
+    icon: Map,
+    number: "05",
+    tag: "Career Growth",
+    color: "green",
+  },
+  {
+    title: "System Design Coach",
+    description:
+      "Learn architecture, databases, scalability, APIs, and engineering trade-offs.",
+    path: "/system-design",
+    icon: Network,
+    number: "06",
+    tag: "Advanced Learning",
+    color: "pink",
+  },
+];
 
 function Home() {
-
-  const features = [
-
-    {
-      title: "Resume Analyzer",
-      description:
-        "Get ATS score and AI-powered resume feedback.",
-      path: "/resume-analyzer",
-    },
-
-    {
-      title: "AI Job Search",
-      description:
-        "Find jobs based on your resume, skills and career goals.",
-      path: "/job-search",
-    },
-
-    {
-      title: "DSA Coach",
-      description:
-        "Learn Data Structures and Algorithms with AI guidance.",
-      path: "/dsa-coach",
-    },
-
-    {
-      title: "Mock Interview",
-      description:
-        "Practice technical interviews and get AI feedback.",
-      path: "/mock-interview",
-    },
-
-    {
-      title: "AI Career Roadmap",
-      description:
-        "Get a personalized career roadmap based on your skills and target role.",
-      path: "/ai-roadmap",
-    },
-
-    {
-      title: "AI System Design",
-      description:
-        "Practice system design problems and learn scalable architecture with AI.",
-      path: "/system-design",
-    },
-
-  ];
-
-
   return (
+    <main className="career-home">
+      <div className="home-background-glow home-glow-one" />
+      <div className="home-background-glow home-glow-two" />
 
-    <main className="min-h-screen bg-slate-950">
+      <div className="home-container">
+        <section className="career-hero">
+          <div className="hero-content">
+            <div className="hero-eyebrow">
+              <Sparkles size={15} />
+              <span>YOUR PERSONAL AI CAREER COMPANION</span>
+            </div>
 
-      <section className="max-w-7xl mx-auto px-6 py-16">
+            <h1>
+              Build your future.
+              <br />
+              <span>One skill at a time.</span>
+            </h1>
 
-        <div className="text-center">
+            <p className="hero-description">
+              Your all-in-one workspace to prepare for placements,
+              sharpen your coding skills, discover opportunities,
+              and become interview-ready.
+            </p>
 
-          <h1 className="text-5xl font-bold text-white">
-            Career AI
-          </h1>
+            <div className="hero-actions">
+              <Link to="/dsa-coach" className="hero-primary-button">
+                Start Learning
+                <ArrowRight size={18} />
+              </Link>
 
-          <p className="mt-5 text-lg text-slate-400 max-w-3xl mx-auto">
-            Your AI Career Companion
-          </p>
+              <Link to="/job-search" className="hero-secondary-button">
+                Explore Jobs
+              </Link>
+            </div>
 
-        </div>
+            <div className="hero-trust-line">
+              <span className="trust-icon">
+                <CheckCircle2 size={17} />
+              </span>
+              <span>Learn at your pace. Prepare with purpose.</span>
+            </div>
+          </div>
 
+          <div className="hero-visual">
+            <div className="visual-orbit orbit-one" />
+            <div className="visual-orbit orbit-two" />
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-
-          {features.map((feature) => (
-
-            <Link
-              key={feature.path}
-              to={feature.path}
-              className="bg-slate-900 border border-slate-800 p-6 rounded-2xl hover:border-purple-500 hover:-translate-y-1 transition"
-            >
-
-              <h2 className="text-xl font-bold mb-3 text-white">
-                {feature.title}
-              </h2>
-
-              <p className="text-slate-400">
-                {feature.description}
-              </p>
-
-              <div className="mt-5 text-purple-400 font-semibold">
-                Explore →
+            <div className="hero-center-card">
+              <div className="hero-center-icon">
+                <Sparkles size={35} />
               </div>
+              <span className="hero-center-label">CAREER AI</span>
+              <strong>Your next chapter starts here.</strong>
+              <p>Learn. Practice. Grow.</p>
+            </div>
 
-            </Link>
+            <div className="floating-card floating-card-top">
+              <span className="floating-icon floating-blue">
+                <Code2 size={19} />
+              </span>
+              <div>
+                <strong>DSA Practice</strong>
+                <small>Sharpen your logic</small>
+              </div>
+            </div>
 
-          ))}
+            <div className="floating-card floating-card-bottom">
+              <span className="floating-icon floating-purple">
+                <Target size={19} />
+              </span>
+              <div>
+                <strong>Career Goals</strong>
+                <small>Keep moving forward</small>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        </div>
+        <section className="home-section">
+          <div className="section-heading">
+            <div>
+              <div className="section-eyebrow">YOUR WORKSPACE</div>
+              <h2>Everything you need to grow</h2>
+              <p>
+                Choose a tool and take the next step toward your career goals.
+              </p>
+            </div>
 
+            <span className="feature-count">
+              <Sparkles size={15} />
+              6 AI-powered tools
+            </span>
+          </div>
 
-        {/* =================================
-            PREMIUM CARD
-        ================================= */}
+          <div className="career-feature-grid">
+            {features.map((feature) => {
+              const Icon = feature.icon;
 
-        <div className="mt-10 flex justify-center">
+              return (
+                <Link
+                  to={feature.path}
+                  className={`career-feature-card feature-${feature.color}`}
+                  key={feature.path}
+                >
+                  <div className="feature-card-top">
+                    <span className="feature-icon">
+                      <Icon size={24} strokeWidth={1.9} />
+                    </span>
 
-          <Link
-            to="/premium"
-            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-xl font-bold transition"
-          >
-            🚀 Upgrade to Premium
+                    <span className="feature-number">
+                      {feature.number}
+                    </span>
+                  </div>
+
+                  <span className="feature-tag">{feature.tag}</span>
+
+                  <h3>{feature.title}</h3>
+
+                  <p>{feature.description}</p>
+
+                  <div className="feature-card-link">
+                    Open tool
+                    <ArrowRight size={17} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="premium-banner">
+          <div className="premium-icon">
+            <Crown size={30} />
+          </div>
+
+          <div className="premium-content">
+            <span className="premium-eyebrow">
+              <Zap size={14} />
+              TAKE YOUR PREPARATION FURTHER
+            </span>
+
+            <h2>Ready to level up your career?</h2>
+
+            <p>
+              Explore Career AI Premium and see the available benefits
+              for your learning journey.
+            </p>
+          </div>
+
+          <Link to="/premium" className="premium-button">
+            Explore Premium
+            <ArrowRight size={18} />
           </Link>
+        </section>
 
-        </div>
-
-      </section>
-
+        <footer className="career-home-footer">
+          <span>
+            <Sparkles size={15} />
+            Career AI
+          </span>
+          <p>Learn today. Build tomorrow.</p>
+        </footer>
+      </div>
     </main>
-
   );
-
 }
-
-
-/* =====================================
-   APP
-===================================== */
 
 function App() {
-
   return (
-
-    <div className="min-h-screen bg-slate-950">
-
+    <div className="app-shell">
       <Navbar />
 
-
       <Routes>
-
-
-        {/* =================================
-            PUBLIC AUTH
-        ================================= */}
-
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/register"
-          element={<Register />}
-        />
-
-        <Route
-          path="/verify-otp"
-          element={<VerifyOTP />}
-        />
-
-
-        {/* =================================
-            ADMIN ROUTES
-        ================================= */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOTP />} />
 
         <Route element={<AdminRoute />}>
-
-
-          {/* Admin Dashboard */}
-
-          <Route
-            path="/admin"
-            element={<AdminDashboard />}
-          />
-
-
-          {/* All Users */}
-
-          <Route
-            path="/admin/users"
-            element={<AllUsers />}
-          />
-
-
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AllUsers />} />
         </Route>
-
-
-        {/* =================================
-            PROTECTED CAREER AI
-        ================================= */}
 
         <Route element={<ProtectedRoute />}>
-
-
-          {/* Home */}
-
-          <Route
-            path="/"
-            element={<Home />}
-          />
-
-
-          {/* Resume Analyzer */}
-
-          <Route
-            path="/resume-analyzer"
-            element={<ResumeAnalyzerUI />}
-          />
-
-
-          {/* Job Search */}
-
-          <Route
-            path="/job-search"
-            element={<JobSearch />}
-          />
-
-
-          {/* DSA Coach */}
-
-          <Route
-            path="/dsa-coach"
-            element={<DSACoach />}
-          />
-
-
-          {/* Mock Interview */}
-
-          <Route
-            path="/mock-interview"
-            element={<AIMockInterviewer />}
-          />
-
-
-          {/* AI Roadmap */}
-
-          <Route
-            path="/ai-roadmap"
-            element={<AIRoadmap />}
-          />
-
-
-          {/* System Design */}
-
-          <Route
-            path="/system-design"
-            element={<AISystemDesign />}
-          />
-
-
-          {/* =================================
-              PREMIUM
-          ================================= */}
-
-          <Route
-            path="/premium"
-            element={<Premium />}
-          />
-
-
+          <Route path="/" element={<Home />} />
+          <Route path="/resume-analyzer" element={<ResumeAnalyzerUI />} />
+          <Route path="/job-search" element={<JobSearch />} />
+          <Route path="/dsa-coach" element={<DSACoach />} />
+          <Route path="/mock-interview" element={<AIMockInterviewer />} />
+          <Route path="/ai-roadmap" element={<AIRoadmap />} />
+          <Route path="/system-design" element={<AISystemDesign />} />
+          <Route path="/premium" element={<Premium />} />
         </Route>
-
-
       </Routes>
 
-
-      {/* =====================================
-          AI ASSISTANT
-          Available on USER + ADMIN pages
-      ===================================== */}
-
       <AIAssistant />
-
-
     </div>
-
   );
-
 }
-
 
 export default App;
