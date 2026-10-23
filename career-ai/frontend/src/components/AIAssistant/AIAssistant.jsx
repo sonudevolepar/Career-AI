@@ -1,444 +1,343 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import "./AIAssistant.css";
 
+const API_URL = "http://localhost:5000/api/ai-assistant/chat";
+
+const INITIAL_MESSAGE = {
+  role: "assistant",
+  text: "Hi! I'm Career AI Assistant. How can I help you today?",
+  time: new Date(),
+};
+
+function cleanTextForSpeech(text = "") {
+  return text
+    .replace(/```[\w-]*\n?/g, "")
+    .replace(/```/g, "")
+    .replace(/!\[.*?\]\(.*?\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/#{1,6}\s?/g, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/[*_~`]/g, "")
+    .replace(/^\s*[-*]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function Avatar({ speaking, thinking, compact = false }) {
+  return (
+    <div
+      className={[
+        "career-avatar",
+        speaking ? "avatar-speaking" : "",
+        thinking ? "avatar-thinking" : "",
+        compact ? "avatar-compact" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      role="img"
+      aria-label={
+        speaking
+          ? "Career AI is speaking"
+          : thinking
+          ? "Career AI is thinking"
+          : "Career AI avatar"
+      }
+    >
+      <div className="avatar-aura" />
+      <div className="avatar-platform" />
+
+      <div className="avatar-body">
+        <div className="avatar-neck" />
+
+        <div className="avatar-jacket">
+          <div className="avatar-shirt" />
+          <div className="avatar-tie" />
+        </div>
+
+        <div className="avatar-arm avatar-arm-left">
+          <span className="avatar-hand" />
+        </div>
+
+        <div className="avatar-arm avatar-arm-right">
+          <span className="avatar-hand" />
+        </div>
+
+        <div className="avatar-head">
+          <div className="avatar-hair">
+            <span className="hair-lock hair-lock-one" />
+            <span className="hair-lock hair-lock-two" />
+          </div>
+
+          <div className="avatar-ear avatar-ear-left" />
+          <div className="avatar-ear avatar-ear-right" />
+
+          <div className="avatar-face">
+            <div className="avatar-eyebrow eyebrow-left" />
+            <div className="avatar-eyebrow eyebrow-right" />
+
+            <div className="avatar-eye eye-left">
+              <span />
+            </div>
+            <div className="avatar-eye eye-right">
+              <span />
+            </div>
+
+            <div className="avatar-nose" />
+
+            <div className="avatar-mouth">
+              <span className="mouth-inner" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="avatar-light avatar-light-one" />
+      <div className="avatar-light avatar-light-two" />
+    </div>
+  );
+}
+
+function formatInlineText(text) {
+  const parts = text.split(/(\*\*.*?\*\*|`[^`]*`|\*[^*]+\*)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code key={index}>{part.slice(1, -1)}</code>;
+    }
+
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return <em key={index}>{part.slice(1, -1)}</em>;
+    }
+
+    return <React.Fragment key={index}>{part}</React.Fragment>;
+  });
+}
+
+function renderAIResponse(text = "") {
+  const lines = text.split("\n");
+  const elements = [];
+  let bulletItems = [];
+  let numberedItems = [];
+  let codeLines = [];
+  let inCodeBlock = false;
+  let key = 0;
+
+  const flushLists = () => {
+    if (bulletItems.length) {
+      elements.push(
+        <ul className="ai-list" key={`ul-${key++}`}>
+          {bulletItems.map((item, index) => (
+            <li key={index}>{formatInlineText(item)}</li>
+          ))}
+        </ul>
+      );
+      bulletItems = [];
+    }
+
+    if (numberedItems.length) {
+      elements.push(
+        <ol className="ai-list numbered-list" key={`ol-${key++}`}>
+          {numberedItems.map((item, index) => (
+            <li key={index}>{formatInlineText(item)}</li>
+          ))}
+        </ol>
+      );
+      numberedItems = [];
+    }
+  };
+
+  const flushCode = () => {
+    elements.push(
+      <pre className="ai-code-block" key={`code-${key++}`}>
+        <code>{codeLines.join("\n")}</code>
+      </pre>
+    );
+    codeLines = [];
+  };
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith("```")) {
+      if (inCodeBlock) {
+        flushCode();
+        inCodeBlock = false;
+      } else {
+        flushLists();
+        inCodeBlock = true;
+      }
+      return;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      return;
+    }
+
+    if (!trimmed) {
+      flushLists();
+      return;
+    }
+
+    const heading = trimmed.match(/^(#{1,3})\s+(.*)$/);
+    if (heading) {
+      flushLists();
+      elements.push(
+        <h4 className="ai-heading" key={`heading-${key++}`}>
+          {formatInlineText(heading[2])}
+        </h4>
+      );
+      return;
+    }
+
+    if (/^[-*]\s+/.test(trimmed)) {
+      if (numberedItems.length) flushLists();
+      bulletItems.push(trimmed.replace(/^[-*]\s+/, ""));
+      return;
+    }
+
+    const numbered = trimmed.match(/^\d+\.\s+(.*)$/);
+    if (numbered) {
+      if (bulletItems.length) flushLists();
+      numberedItems.push(numbered[1]);
+      return;
+    }
+
+    flushLists();
+    elements.push(
+      <p className="ai-paragraph" key={`p-${key++}`}>
+        {formatInlineText(trimmed)}
+      </p>
+    );
+  });
+
+  flushLists();
+
+  if (inCodeBlock && codeLines.length) {
+    flushCode();
+  }
+
+  return elements;
+}
+
 function AIAssistant() {
   const [open, setOpen] = useState(false);
-
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      text: "Hi! 👋 I'm Career AI Assistant. How can I help you today?",
-      time: new Date(),
-    },
-  ]);
-
+  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceError, setVoiceError] = useState("");
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-
-
-  // ==========================================
-  // AUTO SCROLL
-  // ==========================================
+  const requestRef = useRef(null);
+  const mountedRef = useRef(true);
+  const voiceEnabledRef = useRef(true);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
+    voiceEnabledRef.current = voiceEnabled;
+  }, [voiceEnabled]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
-
-
-  // ==========================================
-  // FOCUS INPUT WHEN CHAT OPENS
-  // ==========================================
 
   useEffect(() => {
     if (open) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 200);
+      const timer = setTimeout(() => inputRef.current?.focus(), 150);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 
+  useEffect(() => {
+    mountedRef.current = true;
 
-  // ==========================================
-  // FORMAT INLINE TEXT
-  // ==========================================
+    return () => {
+      mountedRef.current = false;
+      requestRef.current?.abort();
 
-  const formatInlineText = (text) => {
-    const parts = [];
-    let remaining = text;
-    let key = 0;
-
-    const regex =
-      /(\*\*.*?\*\*|`.*?`)/g;
-
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-      const before = text.slice(
-        0,
-        match.index
-      );
-
-      if (before) {
-        parts.push(
-          <React.Fragment key={key++}>
-            {before}
-          </React.Fragment>
-        );
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
       }
+    };
+  }, []);
 
-      const value = match[0];
-
-      if (
-        value.startsWith("**") &&
-        value.endsWith("**")
-      ) {
-        parts.push(
-          <strong key={key++}>
-            {value.slice(2, -2)}
-          </strong>
-        );
-      } else if (
-        value.startsWith("`") &&
-        value.endsWith("`")
-      ) {
-        parts.push(
-          <code key={key++}>
-            {value.slice(1, -1)}
-          </code>
-        );
-      }
-
-      remaining = text.slice(
-        match.index + match[0].length
-      );
-
-      text = remaining;
-
-      regex.lastIndex = 0;
-      match = null;
-      break;
+  const stopSpeaking = () => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
 
-    if (remaining) {
-      const nestedParts = [];
-      const nestedRegex =
-        /(\*\*.*?\*\*|`.*?`)/g;
-
-      let lastIndex = 0;
-      let nestedMatch;
-
-      while (
-        (nestedMatch =
-          nestedRegex.exec(remaining)) !== null
-      ) {
-        if (nestedMatch.index > lastIndex) {
-          nestedParts.push(
-            <React.Fragment key={key++}>
-              {remaining.slice(
-                lastIndex,
-                nestedMatch.index
-              )}
-            </React.Fragment>
-          );
-        }
-
-        const value = nestedMatch[0];
-
-        if (
-          value.startsWith("**") &&
-          value.endsWith("**")
-        ) {
-          nestedParts.push(
-            <strong key={key++}>
-              {value.slice(2, -2)}
-            </strong>
-          );
-        } else {
-          nestedParts.push(
-            <code key={key++}>
-              {value.slice(1, -1)}
-            </code>
-          );
-        }
-
-        lastIndex =
-          nestedMatch.index +
-          nestedMatch[0].length;
-      }
-
-      if (lastIndex < remaining.length) {
-        nestedParts.push(
-          <React.Fragment key={key++}>
-            {remaining.slice(lastIndex)}
-          </React.Fragment>
-        );
-      }
-
-      return (
-        <>
-          {parts}
-          {nestedParts.length > 0
-            ? nestedParts
-            : remaining}
-        </>
-      );
-    }
-
-    return parts;
+    setSpeaking(false);
   };
 
+  const speakText = (text) => {
+    if (!voiceEnabledRef.current) return;
 
-  // ==========================================
-  // FORMAT AI RESPONSE
-  // ==========================================
-
-  const renderAIResponse = (text) => {
-    if (!text) {
-      return null;
+    if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+      setVoiceError("Voice is not supported in this browser. Try a recent version of Chrome or Edge.");
+      return;
     }
 
-    const lines = text.split("\n");
+    const cleanText = cleanTextForSpeech(text);
 
-    const elements = [];
+    if (!cleanText) return;
 
-    let bulletItems = [];
-    let numberedItems = [];
-    let inCodeBlock = false;
-    let codeLines = [];
-    let key = 0;
+    window.speechSynthesis.cancel();
+    setVoiceError("");
 
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "en-IN";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
 
-    const flushBulletList = () => {
-      if (bulletItems.length > 0) {
-        elements.push(
-          <ul
-            className="ai-list"
-            key={`ul-${key++}`}
-          >
-            {bulletItems.map(
-              (item, index) => (
-                <li key={index}>
-                  {formatInlineText(item)}
-                </li>
-              )
-            )}
-          </ul>
-        );
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice =
+      voices.find((voice) => voice.lang.toLowerCase() === "en-in") ||
+      voices.find((voice) => voice.lang.toLowerCase().startsWith("en-"));
 
-        bulletItems = [];
-      }
-    };
-
-
-    const flushNumberedList = () => {
-      if (numberedItems.length > 0) {
-        elements.push(
-          <ol
-            className="ai-list numbered-list"
-            key={`ol-${key++}`}
-          >
-            {numberedItems.map(
-              (item, index) => (
-                <li key={index}>
-                  {formatInlineText(item)}
-                </li>
-              )
-            )}
-          </ol>
-        );
-
-        numberedItems = [];
-      }
-    };
-
-
-    const flushCodeBlock = () => {
-      if (codeLines.length > 0) {
-        elements.push(
-          <pre
-            className="ai-code-block"
-            key={`code-${key++}`}
-          >
-            <code>
-              {codeLines.join("\n")}
-            </code>
-          </pre>
-        );
-
-        codeLines = [];
-      }
-    };
-
-
-    lines.forEach((line) => {
-      const trimmed = line.trim();
-
-
-      // CODE BLOCK
-
-      if (trimmed.startsWith("```")) {
-        if (inCodeBlock) {
-          flushCodeBlock();
-          inCodeBlock = false;
-        } else {
-          flushBulletList();
-          flushNumberedList();
-          inCodeBlock = true;
-        }
-
-        return;
-      }
-
-
-      if (inCodeBlock) {
-        codeLines.push(line);
-        return;
-      }
-
-
-      // EMPTY LINE
-
-      if (!trimmed) {
-        flushBulletList();
-        flushNumberedList();
-
-        elements.push(
-          <div
-            className="ai-space"
-            key={`space-${key++}`}
-          />
-        );
-
-        return;
-      }
-
-
-      // HEADING ###
-
-      if (trimmed.startsWith("### ")) {
-        flushBulletList();
-        flushNumberedList();
-
-        elements.push(
-          <h4
-            className="ai-heading"
-            key={`heading-${key++}`}
-          >
-            {formatInlineText(
-              trimmed.substring(4)
-            )}
-          </h4>
-        );
-
-        return;
-      }
-
-
-      // HEADING ##
-
-      if (trimmed.startsWith("## ")) {
-        flushBulletList();
-        flushNumberedList();
-
-        elements.push(
-          <h4
-            className="ai-heading"
-            key={`heading-${key++}`}
-          >
-            {formatInlineText(
-              trimmed.substring(3)
-            )}
-          </h4>
-        );
-
-        return;
-      }
-
-
-      // HEADING #
-
-      if (trimmed.startsWith("# ")) {
-        flushBulletList();
-        flushNumberedList();
-
-        elements.push(
-          <h4
-            className="ai-heading"
-            key={`heading-${key++}`}
-          >
-            {formatInlineText(
-              trimmed.substring(2)
-            )}
-          </h4>
-        );
-
-        return;
-      }
-
-
-      // BULLET
-
-      if (
-        trimmed.startsWith("- ") ||
-        trimmed.startsWith("* ")
-      ) {
-        flushNumberedList();
-
-        bulletItems.push(
-          trimmed.substring(2)
-        );
-
-        return;
-      }
-
-
-      // NUMBERED LIST
-
-      const numberedMatch =
-        trimmed.match(
-          /^\d+\.\s+(.*)$/
-        );
-
-      if (numberedMatch) {
-        flushBulletList();
-
-        numberedItems.push(
-          numberedMatch[1]
-        );
-
-        return;
-      }
-
-
-      // NORMAL TEXT
-
-      flushBulletList();
-      flushNumberedList();
-
-      elements.push(
-        <p
-          className="ai-paragraph"
-          key={`paragraph-${key++}`}
-        >
-          {formatInlineText(trimmed)}
-        </p>
-      );
-    });
-
-
-    flushBulletList();
-    flushNumberedList();
-
-    if (inCodeBlock) {
-      flushCodeBlock();
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
     }
 
+    utterance.onstart = () => {
+      if (mountedRef.current) setSpeaking(true);
+    };
 
-    return elements;
+    utterance.onend = () => {
+      if (mountedRef.current) setSpeaking(false);
+    };
+
+    utterance.onerror = (event) => {
+      if (!mountedRef.current) return;
+      setSpeaking(false);
+
+      if (event.error !== "canceled" && event.error !== "interrupted") {
+        setVoiceError("Voice playback failed. You can still read the text response.");
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
   };
-
-
-  // ==========================================
-  // SEND MESSAGE
-  // ==========================================
 
   const sendMessage = async () => {
     const userMessage = input.trim();
 
-    if (!userMessage || loading) {
-      return;
-    }
+    if (!userMessage || loading) return;
 
+    stopSpeaking();
+    setVoiceError("");
 
-    // USER MESSAGE
-
-    setMessages((prev) => [
-      ...prev,
+    setMessages((previous) => [
+      ...previous,
       {
         role: "user",
         text: userMessage,
@@ -446,418 +345,343 @@ function AIAssistant() {
       },
     ]);
 
-
     setInput("");
     setLoading(true);
 
+    const controller = new AbortController();
+    requestRef.current = controller;
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/ai-assistant/chat",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          credentials: "include",
-
-          body: JSON.stringify({
-            message: userMessage,
-            page: window.location.pathname,
-          }),
-        }
-      );
-
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        signal: controller.signal,
+        body: JSON.stringify({
+          message: userMessage,
+          page: window.location.pathname,
+        }),
+      });
 
       const data = await response.json();
 
-      console.log(
-        "AI Assistant Response:",
-        data
-      );
-
-
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "AI Assistant request failed"
-        );
+        throw new Error(data.message || "AI Assistant request failed");
       }
 
+      const answer =
+        typeof data.answer === "string" && data.answer.trim()
+          ? data.answer
+          : "Sorry, I could not generate an answer.";
 
-      // AI RESPONSE
+      if (!mountedRef.current) return;
 
-      setMessages((prev) => [
-        ...prev,
+      setMessages((previous) => [
+        ...previous,
         {
           role: "assistant",
-          text:
-            data.answer ||
-            "Sorry, I could not generate an answer.",
+          text: answer,
           time: new Date(),
           model: data.model || null,
         },
       ]);
 
-
+      if (voiceEnabledRef.current) {
+        speakText(answer);
+      }
     } catch (error) {
-      console.error(
-        "AI Assistant Error:",
-        error
-      );
+      if (error.name === "AbortError") return;
 
+      console.error("AI Assistant Error:", error);
 
-      setMessages((prev) => [
-        ...prev,
+      if (!mountedRef.current) return;
+
+      setMessages((previous) => [
+        ...previous,
         {
           role: "assistant",
           text:
-            "❌ AI Assistant se connection nahi ho pa raha hai. Please check whether the backend is running.",
+            "AI Assistant se connection nahi ho pa raha hai. Please check whether the backend is running.",
           time: new Date(),
         },
       ]);
-
-
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
-
-  // ==========================================
-  // ENTER KEY
-  // ==========================================
-
-  const handleKeyDown = (e) => {
-    if (
-      e.key === "Enter" &&
-      !e.shiftKey
-    ) {
-      e.preventDefault();
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
       sendMessage();
     }
   };
 
-
-  // ==========================================
-  // CLEAR CHAT
-  // ==========================================
-
   const clearChat = () => {
+    stopSpeaking();
     setMessages([
       {
-        role: "assistant",
-        text:
-          "Hi! 👋 I'm Career AI Assistant. How can I help you today?",
+        ...INITIAL_MESSAGE,
         time: new Date(),
       },
     ]);
+    setVoiceError("");
   };
 
+  const toggleVoice = () => {
+    if (voiceEnabled) {
+      setVoiceEnabled(false);
+      stopSpeaking();
+      return;
+    }
 
-  // ==========================================
-  // TIME FORMAT
-  // ==========================================
+    setVoiceEnabled(true);
+    setVoiceError("");
+  };
 
   const formatTime = (time) => {
     if (!time) return "";
 
-    return new Date(time).toLocaleTimeString(
-      [],
-      {
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    );
+    return new Date(time).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
-
 
   return (
     <>
-      {/* =====================================
-          FLOATING AI BUTTON
-      ===================================== */}
-
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        className={`ai-assistant-button ${
-          open ? "button-open" : ""
-        }`}
-        aria-label="Open Career AI Assistant"
+        className={`ai-assistant-button ${open ? "button-open" : ""}`}
+        onClick={() => setOpen((value) => !value)}
+        aria-label={open ? "Close Career AI Assistant" : "Open Career AI Assistant"}
+        aria-expanded={open}
       >
         {open ? (
-          <span className="close-icon">
-            ✕
-          </span>
+          <span className="close-icon">✕</span>
         ) : (
-          <span className="robot-icon">
-            🤖
-          </span>
+          <Avatar compact speaking={speaking} />
         )}
-
-        {!open && (
-          <span className="ai-button-pulse"></span>
-        )}
+        {!open && <span className="ai-button-pulse" />}
       </button>
 
-
-      {/* =====================================
-          CHAT WINDOW
-      ===================================== */}
-
       {open && (
-        <div className="ai-assistant-window">
-
-          {/* HEADER */}
-
-          <div className="ai-assistant-header">
-
+        <section className="ai-assistant-window" aria-label="Career AI chat">
+          <header className="ai-assistant-header">
             <div className="ai-header-left">
-
               <div className="ai-header-avatar">
-                🤖
+                <Avatar compact speaking={speaking} thinking={loading} />
               </div>
 
               <div className="ai-header-info">
-
-                <h3>
-                  Career AI
-                </h3>
-
+                <h3>Career AI</h3>
                 <span className="ai-status">
-                  <span className="online-dot"></span>
-                  Online
+                  <span className="online-dot" />
+                  {loading ? "Thinking..." : speaking ? "Speaking..." : "Ready to help"}
                 </span>
-
               </div>
-
             </div>
 
-
             <div className="ai-header-actions">
+              <button
+                type="button"
+                className={`header-action-button ${voiceEnabled ? "voice-active" : ""}`}
+                onClick={toggleVoice}
+                title={voiceEnabled ? "Turn voice responses off" : "Turn voice responses on"}
+                aria-label={voiceEnabled ? "Turn voice responses off" : "Turn voice responses on"}
+              >
+                {voiceEnabled ? "🔊" : "🔇"}
+              </button>
+
+              {speaking && (
+                <button
+                  type="button"
+                  className="header-action-button"
+                  onClick={stopSpeaking}
+                  title="Stop speaking"
+                  aria-label="Stop speaking"
+                >
+                  ⏹
+                </button>
+              )}
 
               <button
                 type="button"
                 className="header-action-button"
                 onClick={clearChat}
                 title="Clear chat"
+                aria-label="Clear chat"
               >
-                🗑️
+                🗑
               </button>
 
               <button
                 type="button"
-                className="header-action-button close-button"
+                className="header-action-button"
                 onClick={() => setOpen(false)}
-                title="Close"
+                title="Close chat"
+                aria-label="Close chat"
               >
                 ✕
               </button>
-
             </div>
-
-          </div>
-
-
-          {/* CHAT INTRO */}
+          </header>
 
           <div className="ai-chat-subheader">
-
-            <div className="ai-sparkle">
-              ✨
-            </div>
-
+            <div className="ai-sparkle">✦</div>
             <div>
-              <strong>
-                Your AI Career Assistant
-              </strong>
-
-              <span>
-                Ask anything about your career
-              </span>
+              <strong>Your AI Career Assistant</strong>
+              <span>Career guidance, interview prep and coding help</span>
             </div>
-
           </div>
 
+          <div className="ai-avatar-stage">
+            <Avatar speaking={speaking} thinking={loading} />
+            <div className="avatar-caption">
+              <span className="avatar-caption-dot" />
+              {speaking
+                ? "Career AI is speaking"
+                : loading
+                ? "Preparing your answer"
+                : "Ready for your next question"}
+            </div>
+            <div className="avatar-voice-controls">
+              <button
+                type="button"
+                onClick={toggleVoice}
+                className="avatar-control-button"
+              >
+                {voiceEnabled ? "🔊 Voice on" : "🔇 Voice off"}
+              </button>
 
-          {/* =================================
-              MESSAGES
-          ================================= */}
+              {speaking && (
+                <button
+                  type="button"
+                  onClick={stopSpeaking}
+                  className="avatar-control-button stop-control"
+                >
+                  Stop voice
+                </button>
+              )}
+            </div>
+          </div>
 
-          <div className="ai-assistant-messages">
+          {voiceError && (
+            <div className="ai-voice-error" role="status">
+              {voiceError}
+            </div>
+          )}
 
-            {messages.map(
-              (message, index) => (
+          <div className="ai-assistant-messages" aria-live="polite">
+            {messages.map((message, index) => (
+              <div
+                key={`${index}-${message.role}`}
+                className={`message-row ${
+                  message.role === "user" ? "user-row" : "assistant-row"
+                }`}
+              >
+                {message.role === "assistant" && (
+                  <div className="message-avatar">
+                    <Avatar compact speaking={speaking && index === messages.length - 1} />
+                  </div>
+                )}
 
                 <div
-                  key={index}
-                  className={`message-row ${
-                    message.role === "user"
-                      ? "user-row"
-                      : "assistant-row"
+                  className={`message-wrapper ${
+                    message.role === "user" ? "user-wrapper" : "assistant-wrapper"
                   }`}
                 >
-
-                  {/* AI AVATAR */}
-
-                  {message.role ===
-                    "assistant" && (
-                    <div className="message-avatar">
-                      🤖
-                    </div>
-                  )}
-
-
                   <div
-                    className={`message-wrapper ${
-                      message.role ===
-                      "user"
-                        ? "user-wrapper"
-                        : "assistant-wrapper"
+                    className={`message ${
+                      message.role === "user" ? "user-message" : "assistant-message"
                     }`}
                   >
-
-                    <div
-                      className={`message ${
-                        message.role ===
-                        "user"
-                          ? "user-message"
-                          : "assistant-message"
-                      }`}
-                    >
-
-                      {message.role ===
-                      "assistant"
-                        ? renderAIResponse(
-                            message.text
-                          )
-                        : (
-                          <p className="user-text">
-                            {message.text}
-                          </p>
-                        )}
-
-                    </div>
-
-
-                    <div className="message-meta">
-
-                      <span>
-                        {formatTime(
-                          message.time
-                        )}
-                      </span>
-
-                      {message.role ===
-                        "assistant" &&
-                        message.model && (
-                          <span className="model-badge">
-                            AI
-                          </span>
-                        )}
-
-                    </div>
-
+                    {message.role === "assistant" ? (
+                      renderAIResponse(message.text)
+                    ) : (
+                      <p className="user-text">{message.text}</p>
+                    )}
                   </div>
 
-
-                  {/* USER AVATAR */}
-
-                  {message.role ===
-                    "user" && (
-                    <div className="message-avatar user-avatar">
-                      👤
-                    </div>
-                  )}
-
+                  <div className="message-meta">
+                    <span>{formatTime(message.time)}</span>
+                    {message.role === "assistant" && message.model && (
+                      <span className="model-badge">AI</span>
+                    )}
+                    {message.role === "assistant" &&
+                      message.text &&
+                      index === messages.length - 1 && (
+                        <button
+                          type="button"
+                          className="message-speak-button"
+                          onClick={() => speakText(message.text)}
+                          title="Read this answer aloud"
+                        >
+                          ▶ Listen
+                        </button>
+                      )}
+                  </div>
                 </div>
-              )
-            )}
 
-
-            {/* =================================
-                TYPING INDICATOR
-            ================================= */}
+                {message.role === "user" && (
+                  <div className="message-avatar user-avatar">👤</div>
+                )}
+              </div>
+            ))}
 
             {loading && (
               <div className="message-row assistant-row">
-
                 <div className="message-avatar">
-                  🤖
+                  <Avatar compact thinking />
                 </div>
-
                 <div className="message-wrapper assistant-wrapper">
-
                   <div className="message assistant-message typing-message">
-
-                    <span className="typing-text">
-                      AI is thinking
-                    </span>
-
+                    <span className="typing-text">AI is thinking</span>
                     <span className="typing-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
+                      <span />
+                      <span />
+                      <span />
                     </span>
-
                   </div>
-
                 </div>
-
               </div>
             )}
 
-
             <div ref={messagesEndRef} />
-
           </div>
 
-
-          {/* =================================
-              INPUT AREA
-          ================================= */}
-
           <div className="ai-assistant-input-area">
-
             <div className="ai-input-wrapper">
-
               <input
                 ref={inputRef}
                 type="text"
                 placeholder="Ask Career AI..."
                 value={input}
-                onChange={(e) =>
-                  setInput(e.target.value)
-                }
+                onChange={(event) => setInput(event.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={loading}
+                aria-label="Message Career AI"
               />
 
               <button
                 type="button"
                 onClick={sendMessage}
-                disabled={
-                  loading ||
-                  !input.trim()
-                }
+                disabled={loading || !input.trim()}
                 className="send-button"
                 title="Send message"
+                aria-label="Send message"
               >
                 ➤
               </button>
-
             </div>
 
             <div className="input-hint">
-              Press Enter to send
+              Press Enter to send · {voiceEnabled ? "Voice responses on" : "Text responses only"}
             </div>
-
           </div>
-
-        </div>
+        </section>
       )}
     </>
   );
