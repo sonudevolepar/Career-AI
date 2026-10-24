@@ -9,7 +9,7 @@ const INITIAL_MESSAGE = {
   text: "Hi! I'm Career AI Assistant. How can I help you today?",
   time: new Date(),
 };
-
+ //function clean textfor speech
 function cleanTextForSpeech(text = "") {
   return text
     .replace(/```[\w-]*\n?/g, "")
