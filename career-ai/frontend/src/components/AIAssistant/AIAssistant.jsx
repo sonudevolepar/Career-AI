@@ -9,7 +9,7 @@ const INITIAL_MESSAGE = {
   text: "Hi! I'm Career AI Assistant. How can I help you today?",
   time: new Date(),
 };
- //function clean textfor speech
+//function clean textfor speech
 function cleanTextForSpeech(text = "") {
   return text
     .replace(/```[\w-]*\n?/g, "")
@@ -42,10 +42,15 @@ function Avatar({ speaking, thinking, compact = false }) {
         speaking
           ? "Career AI is speaking"
           : thinking
-          ? "Career AI is thinking"
-          : "Career AI avatar"
+            ? "Career AI is thinking"
+            : "Career AI avatar"
       }
     >
+      <img
+        src="/career-ai-logo.svg"
+        alt="Career AI Logo"
+        className="career-avatar-logo"
+      />
       <div className="avatar-aura" />
       <div className="avatar-platform" />
 
@@ -544,8 +549,8 @@ function AIAssistant() {
               {speaking
                 ? "Career AI is speaking"
                 : loading
-                ? "Preparing your answer"
-                : "Ready for your next question"}
+                  ? "Preparing your answer"
+                  : "Ready for your next question"}
             </div>
             <div className="avatar-voice-controls">
               <button
@@ -578,9 +583,8 @@ function AIAssistant() {
             {messages.map((message, index) => (
               <div
                 key={`${index}-${message.role}`}
-                className={`message-row ${
-                  message.role === "user" ? "user-row" : "assistant-row"
-                }`}
+                className={`message-row ${message.role === "user" ? "user-row" : "assistant-row"
+                  }`}
               >
                 {message.role === "assistant" && (
                   <div className="message-avatar">
@@ -589,14 +593,12 @@ function AIAssistant() {
                 )}
 
                 <div
-                  className={`message-wrapper ${
-                    message.role === "user" ? "user-wrapper" : "assistant-wrapper"
-                  }`}
+                  className={`message-wrapper ${message.role === "user" ? "user-wrapper" : "assistant-wrapper"
+                    }`}
                 >
                   <div
-                    className={`message ${
-                      message.role === "user" ? "user-message" : "assistant-message"
-                    }`}
+                    className={`message ${message.role === "user" ? "user-message" : "assistant-message"
+                      }`}
                   >
                     {message.role === "assistant" ? (
                       renderAIResponse(message.text)
