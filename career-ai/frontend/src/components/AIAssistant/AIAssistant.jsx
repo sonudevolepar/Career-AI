@@ -1,4 +1,4 @@
-
+// aiassitant generate
 import React, { useEffect, useRef, useState } from "react";
 import "./AIAssistant.css";
 
