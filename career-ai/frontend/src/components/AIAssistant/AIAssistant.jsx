@@ -25,7 +25,8 @@ function cleanTextForSpeech(text = "") {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
-
+  
+// functions avatar run api of throught
 function Avatar({ speaking, thinking, compact = false }) {
   return (
     <div
