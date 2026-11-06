@@ -26,6 +26,7 @@ function cleanTextForSpeech(text = "") {
     .trim();
 }
   //fuyfyuf
+  //fstrdytd
 // functions avatar run api of throught
 function Avatar({ speaking, thinking, compact = false }) {
   return (
