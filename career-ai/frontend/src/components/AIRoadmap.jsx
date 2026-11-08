@@ -716,7 +716,7 @@ function AIRoadmap() {
               )}
           </div>
         )}
-
+       {/* hello empty state */}
         {/* Empty State */}
         {!roadmap && !loading && !error && (
           <div className="roadmap-empty-state">
