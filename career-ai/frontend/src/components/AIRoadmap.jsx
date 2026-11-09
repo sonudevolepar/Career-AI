@@ -718,6 +718,7 @@ function AIRoadmap() {
         )}
        {/* hello empty state */}
         {/* Empty State */}
+        
         {!roadmap && !loading && !error && (
           <div className="roadmap-empty-state">
             <div className="empty-icon">🗺️</div>
