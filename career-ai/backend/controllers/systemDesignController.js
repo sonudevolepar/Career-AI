@@ -1,6 +1,3 @@
-// ======================================================
-// SYSTEM DESIGN CONTROLLER
-// ======================================================
 
 const {
   generateSystemDesign,
@@ -10,67 +7,87 @@ const {
 // GENERATE SYSTEM DESIGN
 // ======================================================
 
-const generateSystemDesignController = async (
-  req,
-  res
-) => {
+const generateSystemDesignController = async (req, res) => {
   try {
     const {
       problem,
-      difficulty,
-    } = req.body;
+      difficulty = "Beginner",
+    } = req.body || {};
 
-    // ----------------------------------------------
-    // VALIDATION
-    // ----------------------------------------------
-
+    // Validation
     if (
-      !problem ||
       typeof problem !== "string" ||
       !problem.trim()
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "System design problem is required",
+        message: "System design problem is required.",
       });
     }
 
-    // ----------------------------------------------
-    // GENERATE
-    // ----------------------------------------------
+    console.log("System Design request:", {
+      problem: problem.trim(),
+      difficulty,
+    });
 
-    const systemDesign =
-      await generateSystemDesign(
-        problem.trim(),
-        difficulty || "Beginner"
-      );
+    // Generate system design
+    const systemDesign = await generateSystemDesign({
+      problem: problem.trim(),
+      difficulty,
+    });
 
-    // ----------------------------------------------
-    // SUCCESS
-    // ----------------------------------------------
-
+    // Success response
     return res.status(200).json({
       success: true,
-
-      message:
-        "System design generated successfully",
-
+      message: "System design generated successfully.",
       data: systemDesign,
     });
 
   } catch (error) {
-    console.error(
-      "Generate System Design Controller Error:",
-      error
-    );
+    console.error("System Design Controller Error:", {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+    });
 
-    return res.status(500).json({
+    // Preserve actual error status
+    const allowedStatuses = [
+      400,
+      401,
+      403,
+      408,
+      429,
+      500,
+      502,
+      503,
+      504,
+    ];
+
+    const status = allowedStatuses.includes(error.status)
+      ? error.status
+      : 500;
+
+    let message = error.message ||
+      "Failed to generate system design.";
+
+    if (status === 503) {
+      message =
+        "Gemini AI is temporarily unavailable. Please try again later.";
+    }
+
+    if (status === 429) {
+      message =
+        "Gemini API rate limit reached. Please try again later.";
+    }
+
+    if (status === 502) {
+      message =
+        "Gemini API authentication or upstream error. Check backend configuration.";
+    }
+
+    return res.status(status).json({
       success: false,
-
-      message:
-        error.message ||
-        "Failed to generate system design",
+      message,
     });
   }
 };

@@ -5,6 +5,44 @@ const MODEL = "gemini-3.8-flash";
 const API_HOST = "generativelanguage.googleapis.com";
 const API_PATH = "/v1beta/interactions";
 
+const MAX_RETRIES = 3;
+const BASE_DELAY = 1000;
+const REQUEST_TIMEOUT = 120000;
+
+// -------------------------------
+// Delay helper
+// -------------------------------
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// -------------------------------
+// Retry delay with jitter
+// -------------------------------
+function getRetryDelay(attempt, retryAfter) {
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.min(seconds * 1000, 30000);
+    }
+
+    const date = Date.parse(retryAfter);
+
+    if (!Number.isNaN(date)) {
+      return Math.min(Math.max(date - Date.now(), 0), 30000);
+    }
+  }
+
+  const exponentialDelay = BASE_DELAY * Math.pow(2, attempt);
+  const jitter = 0.8 + Math.random() * 0.4;
+
+  return Math.round(exponentialDelay * jitter);
+}
+
+// -------------------------------
+// Single Gemini API request
+// -------------------------------
 function postToGemini(payload, apiKey) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify(payload);
@@ -19,7 +57,7 @@ function postToGemini(payload, apiKey) {
           "x-goog-api-key": apiKey,
           "Content-Length": Buffer.byteLength(body),
         },
-        timeout: 120000,
+        timeout: REQUEST_TIMEOUT,
       },
       (response) => {
         let rawData = "";
@@ -31,55 +69,81 @@ function postToGemini(payload, apiKey) {
         });
 
         response.on("end", () => {
-          let data;
+          let data = {};
 
           try {
             data = JSON.parse(rawData);
           } catch {
-            return reject(
-              new Error("Gemini API returned an invalid response.")
-            );
-          }
-
-          if (
-            response.statusCode < 200 ||
-            response.statusCode >= 300
-          ) {
             const error = new Error(
-              data?.error?.message ||
-                data?.message ||
-                `Gemini API returned HTTP ${response.statusCode}.`
+              "Gemini API returned an invalid response."
             );
 
-            error.status =
-              response.statusCode === 401 ||
-              response.statusCode === 403
-                ? 502
-                : response.statusCode;
+            error.status = response.statusCode || 502;
+            error.retryable = [408, 429, 500, 502, 503, 504]
+              .includes(response.statusCode);
+
+            error.retryAfter = response.headers["retry-after"];
 
             return reject(error);
           }
 
+          // HTTP error handling
+          if (
+            response.statusCode < 200 ||
+            response.statusCode >= 300
+          ) {
+            const status = response.statusCode;
+
+            const error = new Error(
+              data?.error?.message ||
+              data?.message ||
+              `Gemini API returned HTTP ${status}.`
+            );
+
+            error.status =
+              status === 401 || status === 403 ? 502 : status;
+
+            error.retryable = [
+              408,
+              429,
+              500,
+              502,
+              503,
+              504,
+            ].includes(status);
+
+            error.retryAfter = response.headers["retry-after"];
+
+            return reject(error);
+          }
+
+          // Gemini interaction failure
           if (
             data.status === "failed" ||
             data.status === "cancelled"
           ) {
-            return reject(
-              new Error(
-                data?.error?.message ||
-                  "Gemini could not generate the system design."
-              )
+            const error = new Error(
+              data?.error?.message ||
+              "Gemini could not generate the system design."
             );
+
+            error.status = 502;
+            error.retryable = false;
+
+            return reject(error);
           }
 
           const output = extractOutput(data);
 
           if (!output) {
-            return reject(
-              new Error(
-                "Gemini returned no text. Please try again."
-              )
+            const error = new Error(
+              "Gemini returned no text. Please try again."
             );
+
+            error.status = 502;
+            error.retryable = false;
+
+            return reject(error);
           }
 
           resolve(output);
@@ -88,12 +152,29 @@ function postToGemini(payload, apiKey) {
     );
 
     request.on("timeout", () => {
-      request.destroy(
-        new Error("Gemini API timed out. Please try again.")
+      const error = new Error(
+        "Gemini API request timed out. Please try again."
       );
+
+      error.code = "ETIMEDOUT";
+      request.destroy(error);
     });
 
     request.on("error", (error) => {
+      if (!error.status) {
+        error.status = 503;
+      }
+
+      if (error.retryable === undefined) {
+        error.retryable = [
+          "ETIMEDOUT",
+          "ECONNRESET",
+          "ECONNREFUSED",
+          "EAI_AGAIN",
+          "ENOTFOUND",
+        ].includes(error.code);
+      }
+
       reject(error);
     });
 
@@ -102,8 +183,70 @@ function postToGemini(payload, apiKey) {
   });
 }
 
+// -------------------------------
+// Automatic retry mechanism
+// -------------------------------
+async function postToGeminiWithRetry(payload, apiKey) {
+  let lastError;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(
+        `Gemini request attempt ${attempt + 1}/${MAX_RETRIES + 1}`
+      );
+
+      return await postToGemini(payload, apiKey);
+    } catch (error) {
+      lastError = error;
+
+      const canRetry =
+        error.retryable === true &&
+        attempt < MAX_RETRIES;
+
+      if (!canRetry) {
+        break;
+      }
+
+      const delay = getRetryDelay(
+        attempt,
+        error.retryAfter
+      );
+
+      console.warn(
+        `Gemini temporary error (${error.status || error.code}). ` +
+        `Retrying in ${delay}ms...`
+      );
+
+      await sleep(delay);
+    }
+  }
+
+  console.error("Gemini final failure:", {
+    message: lastError.message,
+    status: lastError.status,
+    code: lastError.code,
+  });
+
+  if (
+    [408, 429, 500, 502, 503, 504].includes(lastError.status)
+  ) {
+    const error = new Error(
+      lastError.status === 429
+        ? "Gemini API rate limit reached. Please try again shortly."
+        : "Gemini AI is temporarily unavailable. Automatic retries failed. Please try again after some time."
+    );
+
+    error.status = lastError.status;
+    throw error;
+  }
+
+  throw lastError;
+}
+
+// -------------------------------
+// Extract Gemini output
+// -------------------------------
 function extractOutput(data) {
-  // Standard Interactions API text output
   if (
     typeof data.output_text === "string" &&
     data.output_text.trim()
@@ -113,7 +256,6 @@ function extractOutput(data) {
 
   const texts = [];
 
-  // Handle output/steps structures returned by API
   const collections = [
     data.output,
     data.steps,
@@ -129,15 +271,18 @@ function extractOutput(data) {
         continue;
       }
 
-      if (typeof item?.text === "string") {
+      if (
+        typeof item?.text === "string" &&
+        item.text.trim()
+      ) {
         texts.push(item.text);
       }
 
       if (Array.isArray(item?.content)) {
         for (const content of item.content) {
           if (
-            typeof content?.text === "string" &&
-            (!content.type || content.type === "text")
+            content?.type === "text" &&
+            typeof content.text === "string"
           ) {
             texts.push(content.text);
           }
@@ -149,8 +294,10 @@ function extractOutput(data) {
   return texts.join("\n").trim();
 }
 
+// -------------------------------
+// Get topic from frontend input
+// -------------------------------
 function getTopic(input) {
-  // Accept strings directly as well as common frontend field names
   if (typeof input === "string") {
     return input.trim();
   }
@@ -184,8 +331,11 @@ function getTopic(input) {
       return value.trim();
     }
 
-    // Some forms send an object containing a topic
-    if (value && typeof value === "object" && !Array.isArray(value)) {
+    if (
+      value &&
+      typeof value === "object" &&
+      !Array.isArray(value)
+    ) {
       const nestedTopic = getTopic(value);
 
       if (nestedTopic) return nestedTopic;
@@ -195,6 +345,9 @@ function getTopic(input) {
   return "";
 }
 
+// -------------------------------
+// Generate System Design
+// -------------------------------
 async function generateSystemDesign(input = {}) {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -202,6 +355,7 @@ async function generateSystemDesign(input = {}) {
     const error = new Error(
       "GEMINI_API_KEY is missing in backend .env."
     );
+
     error.status = 500;
     throw error;
   }
@@ -210,22 +364,25 @@ async function generateSystemDesign(input = {}) {
 
   if (!topic) {
     const error = new Error(
-      "Please enter a system design topic, for example: Design YouTube, WhatsApp, or an URL shortener."
+      "Please enter a system design topic."
     );
+
     error.status = 400;
     throw error;
   }
 
   if (topic.length > 12000) {
     const error = new Error(
-      "Please keep the system design requirements under 12000 characters."
+      "Please keep system design requirements under 12000 characters."
     );
+
     error.status = 400;
     throw error;
   }
 
   const difficulty =
-    input && typeof input === "object" &&
+    input &&
+    typeof input === "object" &&
     typeof input.difficulty === "string"
       ? input.difficulty
       : "Intermediate";
@@ -275,7 +432,10 @@ Do not claim the system was actually deployed or tested.
     },
   };
 
-  const design = await postToGemini(payload, apiKey);
+  const design = await postToGeminiWithRetry(
+    payload,
+    apiKey
+  );
 
   return {
     topic,
