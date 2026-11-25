@@ -12,8 +12,20 @@ const GEMINI_API_KEY =
 // the next model will automatically be tried.
 
 const GEMINI_MODELS = [
+  // Tier 1: Latest Gemini Flash models
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
   "gemini-3.6-flash",
-  "gemini-2.5-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+
+  // Tier 2: Other Gemini models
+  "gemini-3.1-pro-preview",
+  "gemini-3.1-flash-lite",
+  "gemini-3-flash-preview",
+
+  // Tier 3: Older fallback
+  "gemini-2.5-pro",
   "gemini-2.5-flash-lite",
 ];
 
