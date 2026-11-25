@@ -7,7 +7,7 @@ import "./AllUsers.css";
 
 
 const API_URL =
-  "http://localhost:5000/api/auth";
+  "https://career-ai-rd9z.onrender.com/api/auth";
 
 
 const AllUsers = () => {

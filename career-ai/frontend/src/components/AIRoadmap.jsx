@@ -25,7 +25,7 @@ function AIRoadmap() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/roadmap/generate",
+        "https://career-ai-rd9z.onrender.com/api/roadmap/generate",
         {
           method: "POST",
           headers: {

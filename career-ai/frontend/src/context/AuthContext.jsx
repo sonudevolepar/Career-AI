@@ -7,7 +7,7 @@ import React, {
 
 const AuthContext = createContext();
 
-const API_URL = "http://localhost:5000/api/auth";
+const API_URL = "https://career-ai-rd9z.onrender.com/api/auth";
 
 
 export const AuthProvider = ({ children }) => {

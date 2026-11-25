@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./AIAssistant.css";
 
-const API_URL = "http://localhost:5000/api/ai-assistant/chat";
+const API_URL = "https://career-ai-rd9z.onrender.com/api/ai-assistant/chat";
 
 const INITIAL_MESSAGE = {
   role: "assistant",

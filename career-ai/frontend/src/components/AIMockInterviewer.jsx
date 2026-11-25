@@ -58,7 +58,7 @@ function AIMockInterviewer() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/interview/questions",
+        "https://career-ai-rd9z.onrender.com/api/interview/questions",
         {
           method: "POST",
           headers: {
@@ -173,7 +173,7 @@ function AIMockInterviewer() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/interview/feedback",
+        "https://career-ai-rd9z.onrender.com/api/interview/feedback",
         {
           method: "POST",
           headers: {

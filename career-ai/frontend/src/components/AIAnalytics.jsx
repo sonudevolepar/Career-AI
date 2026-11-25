@@ -29,7 +29,7 @@ export default function AIAnalytics() {
       const extractedText = `Simulated extracted text from ${file.name} for the role of ${jobRole}`;
 
       // Ab hum apna Backend API call kar rahe hain (Direct Gemini nahi)
-      const response = await fetch("http://localhost:5000/api/resume/analyze", {
+      const response = await fetch("https://career-ai-rd9z.onrender.com/api/resume/analyze", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

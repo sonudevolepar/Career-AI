@@ -11,7 +11,7 @@ import { useAuth } from "../context/AuthContext";
 
 
 const API_URL =
-  "http://localhost:5000/api/auth";
+  "https://career-ai-rd9z.onrender.com/api/auth";
 
 
 const VerifyOTP = () => {

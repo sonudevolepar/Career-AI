@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import "./JobSearch.css";
 
-const API_BASE = "http://localhost:5000/api/jobs";
+const API_BASE = "https://career-ai-rd9z.onrender.com/api/jobs";
 
 const INITIAL_FILTERS = {
   role: "Software Engineer",
