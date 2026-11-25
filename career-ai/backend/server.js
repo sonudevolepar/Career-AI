@@ -127,12 +127,12 @@ async function startServer() {
 
     console.log("MongoDB connected successfully");
 
-    app.listen(PORT, "127.0.0.1", () => {
+    app.listen(PORT, () => {
       console.log(
-        `Career AI Backend running on http://127.0.0.1:${PORT}`
+        `Career AI Backend running on : ${PORT}`
       );
 
-      console.log("Job Search API: /api/jobs/search");
+      // console.log("Job Search API: /api/jobs/search");
     });
   } catch (error) {
     console.error("Backend startup error:", error.message);

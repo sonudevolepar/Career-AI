@@ -1,48 +1,117 @@
 
 const https = require("https");
 
-const MODEL = "gemini-3.8-flash";
+// ======================================================
+// GEMINI CONFIGURATION
+// ======================================================
+
+const PRIMARY_MODEL =
+  process.env.GEMINI_MODEL || "gemini-3.8-flash";
+
+const FALLBACK_MODELS = (
+  process.env.GEMINI_FALLBACK_MODELS ||
+  [
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+  ].join(",")
+)
+  .split(",")
+  .map((model) => model.trim())
+  .filter(
+    (model, index, models) =>
+      model &&
+      model !== PRIMARY_MODEL &&
+      models.indexOf(model) === index
+  );
+
 const API_HOST = "generativelanguage.googleapis.com";
 const API_PATH = "/v1beta/interactions";
 
 const MAX_RETRIES = 3;
 const BASE_DELAY = 1000;
+const MAX_RETRY_DELAY = 30000;
 const REQUEST_TIMEOUT = 120000;
 
-// -------------------------------
-// Delay helper
-// -------------------------------
+const RETRYABLE_STATUSES = [
+  408, 429, 500, 502, 503, 504,
+];
+
+const RETRYABLE_NETWORK_ERRORS = [
+  "ETIMEDOUT",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "EAI_AGAIN",
+  "ENOTFOUND",
+];
+
+// ======================================================
+// DELAY HELPER
+// ======================================================
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// -------------------------------
-// Retry delay with jitter
-// -------------------------------
+// ======================================================
+// RETRY DELAY WITH JITTER
+// ======================================================
+
 function getRetryDelay(attempt, retryAfter) {
   if (retryAfter) {
     const seconds = Number(retryAfter);
 
     if (Number.isFinite(seconds) && seconds >= 0) {
-      return Math.min(seconds * 1000, 30000);
+      return Math.min(
+        seconds * 1000,
+        MAX_RETRY_DELAY
+      );
     }
 
     const date = Date.parse(retryAfter);
 
     if (!Number.isNaN(date)) {
-      return Math.min(Math.max(date - Date.now(), 0), 30000);
+      return Math.min(
+        Math.max(date - Date.now(), 0),
+        MAX_RETRY_DELAY
+      );
     }
   }
 
-  const exponentialDelay = BASE_DELAY * Math.pow(2, attempt);
+  const exponentialDelay =
+    BASE_DELAY * Math.pow(2, attempt);
+
   const jitter = 0.8 + Math.random() * 0.4;
 
-  return Math.round(exponentialDelay * jitter);
+  return Math.min(
+    Math.round(exponentialDelay * jitter),
+    MAX_RETRY_DELAY
+  );
 }
 
-// -------------------------------
-// Single Gemini API request
-// -------------------------------
+// ======================================================
+// ERROR HELPER
+// ======================================================
+
+function createError(
+  message,
+  status = 500,
+  retryable = false
+) {
+  const error = new Error(message);
+
+  error.status = status;
+  error.retryable = retryable;
+
+  return error;
+}
+
+// ======================================================
+// SINGLE GEMINI API REQUEST
+// ======================================================
+
 function postToGemini(payload, apiKey) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify(payload);
@@ -52,13 +121,16 @@ function postToGemini(payload, apiKey) {
         hostname: API_HOST,
         path: API_PATH,
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
           "Content-Length": Buffer.byteLength(body),
         },
+
         timeout: REQUEST_TIMEOUT,
       },
+
       (response) => {
         let rawData = "";
 
@@ -74,76 +146,92 @@ function postToGemini(payload, apiKey) {
           try {
             data = JSON.parse(rawData);
           } catch {
-            const error = new Error(
-              "Gemini API returned an invalid response."
+            const error = createError(
+              "Gemini API returned an invalid response.",
+              response.statusCode || 502,
+              RETRYABLE_STATUSES.includes(
+                response.statusCode
+              )
             );
 
-            error.status = response.statusCode || 502;
-            error.retryable = [408, 429, 500, 502, 503, 504]
-              .includes(response.statusCode);
-
-            error.retryAfter = response.headers["retry-after"];
+            error.retryAfter =
+              response.headers["retry-after"];
 
             return reject(error);
           }
 
-          // HTTP error handling
-          if (
-            response.statusCode < 200 ||
-            response.statusCode >= 300
-          ) {
-            const status = response.statusCode;
+          const status = response.statusCode || 500;
 
-            const error = new Error(
+          // HTTP ERROR HANDLING
+
+          if (status < 200 || status >= 300) {
+            const apiMessage =
               data?.error?.message ||
               data?.message ||
-              `Gemini API returned HTTP ${status}.`
+              `Gemini API returned HTTP ${status}.`;
+
+            const isAuthError =
+              status === 401 || status === 403;
+
+            const isModelUnavailable =
+              status === 404 &&
+              /model|not found|not supported/i.test(
+                apiMessage
+              );
+
+            const error = createError(
+              apiMessage,
+              isAuthError ? 502 : status,
+              !isAuthError &&
+                (
+                  RETRYABLE_STATUSES.includes(status) ||
+                  isModelUnavailable
+                )
             );
 
-            error.status =
-              status === 401 || status === 403 ? 502 : status;
+            error.modelUnavailable =
+              isModelUnavailable;
 
-            error.retryable = [
-              408,
-              429,
-              500,
-              502,
-              503,
-              504,
-            ].includes(status);
-
-            error.retryAfter = response.headers["retry-after"];
+            error.retryAfter =
+              response.headers["retry-after"];
 
             return reject(error);
           }
 
-          // Gemini interaction failure
+          // INTERACTION FAILURE
+
           if (
             data.status === "failed" ||
             data.status === "cancelled"
           ) {
-            const error = new Error(
+            const message =
               data?.error?.message ||
-              "Gemini could not generate the system design."
+              "Gemini could not generate the system design.";
+
+            const error = createError(
+              message,
+              502,
+              false
             );
 
-            error.status = 502;
-            error.retryable = false;
+            error.modelUnavailable =
+              /model|not found|not supported/i.test(message);
 
             return reject(error);
           }
 
+          // EXTRACT OUTPUT
+
           const output = extractOutput(data);
 
           if (!output) {
-            const error = new Error(
-              "Gemini returned no text. Please try again."
+            return reject(
+              createError(
+                "Gemini returned no text. Please try again.",
+                502,
+                false
+              )
             );
-
-            error.status = 502;
-            error.retryable = false;
-
-            return reject(error);
           }
 
           resolve(output);
@@ -151,14 +239,21 @@ function postToGemini(payload, apiKey) {
       }
     );
 
+    // REQUEST TIMEOUT
+
     request.on("timeout", () => {
-      const error = new Error(
-        "Gemini API request timed out. Please try again."
+      const error = createError(
+        "Gemini API request timed out.",
+        503,
+        true
       );
 
       error.code = "ETIMEDOUT";
+
       request.destroy(error);
     });
+
+    // NETWORK ERROR
 
     request.on("error", (error) => {
       if (!error.status) {
@@ -166,13 +261,8 @@ function postToGemini(payload, apiKey) {
       }
 
       if (error.retryable === undefined) {
-        error.retryable = [
-          "ETIMEDOUT",
-          "ECONNRESET",
-          "ECONNREFUSED",
-          "EAI_AGAIN",
-          "ENOTFOUND",
-        ].includes(error.code);
+        error.retryable =
+          RETRYABLE_NETWORK_ERRORS.includes(error.code);
       }
 
       reject(error);
@@ -183,21 +273,56 @@ function postToGemini(payload, apiKey) {
   });
 }
 
-// -------------------------------
-// Automatic retry mechanism
-// -------------------------------
-async function postToGeminiWithRetry(payload, apiKey) {
+// ======================================================
+// AUTOMATIC RETRY FOR ONE MODEL
+// ======================================================
+
+async function postToGeminiWithRetry(
+  payload,
+  apiKey,
+  model
+) {
   let lastError;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  const modelPayload = {
+    ...payload,
+    model,
+  };
+
+  for (
+    let attempt = 0;
+    attempt <= MAX_RETRIES;
+    attempt++
+  ) {
     try {
       console.log(
-        `Gemini request attempt ${attempt + 1}/${MAX_RETRIES + 1}`
+        `Gemini model: ${model} | Attempt ${
+          attempt + 1
+        }/${MAX_RETRIES + 1}`
       );
 
-      return await postToGemini(payload, apiKey);
+      const output = await postToGemini(
+        modelPayload,
+        apiKey
+      );
+
+      console.log(
+        `Generation successful using ${model}`
+      );
+
+      return {
+        output,
+        model,
+      };
+
     } catch (error) {
       lastError = error;
+
+      // Invalid model: move directly to next model.
+
+      if (error.modelUnavailable) {
+        break;
+      }
 
       const canRetry =
         error.retryable === true &&
@@ -214,38 +339,112 @@ async function postToGeminiWithRetry(payload, apiKey) {
 
       console.warn(
         `Gemini temporary error (${error.status || error.code}). ` +
-        `Retrying in ${delay}ms...`
+        `Retrying ${model} in ${delay}ms...`
       );
 
       await sleep(delay);
     }
   }
 
-  console.error("Gemini final failure:", {
-    message: lastError.message,
-    status: lastError.status,
-    code: lastError.code,
+  console.error(`Gemini model failed: ${model}`, {
+    message: lastError?.message,
+    status: lastError?.status,
+    code: lastError?.code,
   });
 
-  if (
-    [408, 429, 500, 502, 503, 504].includes(lastError.status)
-  ) {
-    const error = new Error(
-      lastError.status === 429
-        ? "Gemini API rate limit reached. Please try again shortly."
-        : "Gemini AI is temporarily unavailable. Automatic retries failed. Please try again after some time."
-    );
-
-    error.status = lastError.status;
-    throw error;
-  }
-
-  throw lastError;
+  throw lastError || createError(
+    "Gemini request failed.",
+    503,
+    true
+  );
 }
 
-// -------------------------------
-// Extract Gemini output
-// -------------------------------
+// ======================================================
+// SMART MULTI-MODEL FALLBACK
+// ======================================================
+
+async function generateWithFallback(payload, apiKey) {
+  const models = [
+    PRIMARY_MODEL,
+    ...FALLBACK_MODELS,
+  ];
+
+  let lastError;
+
+  console.log(
+    `Starting Smart Fallback. Total models: ${models.length}`
+  );
+
+  for (let index = 0; index < models.length; index++) {
+    const model = models[index];
+
+    try {
+      console.log(
+        `Trying model ${index + 1}/${models.length}: ${model}`
+      );
+
+      const result = await postToGeminiWithRetry(
+        payload,
+        apiKey,
+        model
+      );
+
+      console.log(
+        `Smart Fallback successful: ${model}`
+      );
+
+      return {
+        ...result,
+        isFallback: index > 0,
+      };
+
+    } catch (error) {
+      lastError = error;
+
+      console.error(`Model failed: ${model}`, {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+      });
+
+      // Stop for authentication and other
+      // non-recoverable request errors.
+
+      const canSwitchModel =
+        error.retryable === true ||
+        error.modelUnavailable === true;
+
+      if (!canSwitchModel) {
+        throw error;
+      }
+
+      if (index < models.length - 1) {
+        console.warn(
+          `Switching to fallback model: ${models[index + 1]}`
+        );
+      }
+    }
+  }
+
+  console.error(
+    "All Gemini fallback models failed."
+  );
+
+  const finalError = createError(
+    "All Gemini models are temporarily unavailable. Please try again later.",
+    lastError?.status === 429 ? 429 : 503,
+    false
+  );
+
+  finalError.code = lastError?.code;
+
+  throw finalError;
+}
+
+// ======================================================
+// EXTRACT GEMINI OUTPUT
+// ======================================================
+
 function extractOutput(data) {
   if (
     typeof data.output_text === "string" &&
@@ -294,9 +493,10 @@ function extractOutput(data) {
   return texts.join("\n").trim();
 }
 
-// -------------------------------
-// Get topic from frontend input
-// -------------------------------
+// ======================================================
+// GET TOPIC FROM FRONTEND INPUT
+// ======================================================
+
 function getTopic(input) {
   if (typeof input === "string") {
     return input.trim();
@@ -327,7 +527,10 @@ function getTopic(input) {
   for (const field of fields) {
     const value = input[field];
 
-    if (typeof value === "string" && value.trim()) {
+    if (
+      typeof value === "string" &&
+      value.trim()
+    ) {
       return value.trim();
     }
 
@@ -338,46 +541,43 @@ function getTopic(input) {
     ) {
       const nestedTopic = getTopic(value);
 
-      if (nestedTopic) return nestedTopic;
+      if (nestedTopic) {
+        return nestedTopic;
+      }
     }
   }
 
   return "";
 }
 
-// -------------------------------
-// Generate System Design
-// -------------------------------
+// ======================================================
+// GENERATE SYSTEM DESIGN
+// ======================================================
+
 async function generateSystemDesign(input = {}) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey || !apiKey.trim()) {
-    const error = new Error(
-      "GEMINI_API_KEY is missing in backend .env."
+    throw createError(
+      "GEMINI_API_KEY is missing in backend .env.",
+      500
     );
-
-    error.status = 500;
-    throw error;
   }
 
   const topic = getTopic(input);
 
   if (!topic) {
-    const error = new Error(
-      "Please enter a system design topic."
+    throw createError(
+      "Please enter a system design topic.",
+      400
     );
-
-    error.status = 400;
-    throw error;
   }
 
   if (topic.length > 12000) {
-    const error = new Error(
-      "Please keep system design requirements under 12000 characters."
+    throw createError(
+      "Please keep system design requirements under 12000 characters.",
+      400
     );
-
-    error.status = 400;
-    throw error;
   }
 
   const difficulty =
@@ -386,6 +586,10 @@ async function generateSystemDesign(input = {}) {
     typeof input.difficulty === "string"
       ? input.difficulty
       : "Intermediate";
+
+  // ====================================================
+  // SYSTEM DESIGN PROMPT
+  // ====================================================
 
   const prompt = `
 You are an expert software architect and system design interviewer.
@@ -424,15 +628,19 @@ Do not claim the system was actually deployed or tested.
 `;
 
   const payload = {
-    model: MODEL,
     input: prompt,
     store: false,
+
     generation_config: {
       temperature: 0.4,
     },
   };
 
-  const design = await postToGeminiWithRetry(
+  // ====================================================
+  // PRIMARY + MULTI-MODEL FALLBACK
+  // ====================================================
+
+  const result = await generateWithFallback(
     payload,
     apiKey
   );
@@ -440,10 +648,15 @@ Do not claim the system was actually deployed or tested.
   return {
     topic,
     difficulty,
-    model: MODEL,
-    design,
+    model: result.model,
+    isFallback: result.isFallback,
+    design: result.output,
   };
 }
+
+// ======================================================
+// EXPORT
+// ======================================================
 
 module.exports = {
   generateSystemDesign,
