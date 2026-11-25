@@ -27,7 +27,7 @@ const app = express();
 
 // Flexible CORS Configuration for Local & Network Access
 const allowedOrigins = [
-  "http://localhost:5173",
+  "https://career-ai-swart.vercel.app",
   "http://127.0.0.1:5173",
 ];
 
